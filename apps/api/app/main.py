@@ -69,8 +69,6 @@ async def security_headers_middleware(request: Request, call_next):
     return response
 
 
-from app.core.config import settings
-
 _cors_origins = (
     ["*"]
     if settings.CORS_ORIGINS.strip() == "*"
