@@ -1,0 +1,57 @@
+# Render Blueprint — Dashboard Konten AI (uji publik)
+# Cara pakai: di dashboard Render → New → Blueprint → pilih repo ini.
+# Isi variabel bertanda `sync: false` secara manual setelah blueprint dibuat.
+
+services:
+  # ------------------------------------------------------- API (FastAPI)
+  - type: web
+    name: dkai-api
+    runtime: docker
+    dockerContext: ./apps/api
+    dockerfilePath: ./apps/api/Dockerfile
+    plan: free
+    healthCheckPath: /health
+    envVars:
+      - key: ENV
+        value: prod
+      - key: DATABASE_URL
+        sync: false # contoh: postgresql+asyncpg://postgres:xxx@db.xxx.supabase.co:5432/postgres
+      - key: JWT_SECRET_KEY
+        generateValue: true # Render mengisi acak 64 char
+      - key: FERNET_KEY
+        sync: false # generate: python3 -c "from cryptography.fernet import Fernet; print(Fernet.generate_key().decode())"
+      - key: FRONTEND_URL
+        sync: false # contoh: https://dkai-web.vercel.app
+      - key: API_BASE_URL
+        sync: false # contoh: https://dkai-api.onrender.com
+      - key: CORS_ORIGINS
+        sync: false # contoh: https://dkai-web.vercel.app
+      - key: BANK_NAME
+        value: Bank Central Asia (BCA)
+      - key: BANK_ACCOUNT_NUMBER
+        sync: false # nomor rekening untuk transfer manual
+      - key: BANK_ACCOUNT_NAME
+        sync: false # nama pemilik rekening
+      - key: MAX_BRANDS_PER_ORG
+        value: 3
+      - key: MAX_ACCOUNTS_PER_PLATFORM
+        value: 3
+
+  # ------------------------------------------------------- Worker (APScheduler)
+  - type: worker
+    name: dkai-worker
+    runtime: docker
+    dockerContext: .
+    dockerfilePath: ./apps/worker/Dockerfile
+    plan: free
+    envVars:
+      - key: ENV
+        value: prod
+      - key: DATABASE_URL
+        sync: false # SAMA dengan milik dkai-api
+      - key: SYNC_INTERVAL_HOURS
+        value: 6
+      - key: SUMMARY_CRON
+        value: 0 7 * * 1
+      - key: WORKER_TIMEZONE
+        value: Asia/Jakarta

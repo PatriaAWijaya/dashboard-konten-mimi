@@ -1,0 +1,23 @@
+# Dependensi
+node_modules/
+.next/
+__pycache__/
+*.pyc
+.venv/
+venv/
+
+# Environment (jangan commit rahasia; contohnya aman dicommit)
+.env
+!.env.example
+
+# Storage bukti transfer (folder privat) — isinya diabaikan, foldernya tetap
+storage/*
+!storage/.gitkeep
+
+# Data volume docker (local)
+pgdata/
+redisdata/
+
+# Sistem operasi
+.DS_Store
+Thumbs.db

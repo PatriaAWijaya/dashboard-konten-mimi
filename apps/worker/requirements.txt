@@ -1,0 +1,10 @@
+# Dependensi khusus worker.
+#
+# Dependensi backend (FastAPI, SQLAlchemy, pydantic, dkk.) berasal dari
+# apps/api/requirements.txt — instal KEDUANYA sebelum menjalankan worker:
+#
+#   pip install -r ../api/requirements.txt -r requirements.txt
+#
+# (Di Docker, apps/worker/Dockerfile sudah melakukan ini otomatis.)
+
+apscheduler>=3.10,<3.12

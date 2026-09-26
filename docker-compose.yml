@@ -1,0 +1,110 @@
+# Dashboard Konten AI — docker-compose (Fase 0)
+# Jalan: cp .env.example .env && docker compose up --build
+name: dashboard-konten-ai
+
+services:
+  # ---------------------------------------------------------------- Postgres
+  db:
+    image: postgres:16-alpine
+    container_name: dashboard-konten-ai-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD di .env}
+      POSTGRES_DB: ${POSTGRES_DB:-dashboard}
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+      start_period: 10s
+
+  # ------------------------------------------------------------------ Redis
+  # Disiapkan untuk worker/queue pada fase berikutnya. Belum dipakai di Fase 0.
+  redis:
+    image: redis:7-alpine
+    container_name: dashboard-konten-ai-redis
+    restart: unless-stopped
+    ports:
+      - "6379:6379"
+    volumes:
+      - redisdata:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  # -------------------------------------------------------------------- API
+  api:
+    build:
+      context: ./apps/api
+    container_name: dashboard-konten-ai-api
+    restart: unless-stopped
+    env_file:
+      - .env
+    environment:
+      # Dibangun dari variabel .env agar backend memakai user DB yang sama
+      # dengan yang dibuat oleh entrypoint.sh (role terpisah, least privilege).
+      DATABASE_URL: postgresql+asyncpg://${APP_DB_USER:-app_user}:${APP_DB_PASSWORD:?Set APP_DB_PASSWORD di .env}@db:5432/${POSTGRES_DB:-dashboard}
+      SUPERUSER_DATABASE_URL: postgresql+asyncpg://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD di .env}@db:5432/${POSTGRES_DB:-dashboard}
+      MIGRATION_DATABASE_URL: postgresql+asyncpg://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD di .env}@db:5432/${POSTGRES_DB:-dashboard}
+      REDIS_URL: redis://redis:6379/0
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./storage:/app/storage
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_started
+
+  # -------------------------------------------------------------------- Web
+  web:
+    build:
+      context: ./apps/web
+    container_name: dashboard-konten-ai-web
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    environment:
+      NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-http://localhost:8000}
+    depends_on:
+      - api
+
+  # ----------------------------------------------------------------- Worker
+  # Penjadwal Fase 2 (APScheduler): sinkronisasi akun tiap N jam +
+  # ringkasan mingguan tiap Senin 07:00 WIB. Butuh backend Fase 2 selesai
+  # (sync_service/summaries/notifications); bila belum, container keluar
+  # dengan pesan jelas dan bisa di-restart setelah backend siap.
+  worker:
+    build:
+      context: .
+      dockerfile: apps/worker/Dockerfile
+    container_name: dashboard-konten-ai-worker
+    restart: unless-stopped
+    env_file:
+      - .env
+    environment:
+      # Sama seperti service api: user DB least privilege dari entrypoint.sh.
+      DATABASE_URL: postgresql+asyncpg://${APP_DB_USER}:${APP_DB_PASSWORD}@db:5432/${POSTGRES_DB:-dashboard}
+      REDIS_URL: redis://redis:6379/0
+      SYNC_INTERVAL_HOURS: ${SYNC_INTERVAL_HOURS:-6}
+      SUMMARY_CRON: "${SUMMARY_CRON:-0 7 * * 1}"
+      WORKER_TIMEZONE: ${WORKER_TIMEZONE:-Asia/Jakarta}
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_started
+      api:
+        condition: service_started
+
+volumes:
+  pgdata:
+  redisdata:
