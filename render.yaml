@@ -38,20 +38,4 @@ services:
         value: 3
 
   # ------------------------------------------------------- Worker (APScheduler)
-  - type: worker
-    name: dkai-worker
-    runtime: docker
-    dockerContext: .
-    dockerfilePath: ./apps/worker/Dockerfile
-    plan: free
-    envVars:
-      - key: ENV
-        value: prod
-      - key: DATABASE_URL
-        sync: false # SAMA dengan milik dkai-api
-      - key: SYNC_INTERVAL_HOURS
-        value: 6
-      - key: SUMMARY_CRON
-        value: 0 7 * * 1
-      - key: WORKER_TIMEZONE
-        value: Asia/Jakarta
+  
