@@ -117,7 +117,7 @@ def get_settings() -> Settings:
  settings = Settings()
  env_database_url = os.environ.get("DATABASE_URL")
  if env_database_url:
- settings.DATABASE_URL = env_database_url
+         settings.DATABASE_URL = env_database_url
  for field_name in ("SUPERUSER_DATABASE_URL", "MIGRATION_DATABASE_URL"):
  env_value = os.environ.get(field_name)
  setattr(settings, field_name, env_value or "")
