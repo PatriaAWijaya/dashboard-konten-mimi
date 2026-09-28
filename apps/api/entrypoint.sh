@@ -13,6 +13,8 @@ python3 -c 'import os; print("[entrypoint] python DATABASE_URL:", "ADA" if os.en
 python3 -c "import app.core.config as c; print('[entrypoint] config berasal dari:', c.__file__)"
 python3 -c "from app.core.config import get_settings; u=get_settings().migration_database_url; print('[entrypoint] get_settings:', 'LOCALHOST-DEFAULT' if 'localhost' in u else ('SUPABASE-URL' if 'supabase' in u else 'LAINNYA'))"
 
+python3 -c "import os; v=os.environ.get('DATABASE_URL',''); print('[entrypoint] os.environ: len='+str(len(v))+' awal='+repr(v[:35])); from app.core.config import get_settings; s=get_settings(); print('[entrypoint] pydantic: '+repr(s.DATABASE_URL[:40])); print('[entrypoint] fields_set:', sorted(str(f) for f in s.model_fields_set))"
+
 python3 -c "import pydantic_settings; print('[entrypoint] pydantic-settings:', pydantic_settings.__version__)"
 ls -la /app/.env 2>/dev/null && echo "[entrypoint] FILE /app/.env ADA" || echo "[entrypoint] tidak ada /app/.env"
 
