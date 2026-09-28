@@ -10,6 +10,9 @@ set -euo pipefail
 echo "[entrypoint] DATABASE_URL: $([ -n "${DATABASE_URL:-}" ] && echo TERISI || echo KOSONG)"
 
 python3 -c 'import os; print("[entrypoint] python DATABASE_URL:", "ADA" if os.environ.get("DATABASE_URL") else "TIDAK ADA")'
+python3 -c "import app.core.config as c; print('[entrypoint] config berasal dari:', c.__file__)"
+python3 -c "from app.core.config import get_settings; u=get_settings().migration_database_url; print('[entrypoint] get_settings:', 'LOCALHOST-DEFAULT' if 'localhost' in u else ('SUPABASE-URL' if 'supabase' in u else 'LAINNYA'))"
+
 export DATABASE_URL SUPERUSER_DATABASE_URL MIGRATION_DATABASE_URL FERNET_KEY JWT_SECRET_KEY ENV FRONTEND_URL API_BASE_URL CORS_ORIGINS BANK_NAME BANK_ACCOUNT_NUMBER BANK_ACCOUNT_NAME MAX_BRANDS_PER_ORG MAX_ACCOUNTS_PER_PLATFORM APP_DB_USER APP_DB_PASSWORD PORT 2>/dev/null || true
 
 if [ -n "${SUPERUSER_DATABASE_URL:-}" ] && [ -n "${APP_DB_USER:-}" ] && [ -n "${APP_DB_PASSWORD:-}" ]; then
