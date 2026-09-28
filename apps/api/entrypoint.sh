@@ -7,6 +7,8 @@
 # role, langsung jalankan migrasi dengan DATABASE_URL lalu start aplikasi.
 set -euo pipefail
 
+echo "[entrypoint] DATABASE_URL: $([ -n "${DATABASE_URL:-}" ] && echo TERISI || echo KOSONG)"
+
 if [ -n "${SUPERUSER_DATABASE_URL:-}" ] && [ -n "${APP_DB_USER:-}" ] && [ -n "${APP_DB_PASSWORD:-}" ]; then
     export MIGRATION_DATABASE_URL="${MIGRATION_DATABASE_URL:-$SUPERUSER_DATABASE_URL}"
 
