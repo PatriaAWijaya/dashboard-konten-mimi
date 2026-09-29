@@ -47,7 +47,12 @@ async def main() -> None:
             await session.flush()
             print(f"Superadmin dibuat: {admin.email}")
         else:
-            print(f"Superadmin sudah ada: {admin.email} (dilewati)")
+            # SEMENTARA 2026-09-29: password admin produksi hilang (/tmp terhapus
+            # sebelum sempat dicatat). Sinkronkan ulang dari SEED_ADMIN_PASSWORD
+            # agar bisa login kembali, lalu password diputar manual dan blok
+            # ini DIHAPUS pada commit berikutnya.
+            admin.password_hash = hash_password(settings.SEED_ADMIN_PASSWORD)
+            print(f"Superadmin sudah ada: {admin.email} (password di-reset sementara)")
 
         # --- Paket ---
         result = await session.execute(select(MembershipPlan).where(MembershipPlan.name == PLAN_NAME))
