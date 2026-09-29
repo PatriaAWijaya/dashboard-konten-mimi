@@ -86,17 +86,32 @@ class SmtpEmailService(EmailService):
         msg["To"] = to_email
         msg["Subject"] = subject
         msg.set_content(body)
-        if settings.SMTP_USE_TLS:
-            with smtplib.SMTP(settings.SMTP_HOST, settings.SMTP_PORT) as smtp:
-                smtp.starttls()
-                if settings.SMTP_USERNAME:
-                    smtp.login(settings.SMTP_USERNAME, settings.SMTP_PASSWORD)
-                smtp.send_message(msg)
-        else:
-            with smtplib.SMTP(settings.SMTP_HOST, settings.SMTP_PORT) as smtp:
-                if settings.SMTP_USERNAME:
-                    smtp.login(settings.SMTP_USERNAME, settings.SMTP_PASSWORD)
-                smtp.send_message(msg)
+        try:
+            # timeout 10 dtk: jangan biarkan koneksi SMTP yang macet
+            # menggantung request (mis. registrasi) sampai proxy timeout.
+            if settings.SMTP_USE_TLS:
+                with smtplib.SMTP(settings.SMTP_HOST, settings.SMTP_PORT, timeout=10) as smtp:
+                    smtp.starttls()
+                    if settings.SMTP_USERNAME:
+                        smtp.login(settings.SMTP_USERNAME, settings.SMTP_PASSWORD)
+                    smtp.send_message(msg)
+            else:
+                with smtplib.SMTP(settings.SMTP_HOST, settings.SMTP_PORT, timeout=10) as smtp:
+                    if settings.SMTP_USERNAME:
+                        smtp.login(settings.SMTP_USERNAME, settings.SMTP_PASSWORD)
+                    smtp.send_message(msg)
+        except Exception:
+            # Email gagal terkirim (host salah, kredensial salah, dsb):
+            # catat saja, jangan gagalkan alur pemanggil (registrasi dsb).
+            logger.exception(
+                "Gagal mengirim email '%s' ke %s via %s:%s.",
+                subject,
+                to_email,
+                settings.SMTP_HOST,
+                settings.SMTP_PORT,
+            )
+            return
+        logger.info("Email '%s' terkirim ke %s.", subject, to_email)
 
     async def send_verification_email(self, *, to_email: str, name: str, token: str) -> None:
         body = (
