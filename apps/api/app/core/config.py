@@ -85,6 +85,9 @@ class Settings(BaseSettings):
     SMTP_PASSWORD: str = ""
     SMTP_FROM: str = "noreply@dashboard.local"
     SMTP_USE_TLS: bool = True
+    # Brevo HTTP API (pengiriman via port 443; untuk hosting yang memblokir
+    # outbound SMTP seperti Render free tier). Format: xkeysib-...
+    BREVO_API_KEY: str = ""
 
     @property
     def is_dev(self) -> bool:

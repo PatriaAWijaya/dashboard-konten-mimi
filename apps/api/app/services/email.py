@@ -1,13 +1,16 @@
-"""Layanan email: ABC + implementasi console (dev) & SMTP (kerangka)."""
+"""Layanan email: ABC + implementasi console (dev), SMTP, & Brevo HTTP API."""
 
 from __future__ import annotations
 
+import json
 import logging
 import smtplib
+import urllib.request
 from abc import ABC, abstractmethod
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
 from email.message import EmailMessage
+from email.utils import parseaddr
 
 from app.core.config import get_settings
 
@@ -132,4 +135,68 @@ def get_email_service() -> EmailService:
     settings = get_settings()
     if settings.is_dev:
         return ConsoleEmailService()
+    # Render (free tier) memblokir outbound SMTP (port 25/465/587) di level
+    # jaringan -> koneksi menggantung sampai timeout. Brevo HTTP API lewat
+    # port 443 tidak diblokir, jadi diprioritaskan bila API key tersedia.
+    if settings.BREVO_API_KEY:
+        return BrevoHttpEmailService()
     return SmtpEmailService()
+
+
+class BrevoHttpEmailService(EmailService):
+    """Kirim email via Brevo HTTP API (port 443).
+
+    Dipakai di hosting yang memblokir outbound SMTP (mis. Render free tier).
+    Memakai akun & sender terverifikasi Brevo yang sama dengan SMTP;
+    yang dibutuhkan hanya API key (format xkeysib-...) via BREVO_API_KEY.
+    """
+
+    API_URL = "https://api.brevo.com/v3/smtp/email"
+
+    def _send(self, to_email: str, subject: str, body: str) -> None:
+        settings = get_settings()
+        sender_name, sender_email = parseaddr(settings.SMTP_FROM)
+        if not sender_email:
+            sender_email = settings.SMTP_FROM.strip()
+        payload = {
+            "sender": {"name": sender_name or "Dashboard Konten AI", "email": sender_email},
+            "to": [{"email": to_email}],
+            "subject": subject,
+            "textContent": body,
+        }
+        req = urllib.request.Request(
+            self.API_URL,
+            data=json.dumps(payload).encode("utf-8"),
+            method="POST",
+            headers={
+                "accept": "application/json",
+                "content-type": "application/json",
+                "api-key": settings.BREVO_API_KEY,
+                # Hindari proteksi bot yang memblokir User-Agent default urllib.
+                "User-Agent": "DashboardKontenAI/1.0",
+            },
+        )
+        try:
+            with urllib.request.urlopen(req, timeout=15) as resp:
+                resp.read()
+        except Exception:
+            # Jangan gagalkan alur pemanggil (registrasi dsb); cukup catat.
+            logger.exception(
+                "Gagal mengirim email '%s' ke %s via Brevo HTTP API.", subject, to_email
+            )
+            return
+        logger.info("Email '%s' terkirim ke %s via Brevo HTTP API.", subject, to_email)
+
+    async def send_verification_email(self, *, to_email: str, name: str, token: str) -> None:
+        body = (
+            f"Halo {name},\n\nTerima kasih telah mendaftar di Dashboard Konten AI.\n"
+            f"Gunakan token berikut untuk verifikasi email Anda (berlaku 24 jam):\n\n{token}\n"
+        )
+        self._send(to_email, "Verifikasi Email — Dashboard Konten AI", body)
+
+    async def send_password_reset_email(self, *, to_email: str, name: str, token: str) -> None:
+        body = (
+            f"Halo {name},\n\nGunakan token berikut untuk mengatur ulang kata sandi Anda "
+            f"(berlaku 24 jam):\n\n{token}\n\nAbaikan email ini bila Anda tidak memintanya.\n"
+        )
+        self._send(to_email, "Reset Kata Sandi — Dashboard Konten AI", body)
