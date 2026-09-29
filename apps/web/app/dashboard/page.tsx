@@ -7,13 +7,17 @@ import { api, ApiError } from "@/lib/api";
 import { formatTanggal } from "@/lib/format";
 import type { OrganizationDetail } from "@/lib/types";
 import { Alert, Button, Card, Input, PageHeader, Spinner } from "@/components/ui";
+import { KirimUlangVerifikasi } from "@/components/KirimUlangVerifikasi";
 import { MembershipBadge, membershipLabel } from "@/components/badges";
 
 // Wizard organisasi pertama untuk user yang belum punya organisasi.
 function WizardOrganisasi({ onSelesai }: { onSelesai: () => void }) {
+  const { user } = useAuth();
   const [nama, setNama] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+
+  const perluVerifikasi = error.toLowerCase().includes("verifikasi");
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -55,6 +59,15 @@ function WizardOrganisasi({ onSelesai }: { onSelesai: () => void }) {
         </div>
         <form onSubmit={handleSubmit} className="mt-6 space-y-4">
           {error && <Alert kind="error">{error}</Alert>}
+          {perluVerifikasi && user?.email && (
+            <div className="rounded-xl border border-amber-200 bg-amber-50 p-4">
+              <p className="mb-3 text-sm text-amber-800">
+                Akun Anda belum terverifikasi. Verifikasi email terlebih dahulu,
+                lalu coba buat organisasi lagi.
+              </p>
+              <KirimUlangVerifikasi email={user.email} />
+            </div>
+          )}
           <Input
             label="Nama organisasi"
             required

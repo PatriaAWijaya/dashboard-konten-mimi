@@ -4,7 +4,8 @@ import { Suspense, useEffect, useState } from "react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { api, ApiError } from "@/lib/api";
-import { Alert, Button, Card, Spinner } from "@/components/ui";
+import { Alert, Button, Card, Input, Spinner } from "@/components/ui";
+import { KirimUlangVerifikasi } from "@/components/KirimUlangVerifikasi";
 
 function VerifyEmailInner() {
   const searchParams = useSearchParams();
@@ -13,6 +14,7 @@ function VerifyEmailInner() {
     "loading"
   );
   const [pesan, setPesan] = useState("");
+  const [emailKirimUlang, setEmailKirimUlang] = useState("");
 
   useEffect(() => {
     if (!token) {
@@ -67,9 +69,19 @@ function VerifyEmailInner() {
               </h1>
               <Alert kind="error">{pesan}</Alert>
               <p className="text-sm text-slate-600">
-                Tautan mungkin sudah kedaluwarsa atau sudah dipakai. Coba daftar
-                ulang atau hubungi dukungan.
+                Tautan mungkin sudah kedaluwarsa atau sudah dipakai. Minta
+                tautan baru dengan memasukkan email pendaftaran Anda:
               </p>
+              <div className="space-y-3 text-left">
+                <Input
+                  label="Email pendaftaran"
+                  type="email"
+                  placeholder="nama@perusahaan.id"
+                  value={emailKirimUlang}
+                  onChange={(e) => setEmailKirimUlang(e.target.value)}
+                />
+                <KirimUlangVerifikasi email={emailKirimUlang} />
+              </div>
               <Link href="/login" className="block">
                 <Button variant="secondary" className="w-full">
                   Ke halaman masuk

@@ -33,6 +33,7 @@ from app.schemas.auth import (
     RefreshResponse,
     RegisterRequest,
     RegisterResponse,
+    ResendVerificationRequest,
     ResetPasswordRequest,
     UpdateProfileRequest,
     UserPublic,
@@ -138,6 +139,60 @@ async def verify_email(
     token_row.used_at = _now()
     await db.flush()
     return MessageResponse(message="Email berhasil diverifikasi.")
+
+
+# Jeda minimal antar pengiriman ulang (detik) agar tidak membanjiri inbox/API.
+_RESEND_COOLDOWN_SECONDS = 60
+
+
+@router.post("/auth/resend-verification", response_model=MessageResponse)
+@limiter.limit("5/minute")
+async def resend_verification(
+    request: Request,
+    data: ResendVerificationRequest,
+    db: Annotated[AsyncSession, Depends(get_db)],
+):
+    pesan_umum = (
+        "Jika email tersebut terdaftar dan belum diverifikasi, "
+        "email verifikasi baru telah dikirim. Periksa kotak masuk Anda."
+    )
+    row = await _find_auth_row(db, data.email)
+    if row is None or row.get("email_verified"):
+        # Pesan umum: jangan bocorkan email mana yang terdaftar.
+        return MessageResponse(message=pesan_umum)
+    user = await _become(db, row["id"])
+
+    unused = (
+        (
+            await db.execute(
+                select(EmailVerificationToken)
+                .where(
+                    EmailVerificationToken.user_id == user.id,
+                    EmailVerificationToken.used_at.is_(None),
+                )
+                .order_by(EmailVerificationToken.created_at.desc())
+            )
+        )
+        .scalars()
+        .all()
+    )
+    if unused and (_now() - unused[0].created_at).total_seconds() < _RESEND_COOLDOWN_SECONDS:
+        # Token terakhir masih segar (< 60 dtk); email sebelumnya pasti baru saja dikirim.
+        return MessageResponse(message=pesan_umum)
+    # Batalkan token lama yang belum dipakai agar hanya token terbaru yang valid.
+    for lama in unused:
+        lama.used_at = _now()
+
+    token = generate_token()
+    db.add(
+        EmailVerificationToken(
+            user_id=user.id, token_hash=hash_token(token), expires_at=_email_token_expiry()
+        )
+    )
+    await db.flush()
+
+    await get_email_service().send_verification_email(to_email=user.email, name=user.name, token=token)
+    return MessageResponse(message=pesan_umum)
 
 
 # ---------------------------------------------------------------------------

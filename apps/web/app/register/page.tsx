@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import { api, ApiError } from "@/lib/api";
 import { useAuth } from "@/lib/auth";
 import { Alert, Button, Card, Input } from "@/components/ui";
+import { KirimUlangVerifikasi } from "@/components/KirimUlangVerifikasi";
 
 interface DevToken {
   token: string;
@@ -269,6 +270,7 @@ export default function RegisterPage() {
                 email kamu dan klik tautan tersebut untuk mengaktifkan akun.
               </p>
               {error && <Alert kind="error">{error}</Alert>}
+              <KirimUlangVerifikasi email={email} />
 
               {process.env.NODE_ENV === "development" && (
                 <div className="rounded-xl border border-dashed border-slate-300 bg-slate-50 p-4">

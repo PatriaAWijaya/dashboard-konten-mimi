@@ -30,7 +30,11 @@ class RegisterResponse(BaseModel):
 
 
 class VerifyEmailRequest(BaseModel):
-    token: str = Field(min_length=10)
+    token: str
+
+
+class ResendVerificationRequest(BaseModel):
+    email: EmailStr = Field(min_length=10)
 
 
 class LoginRequest(BaseModel):
