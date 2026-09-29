@@ -57,11 +57,12 @@ function UploadIsi() {
   useEffect(() => {
     let batal = false;
     apiOrDemo(
-      () => api.get<{ columns: CsvColumnInfo[] }>("/content/csv-format"),
-      { columns: demoCsvColumns }
+      () => api.get<{ columns: CsvColumnInfo[] } | CsvColumnInfo[]>("/content/csv-format"),
+      demoCsvColumns
     ).then(({ data, demo }) => {
       if (!batal) {
-        setKolom(data.columns);
+        const cols = Array.isArray(data) ? data : data.columns ?? [];
+        setKolom(cols);
         setDemoKolom(demo);
       }
     });
