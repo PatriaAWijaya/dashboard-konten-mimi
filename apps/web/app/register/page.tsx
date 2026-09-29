@@ -270,10 +270,11 @@ export default function RegisterPage() {
               </p>
               {error && <Alert kind="error">{error}</Alert>}
 
-              <div className="rounded-xl border border-dashed border-slate-300 bg-slate-50 p-4">
-                <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
-                  Mode pengembang
-                </p>
+              {process.env.NODE_ENV === "development" && (
+                <div className="rounded-xl border border-dashed border-slate-300 bg-slate-50 p-4">
+                  <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+                    Mode pengembang
+                  </p>
                 <Button
                   variant="secondary"
                   onClick={ambilTokenDev}
@@ -293,7 +294,7 @@ export default function RegisterPage() {
                   </Link>
                 )}
               </div>
-
+              )}
               <Button
                 variant="secondary"
                 onClick={() => router.push("/login")}

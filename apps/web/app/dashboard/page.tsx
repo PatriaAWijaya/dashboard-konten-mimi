@@ -46,7 +46,7 @@ function WizardOrganisasi({ onSelesai }: { onSelesai: () => void }) {
             🏢
           </div>
           <h1 className="text-2xl font-bold text-slate-900">
-            Buat organization pertama Anda
+            Buat organisasi pertama Anda
           </h1>
           <p className="mt-2 text-sm text-slate-500">
             Organisasi adalah wadah untuk brand-brand yang Anda kelola. Anda

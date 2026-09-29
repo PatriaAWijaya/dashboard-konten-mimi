@@ -165,13 +165,9 @@ def _kolom_dokumentasi() -> list[CsvFormatColumn]:
 
 
 @router.get("/content/csv-format", response_model=list[CsvFormatColumn])
-async def csv_format(
-    user: Annotated[User, Depends(get_current_user)],
-    db: Annotated[AsyncSession, Depends(get_db)],
-    org_id: Annotated[uuid.UUID, Depends(parse_org_header)],
-):
-    """Dokumentasi kolom CSV untuk halaman frontend (tanpa butuh file)."""
-    await get_org_context(db, user, org_id, min_role=ROLE_VIEWER)
+async def csv_format():
+    """Dokumentasi kolom CSV — publik (tanpa login/organisasi) agar halaman
+    upload frontend selalu menampilkan dokumentasi yang akurat."""
     return _kolom_dokumentasi()
 
 
