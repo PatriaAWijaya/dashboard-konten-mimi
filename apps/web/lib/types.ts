@@ -126,6 +126,57 @@ export interface UploadResult {
   warnings: string[];
 }
 
+export interface BatchFileResult {
+  filename: string;
+  sukses: boolean;
+  error: string | null;
+  contents_baru: number;
+  contents_diupdate: number;
+  metrics_rows: number;
+  baris_gagal: { baris: number; alasan: string }[];
+  warnings: string[];
+}
+
+export interface BatchUploadResult {
+  files: BatchFileResult[];
+  total_baru: number;
+  total_diupdate: number;
+  total_metrics_rows: number;
+  total_baris_gagal: number;
+}
+
+export interface PerbandinganDelta {
+  bulan_pembanding: string | null;
+  views_pct: number | null;
+  engagement_pct: number | null;
+  jumlah_konten_pct: number | null;
+  reach_pct: number | null;
+  rata_skor_pct: number | null;
+}
+
+export interface PerbandinganBulan {
+  bulan: string;
+  label: string;
+  jumlah_konten: number;
+  views: number;
+  likes: number;
+  comments: number;
+  shares: number;
+  saves: number;
+  reach: number;
+  engagement: number;
+  rata_skor: number | null;
+  rata_wer: number;
+  mom: PerbandinganDelta | null;
+  yoy: PerbandinganDelta | null;
+}
+
+export interface PerbandinganData {
+  rentang: { mulai: string; selesai: string };
+  platform: string;
+  bulan: PerbandinganBulan[];
+}
+
 export interface ScoreResult {
   diskor: number;
   periode: string;

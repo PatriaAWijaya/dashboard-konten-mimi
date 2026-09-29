@@ -5,13 +5,13 @@ from datetime import date, datetime
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
-PRESET_PERIODE = ("7d", "30d", "bulan_ini", "custom")
+PRESET_PERIODE = ("7d", "30d", "90d", "bulan_ini", "12bln", "custom")
 
 
 class PeriodeIn(BaseModel):
     """Periode analisis: preset cepat atau rentang custom (maks 12 bulan)."""
 
-    preset: str = Field(default="30d", description="Preset periode: 7d, 30d, bulan_ini, custom.")
+    preset: str = Field(default="30d", description="Preset periode: 7d, 30d, 90d, bulan_ini, 12bln, custom.")
     start: date | None = Field(default=None, description="Tanggal mulai (wajib bila preset=custom).")
     end: date | None = Field(default=None, description="Tanggal selesai (wajib bila preset=custom).")
 
@@ -93,6 +93,60 @@ class AnalisaOut(BaseModel):
     ringkasan: list = Field(description="Ringkasan per pola (format, tujuan).")
     bermasalah: list = Field(description="Pola/konten yang bermasalah.")
     rekomendasi_pola: list = Field(description="Rekomendasi pola dari analisa.")
+
+
+class BatchFileOut(BaseModel):
+    filename: str = Field(description="Nama file dalam batch.")
+    sukses: bool = Field(description="True bila file berhasil diproses.")
+    error: str | None = Field(default=None, description="Pesan error bila gagal.")
+    contents_baru: int = 0
+    contents_diupdate: int = 0
+    metrics_rows: int = 0
+    baris_gagal: list = Field(default_factory=list)
+    warnings: list[str] = Field(default_factory=list)
+
+
+class BatchUploadOut(BaseModel):
+    files: list[BatchFileOut] = Field(description="Hasil per file.")
+    total_baru: int = Field(description="Total konten baru dari seluruh file.")
+    total_diupdate: int = Field(description="Total konten diupdate dari seluruh file.")
+    total_metrics_rows: int = Field(description="Total baris metrik dari seluruh file.")
+    total_baris_gagal: int = Field(description="Total baris gagal dari seluruh file.")
+    kolom: list[str] = Field(description="Daftar kolom CSV yang diharapkan (dokumentasi).")
+
+
+class PerbandinganDelta(BaseModel):
+    """Perubahan persen satu metrik vs bulan pembanding (None = data pembanding tidak ada)."""
+
+    bulan_pembanding: str | None = Field(description="Bulan pembanding (YYYY-MM) atau None.")
+    views_pct: float | None = None
+    engagement_pct: float | None = None
+    jumlah_konten_pct: float | None = None
+    reach_pct: float | None = None
+    rata_skor_pct: float | None = None
+
+
+class PerbandinganBulan(BaseModel):
+    bulan: str = Field(description="Bulan (YYYY-MM).")
+    label: str = Field(description="Label bulan, mis. 'Jul 2026'.")
+    jumlah_konten: int = 0
+    views: int = 0
+    likes: int = 0
+    comments: int = 0
+    shares: int = 0
+    saves: int = 0
+    reach: int = 0
+    engagement: int = Field(default=0, description="likes+comments+shares+saves.")
+    rata_skor: float | None = None
+    rata_wer: float = 0.0
+    mom: PerbandinganDelta | None = Field(default=None, description="Perbandingan month-on-month.")
+    yoy: PerbandinganDelta | None = Field(default=None, description="Perbandingan year-on-year.")
+
+
+class PerbandinganOut(BaseModel):
+    rentang: dict = Field(description="Rentang tampilan {mulai, selesai}.")
+    platform: str = Field(description="Filter platform yang dipakai.")
+    bulan: list[PerbandinganBulan] = Field(description="Deret bulanan kronologis.")
 
 
 class RecommendationOut(BaseModel):

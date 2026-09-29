@@ -29,6 +29,7 @@ from app.models.brand import Brand
 from app.models.content import (
     BrandDNACard,
     Content,
+    ContentMetricsDaily,
     ContentScore,
     NicheInterview,
     NicheSuggestion,
@@ -37,6 +38,8 @@ from app.models.content import (
 from app.models.user import User
 from app.schemas.content import (
     AnalisaOut,
+    BatchFileOut,
+    BatchUploadOut,
     CsvFormatColumn,
     CsvUploadOut,
     DashboardKartu,
@@ -51,12 +54,15 @@ from app.schemas.content import (
     JawabOut,
     NicheOut,
     NicheSaranOut,
+    PerbandinganBulan,
+    PerbandinganDelta,
+    PerbandinganOut,
     PeriodeIn,
     PilihNicheIn,
     RecommendationOut,
     ScoreOut,
 )
-from app.services.csv_import import EXPECTED_COLUMNS, import_csv
+from app.services.csv_import import AUTO_PLATFORM, EXPECTED_COLUMNS, import_csv
 from app.services.niche import (
     QUESTIONS,
     confirm_dna,
@@ -110,6 +116,10 @@ def _resolve_period(data: PeriodeIn) -> tuple[date, date]:
         return today - timedelta(days=6), today
     if data.preset == "30d":
         return today - timedelta(days=29), today
+    if data.preset == "90d":
+        return today - timedelta(days=89), today
+    if data.preset == "12bln":
+        return today - timedelta(days=364), today
     if data.preset == "bulan_ini":
         return today.replace(day=1), today
     assert data.start and data.end
@@ -218,6 +228,119 @@ async def upload_csv(
     )
     kolom = [c if isinstance(c, str) else str(c.get("nama", c)) for c in EXPECTED_COLUMNS]
     return CsvUploadOut(**hasil, kolom=kolom)
+
+
+BATCH_PLATFORM_VALID = ("tiktok", "instagram", AUTO_PLATFORM)
+MAX_BATCH_FILES = 10
+
+
+@router.post("/content/upload-batch", response_model=BatchUploadOut)
+async def upload_csv_batch(
+    org_id: Annotated[uuid.UUID, Depends(parse_org_header)],
+    brand_id: Annotated[str, Form(description="ID brand tujuan.")],
+    platform: Annotated[str, Form(description="Platform: tiktok, instagram, atau auto (dari kolom platform).")],
+    files: Annotated[list[UploadFile], File(description="File-file CSV data konten (maks 10).")],
+    user: Annotated[User, Depends(get_current_user)],
+    db: Annotated[AsyncSession, Depends(get_db)],
+):
+    """Upload beberapa file CSV sekaligus untuk satu brand.
+
+    Meta membatasi export maksimal 3 bulan, jadi beberapa file (mis. per
+    triwulan) dapat diunggah bersamaan untuk analisa beberapa periode.
+    Import idempoten per file: baris yang sama (brand+platform+post_id)
+    hanya di-update, tidak diduplikasi. Satu file gagal tidak
+    menggagalkan file lain.
+    """
+    ctx = await get_org_context(db, user, org_id, min_role=ROLE_EDITOR)
+    try:
+        brand_uuid = uuid.UUID(brand_id)
+    except ValueError:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="brand_id tidak valid.")
+    brand = await _get_brand(db, brand_uuid, ctx.organization.id)
+
+    platform_norm = (platform or "").strip().lower()
+    if platform_norm not in BATCH_PLATFORM_VALID:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"Platform tidak valid. Pilihan: {', '.join(BATCH_PLATFORM_VALID)}.",
+        )
+    if not files:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Tidak ada file yang diunggah.")
+    if len(files) > MAX_BATCH_FILES:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"Maksimal {MAX_BATCH_FILES} file per batch.",
+        )
+
+    max_bytes = get_settings().max_upload_bytes
+    hasil_files: list[BatchFileOut] = []
+    total_baru = total_diupdate = total_metrics = total_gagal = 0
+    for f in files:
+        nama = f.filename or "upload.csv"
+        blob = await f.read()
+        if not (nama.lower().endswith(".csv")):
+            hasil_files.append(
+                BatchFileOut(filename=nama, sukses=False, error="File harus berformat .csv.")
+            )
+            continue
+        if len(blob) > max_bytes:
+            hasil_files.append(
+                BatchFileOut(
+                    filename=nama,
+                    sukses=False,
+                    error=f"Ukuran file melebihi batas {get_settings().MAX_UPLOAD_MB} MB.",
+                )
+            )
+            continue
+        if not blob.strip():
+            hasil_files.append(
+                BatchFileOut(filename=nama, sukses=False, error="File CSV kosong.")
+            )
+            continue
+        try:
+            hasil = await import_csv(
+                db,
+                brand=brand,
+                organization_id=ctx.organization.id,
+                platform=platform_norm,
+                file_bytes=blob,
+                filename=nama,
+            )
+        except ValueError as exc:
+            await db.rollback()
+            hasil_files.append(BatchFileOut(filename=nama, sukses=False, error=str(exc)))
+            continue
+        except Exception as exc:  # pragma: no cover - defensive
+            await db.rollback()
+            hasil_files.append(
+                BatchFileOut(filename=nama, sukses=False, error=f"Gagal memproses file: {exc}")
+            )
+            continue
+        total_baru += hasil["contents_baru"]
+        total_diupdate += hasil["contents_diupdate"]
+        total_metrics += hasil["metrics_rows"]
+        total_gagal += len(hasil["baris_gagal"])
+        hasil_files.append(
+            BatchFileOut(
+                filename=nama,
+                sukses=True,
+                contents_baru=hasil["contents_baru"],
+                contents_diupdate=hasil["contents_diupdate"],
+                metrics_rows=hasil["metrics_rows"],
+                baris_gagal=hasil["baris_gagal"],
+                warnings=hasil["warnings"],
+            )
+        )
+
+    kolom = [c if isinstance(c, str) else str(c.get("nama", c)) for c in EXPECTED_COLUMNS]
+    return BatchUploadOut(
+        files=hasil_files,
+        total_baru=total_baru,
+        total_diupdate=total_diupdate,
+        total_metrics_rows=total_metrics,
+        total_baris_gagal=total_gagal,
+        kolom=kolom,
+    )
 
 
 # ---------------------------------------------------------------------------
@@ -399,6 +522,210 @@ async def brand_analisa(
         ringkasan=hasil.get("ringkasan") or [],
         bermasalah=hasil.get("bermasalah") or [],
         rekomendasi_pola=hasil.get("rekomendasi_pola") or [],
+    )
+
+
+# ---------------------------------------------------------------------------
+# Perbandingan MoM & YoY
+# ---------------------------------------------------------------------------
+
+_BULAN_SINGKAT = ["Jan", "Feb", "Mar", "Apr", "Mei", "Jun", "Jul", "Agu", "Sep", "Okt", "Nov", "Des"]
+
+
+def _geser_bulan(tahun: int, bulan: int, geser: int) -> tuple[int, int]:
+    total = (tahun * 12 + (bulan - 1)) + geser
+    return total // 12, total % 12 + 1
+
+
+def _kunci_bulan(tahun: int, bulan: int) -> str:
+    return f"{tahun:04d}-{bulan:02d}"
+
+
+def _label_bulan(tahun: int, bulan: int) -> str:
+    return f"{_BULAN_SINGKAT[bulan - 1]} {tahun}"
+
+
+def _pct_perubahan(sekarang: float, pembanding: float | None) -> float | None:
+    if pembanding is None or pembanding == 0:
+        return None
+    return round((sekarang - pembanding) / pembanding * 100, 1)
+
+
+@router.get("/content/brands/{brand_id}/perbandingan", response_model=PerbandinganOut)
+async def brand_perbandingan(
+    brand_id: Annotated[uuid.UUID, Path()],
+    org_id: Annotated[uuid.UUID, Depends(parse_org_header)],
+    user: Annotated[User, Depends(get_current_user)],
+    db: Annotated[AsyncSession, Depends(get_db)],
+    platform: Annotated[str, Query(description="Filter platform: semua, tiktok, instagram.")] = "semua",
+    start: Annotated[date | None, Query(description="Tanggal mulai tampilan.")] = None,
+    end: Annotated[date | None, Query(description="Tanggal selesai tampilan.")] = None,
+):
+    """Deret bulanan + perbandingan month-on-month (MoM) dan year-on-year (YoY).
+
+    Karena export Meta dibatasi maksimal 3 bulan per file, data beberapa
+    periode dapat diunggah bertahap (upload batch) lalu dibandingkan di sini.
+    Delta bernilai None bila bulan pembanding belum punya data.
+    """
+    ctx = await get_org_context(db, user, org_id, min_role=ROLE_VIEWER)
+    brand = await _get_brand(db, brand_id, ctx.organization.id)
+
+    platform_norm = (platform or "semua").strip().lower()
+    if platform_norm not in ("semua", "tiktok", "instagram"):
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Platform tidak valid. Pilihan: semua, tiktok, instagram.",
+        )
+
+    hari_ini = datetime.now(timezone.utc).date()
+    akhir = end or hari_ini
+    awal = start or date(*_geser_bulan(akhir.year, akhir.month, -11), 1)
+    if awal > akhir:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Tanggal mulai tidak boleh setelah tanggal selesai.",
+        )
+    if (akhir - awal).days > 730:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Rentang perbandingan maksimal 24 bulan.",
+        )
+
+    # Jendela ambil data diperlebar 12 bulan ke belakang agar YoY punya pembanding.
+    awal_ambil = date(*_geser_bulan(awal.year, awal.month, -12), 1)
+    mulai_dt = datetime(awal_ambil.year, awal_ambil.month, awal_ambil.day, tzinfo=timezone.utc)
+    selesai_dt = datetime(akhir.year, akhir.month, akhir.day, tzinfo=timezone.utc) + timedelta(days=1)
+
+    q = select(Content).where(
+        Content.brand_id == brand.id,
+        Content.posted_at >= mulai_dt,
+        Content.posted_at < selesai_dt,
+    )
+    if platform_norm != "semua":
+        q = q.where(Content.platform == platform_norm)
+    contents = (await db.execute(q.order_by(Content.posted_at))).scalars().all()
+    cids = [c.id for c in contents]
+
+    # Agregat metrik per konten (jumlahkan seluruh baris harian).
+    metrik_per_konten: dict = {}
+    if cids:
+        rows = (
+            await db.execute(
+                select(ContentMetricsDaily).where(ContentMetricsDaily.content_id.in_(cids))
+            )
+        ).scalars().all()
+        for r in rows:
+            m = metrik_per_konten.setdefault(
+                r.content_id,
+                {"views": 0, "likes": 0, "comments": 0, "shares": 0, "saves": 0, "reach": 0},
+            )
+            m["views"] += r.views or 0
+            m["likes"] += r.likes or 0
+            m["comments"] += r.comments or 0
+            m["shares"] += r.shares or 0
+            m["saves"] += r.saves or 0
+            m["reach"] += r.reach or 0
+
+    # Skor terbaru per konten (seperti dashboard).
+    skor_terbaru: dict = {}
+    if cids:
+        skor_rows = (
+            await db.execute(
+                select(ContentScore).where(
+                    ContentScore.content_id.in_(cids),
+                    ContentScore.period_start <= akhir,
+                    ContentScore.period_end >= awal_ambil,
+                )
+            )
+        ).scalars().all()
+        for s in skor_rows:
+            lama = skor_terbaru.get(s.content_id)
+            if lama is None or (s.period_end, s.period_start) > (lama.period_end, lama.period_start):
+                skor_terbaru[s.content_id] = s
+
+    # Bucket per bulan posting.
+    agregat: dict[str, dict] = {}
+    for content in contents:
+        kunci = _kunci_bulan(content.posted_at.year, content.posted_at.month)
+        a = agregat.setdefault(
+            kunci,
+            {"n": 0, "views": 0, "likes": 0, "comments": 0, "shares": 0,
+             "saves": 0, "reach": 0, "wer": 0.0, "skor": 0.0, "n_skor": 0},
+        )
+        m = metrik_per_konten.get(content.id, {"views": 0, "likes": 0, "comments": 0, "shares": 0, "saves": 0, "reach": 0})
+        views = m["views"]
+        wer = compute_weighted_er(m["likes"], m["comments"], m["shares"], m["saves"], views)
+        skor = skor_terbaru.get(content.id)
+        nilai_skor = float(skor.score) if skor and skor.score is not None else None
+        a["n"] += 1
+        a["views"] += views
+        a["likes"] += m["likes"]
+        a["comments"] += m["comments"]
+        a["shares"] += m["shares"]
+        a["saves"] += m["saves"]
+        a["reach"] += m["reach"]
+        a["wer"] += wer
+        if nilai_skor is not None:
+            a["skor"] += nilai_skor
+            a["n_skor"] += 1
+
+    def _delta(kunci: str, kunci_banding: str | None) -> PerbandinganDelta | None:
+        if kunci_banding is None:
+            return None
+        cur = agregat.get(kunci)
+        prev = agregat.get(kunci_banding)
+        if cur is None or prev is None or prev["n"] == 0:
+            return PerbandinganDelta(bulan_pembanding=None)
+        return PerbandinganDelta(
+            bulan_pembanding=kunci_banding,
+            views_pct=_pct_perubahan(cur["views"], prev["views"]),
+            engagement_pct=_pct_perubahan(
+                cur["likes"] + cur["comments"] + cur["shares"] + cur["saves"],
+                prev["likes"] + prev["comments"] + prev["shares"] + prev["saves"],
+            ),
+            jumlah_konten_pct=_pct_perubahan(cur["n"], prev["n"]),
+            reach_pct=_pct_perubahan(cur["reach"], prev["reach"]),
+            rata_skor_pct=_pct_perubahan(
+                cur["skor"] / cur["n_skor"] if cur["n_skor"] else None,
+                prev["skor"] / prev["n_skor"] if prev["n_skor"] else None,
+            ),
+        )
+
+    # Deret bulan tampilan kronologis.
+    deret: list[PerbandinganBulan] = []
+    t, b = awal.year, awal.month
+    while (t, b) <= (akhir.year, akhir.month):
+        kunci = _kunci_bulan(t, b)
+        a = agregat.get(kunci, {"n": 0, "views": 0, "likes": 0, "comments": 0,
+                               "shares": 0, "saves": 0, "reach": 0, "wer": 0.0,
+                               "skor": 0.0, "n_skor": 0})
+        n = a["n"]
+        kunci_mom = _kunci_bulan(*_geser_bulan(t, b, -1))
+        kunci_yoy = _kunci_bulan(*_geser_bulan(t, b, -12))
+        deret.append(
+            PerbandinganBulan(
+                bulan=kunci,
+                label=_label_bulan(t, b),
+                jumlah_konten=n,
+                views=a["views"],
+                likes=a["likes"],
+                comments=a["comments"],
+                shares=a["shares"],
+                saves=a["saves"],
+                reach=a["reach"],
+                engagement=a["likes"] + a["comments"] + a["shares"] + a["saves"],
+                rata_skor=round(a["skor"] / a["n_skor"], 2) if a["n_skor"] else None,
+                rata_wer=round(a["wer"] / n, 4) if n else 0.0,
+                mom=_delta(kunci, kunci_mom),
+                yoy=_delta(kunci, kunci_yoy),
+            )
+        )
+        t, b = _geser_bulan(t, b, 1)
+
+    return PerbandinganOut(
+        rentang={"mulai": awal.isoformat(), "selesai": akhir.isoformat()},
+        platform=platform_norm,
+        bulan=deret,
     )
 
 

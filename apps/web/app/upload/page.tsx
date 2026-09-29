@@ -10,7 +10,13 @@ import {
   demoCsvColumns,
   getSelectedBrandId,
 } from "@/lib/content";
-import type { CsvColumnInfo, Platform, ScoreResult, UploadResult } from "@/lib/types";
+import type {
+  BatchFileResult,
+  BatchUploadResult,
+  CsvColumnInfo,
+  ScoreResult,
+  UploadResult,
+} from "@/lib/types";
 import {
   Alert,
   Button,
@@ -21,18 +27,27 @@ import {
 import BrandSelector from "@/components/BrandSelector";
 import DemoBadge from "@/components/DemoBadge";
 
+type PlatformPilih = "tiktok" | "instagram" | "auto";
+const PRESET_SKOR = [
+  { value: "30d", label: "30 hari terakhir" },
+  { value: "90d", label: "90 hari terakhir" },
+  { value: "12bln", label: "12 bulan terakhir" },
+] as const;
+
 function UploadIsi() {
   const [brandId, setBrandId] = useState<string | null>(null);
-  const [platform, setPlatform] = useState<Platform>("tiktok");
-  const [file, setFile] = useState<File | null>(null);
+  const [platform, setPlatform] = useState<PlatformPilih>("tiktok");
+  const [files, setFiles] = useState<File[]>([]);
   const [kolom, setKolom] = useState<CsvColumnInfo[]>([]);
   const [demoKolom, setDemoKolom] = useState(false);
   const [uploading, setUploading] = useState(false);
-  const [hasil, setHasil] = useState<UploadResult | null>(null);
+  const [hasil, setHasil] = useState<BatchUploadResult | null>(null);
   const [demoHasil, setDemoHasil] = useState(false);
   const [error, setError] = useState("");
   const [scoring, setScoring] = useState(false);
   const [skor, setSkor] = useState<ScoreResult | null>(null);
+  const [presetSkor, setPresetSkor] = useState<string>("30d");
+  const [fileTerbuka, setFileTerbuka] = useState<string | null>(null);
 
   useEffect(() => {
     setBrandId(getSelectedBrandId());
@@ -56,7 +71,19 @@ function UploadIsi() {
   }, []);
 
   function contohUrl() {
-    return `/contoh/${platform}_contoh.csv`;
+    return `/contoh/${platform === "instagram" ? "instagram" : "tiktok"}_contoh.csv`;
+  }
+
+  function tambahFiles(daftar: FileList | null) {
+    if (!daftar) return;
+    const baru = Array.from(daftar).filter((f) =>
+      f.name.toLowerCase().endsWith(".csv")
+    );
+    setFiles((lama) => [...lama, ...baru].slice(0, 10));
+  }
+
+  function hapusFile(index: number) {
+    setFiles((lama) => lama.filter((_, i) => i !== index));
   }
 
   async function handleUpload(e: React.FormEvent) {
@@ -68,8 +95,8 @@ function UploadIsi() {
       setError("Pilih brand terlebih dahulu.");
       return;
     }
-    if (!file) {
-      setError("Pilih file CSV terlebih dahulu.");
+    if (files.length === 0) {
+      setError("Pilih minimal satu file CSV.");
       return;
     }
     setUploading(true);
@@ -77,10 +104,10 @@ function UploadIsi() {
       const form = new FormData();
       form.append("brand_id", brandId);
       form.append("platform", platform);
-      form.append("file", file);
-      const { data, demo } = await apiOrDemo<UploadResult>(
-        () => api.postForm<UploadResult>("/content/upload", form),
-        () => simulasiUploadDemo(file)
+      for (const f of files) form.append("files", f);
+      const { data, demo } = await apiOrDemo<BatchUploadResult>(
+        () => api.postForm<BatchUploadResult>("/content/upload-batch", form),
+        () => simulasiUploadBatchDemo(files)
       );
       setHasil(data);
       setDemoHasil(demo);
@@ -99,8 +126,11 @@ function UploadIsi() {
     setError("");
     try {
       const { data } = await apiOrDemo<ScoreResult>(
-        () => api.post<ScoreResult>(`/content/brands/${brandId}/score`, { preset: "30d" }),
-        { diskor: hasil?.contents_baru ?? 0, periode: "30 hari terakhir (demo)" }
+        () => api.post<ScoreResult>(`/content/brands/${brandId}/score`, { preset: presetSkor }),
+        {
+          diskor: hasil?.total_baru ?? 0,
+          periode: `${PRESET_SKOR.find((p) => p.value === presetSkor)?.label ?? presetSkor} (demo)`,
+        }
       );
       setSkor(data);
     } catch (err) {
@@ -112,11 +142,13 @@ function UploadIsi() {
     }
   }
 
+  const presetLabel = PRESET_SKOR.find((p) => p.value === presetSkor)?.label;
+
   return (
     <div className="mx-auto max-w-4xl px-4 py-8 sm:px-6">
       <PageHeader
         title="Upload Data"
-        subtitle="Unggah metrik konten TikTok / Instagram dalam format CSV, lalu jalankan scoring."
+        subtitle="Unggah satu atau beberapa file CSV metrik konten, lalu jalankan scoring."
         action={<DemoBadge tampil={demoHasil} />}
       />
 
@@ -128,7 +160,7 @@ function UploadIsi() {
           </h2>
           <a href={contohUrl()} download>
             <Button variant="secondary">
-              Unduh contoh ({platform === "tiktok" ? "TikTok" : "Instagram"})
+              Unduh contoh ({platform === "instagram" ? "Instagram" : "TikTok"})
             </Button>
           </a>
         </div>
@@ -172,11 +204,17 @@ function UploadIsi() {
         </div>
       </Card>
 
-      {/* 2. Form upload */}
+      {/* 2. Form upload multi-file */}
       <Card className="mb-6">
-        <h2 className="mb-4 text-base font-semibold text-slate-900">
+        <h2 className="mb-1 text-base font-semibold text-slate-900">
           Unggah file
         </h2>
+        <p className="mb-4 text-sm text-slate-500">
+          Export data Meta dibatasi maksimal 3 bulan per file. Untuk analisa
+          beberapa periode, unduh tiap periode (mis. per triwulan) lalu
+          unggah semuanya sekaligus di sini — data akan digabung otomatis
+          dan baris yang sama tidak diduplikasi.
+        </p>
         {error && (
           <div className="mb-4">
             <Alert kind="error">{error}</Alert>
@@ -188,30 +226,59 @@ function UploadIsi() {
             <Select
               label="Platform"
               value={platform}
-              onChange={(e) => setPlatform(e.target.value as Platform)}
+              onChange={(e) => setPlatform(e.target.value as PlatformPilih)}
             >
               <option value="tiktok">TikTok</option>
               <option value="instagram">Instagram</option>
+              <option value="auto">Otomatis (dari kolom platform)</option>
             </Select>
           </div>
           <label className="block">
             <span className="mb-1.5 block text-sm font-medium text-slate-700">
-              File CSV
+              File CSV (bisa pilih lebih dari satu, maks 10)
             </span>
             <input
               type="file"
               accept=".csv,text/csv"
-              onChange={(e) => setFile(e.target.files?.[0] ?? null)}
+              multiple
+              onChange={(e) => {
+                tambahFiles(e.target.files);
+                e.target.value = "";
+              }}
               className="w-full rounded-xl border border-dashed border-slate-300 bg-slate-50 px-3.5 py-3 text-sm text-slate-700 file:mr-3 file:rounded-lg file:border-0 file:bg-indigo-600 file:px-4 file:py-2 file:text-sm file:font-semibold file:text-white hover:file:bg-indigo-700"
             />
-            {file && (
-              <span className="mt-1 block text-xs text-slate-500">
-                {file.name} · {(file.size / 1024).toFixed(1)} KB
-              </span>
-            )}
           </label>
-          <Button type="submit" disabled={uploading}>
-            {uploading ? "Mengunggah…" : "Upload"}
+          {files.length > 0 && (
+            <ul className="space-y-1.5">
+              {files.map((f, i) => (
+                <li
+                  key={`${f.name}-${i}`}
+                  className="flex items-center justify-between gap-2 rounded-lg bg-slate-50 px-3 py-2 text-sm"
+                >
+                  <span className="truncate text-slate-700">
+                    <span className="mr-2 inline-flex h-5 w-5 items-center justify-center rounded bg-indigo-100 text-[11px] font-bold text-indigo-700">
+                      {i + 1}
+                    </span>
+                    {f.name}
+                    <span className="ml-2 text-xs text-slate-400">
+                      {(f.size / 1024).toFixed(1)} KB
+                    </span>
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => hapusFile(i)}
+                    className="shrink-0 rounded-lg px-2 py-1 text-xs font-medium text-red-600 hover:bg-red-50"
+                  >
+                    Hapus
+                  </button>
+                </li>
+              ))}
+            </ul>
+          )}
+          <Button type="submit" disabled={uploading || files.length === 0}>
+            {uploading
+              ? "Mengunggah…"
+              : `Upload${files.length > 0 ? ` ${files.length} file` : ""}`}
           </Button>
         </form>
       </Card>
@@ -221,80 +288,134 @@ function UploadIsi() {
         <Card>
           <div className="mb-4 flex flex-wrap items-center justify-between gap-2">
             <h2 className="text-base font-semibold text-slate-900">
-              Hasil upload
+              Hasil upload ({hasil.files.length} file)
             </h2>
             <DemoBadge tampil={demoHasil} />
           </div>
           <div className="grid grid-cols-3 gap-3 text-center">
             <div className="rounded-xl bg-emerald-50 p-4">
               <p className="text-2xl font-bold text-emerald-700">
-                {hasil.contents_baru}
+                {hasil.total_baru}
               </p>
               <p className="text-xs text-emerald-700">Konten baru</p>
             </div>
             <div className="rounded-xl bg-sky-50 p-4">
               <p className="text-2xl font-bold text-sky-700">
-                {hasil.contents_diupdate}
+                {hasil.total_diupdate}
               </p>
               <p className="text-xs text-sky-700">Konten diupdate</p>
             </div>
             <div className="rounded-xl bg-indigo-50 p-4">
               <p className="text-2xl font-bold text-indigo-700">
-                {hasil.metrics_rows}
+                {hasil.total_metrics_rows}
               </p>
               <p className="text-xs text-indigo-700">Baris metrik</p>
             </div>
           </div>
 
-          {hasil.baris_gagal.length > 0 && (
-            <div className="mt-4">
-              <h3 className="mb-2 text-sm font-semibold text-slate-900">
-                Baris gagal ({hasil.baris_gagal.length})
-              </h3>
-              <ul className="space-y-1.5">
-                {hasil.baris_gagal.map((b) => (
-                  <li
-                    key={b.baris}
-                    className="rounded-lg bg-red-50 px-3 py-2 text-sm text-red-800"
-                  >
-                    <strong>Baris {b.baris}:</strong> {b.alasan}
-                  </li>
-                ))}
-              </ul>
-            </div>
-          )}
-
-          {hasil.warnings.length > 0 && (
-            <div className="mt-4">
-              <h3 className="mb-2 text-sm font-semibold text-slate-900">
-                Peringatan
-              </h3>
-              <ul className="list-disc space-y-1 pl-5 text-sm text-amber-800">
-                {hasil.warnings.map((w, i) => (
-                  <li key={i}>{w}</li>
-                ))}
-              </ul>
-            </div>
-          )}
+          {/* Rincian per file */}
+          <div className="mt-4 space-y-2">
+            {hasil.files.map((f) => (
+              <div key={f.filename} className="rounded-xl border border-slate-200">
+                <button
+                  type="button"
+                  onClick={() =>
+                    setFileTerbuka(fileTerbuka === f.filename ? null : f.filename)
+                  }
+                  className="flex w-full items-center justify-between gap-2 px-4 py-3 text-left"
+                >
+                  <span className="flex min-w-0 items-center gap-2 text-sm">
+                    <span
+                      className={`inline-flex h-2.5 w-2.5 shrink-0 rounded-full ${
+                        f.sukses ? "bg-emerald-500" : "bg-red-500"
+                      }`}
+                    />
+                    <span className="truncate font-medium text-slate-800">
+                      {f.filename}
+                    </span>
+                  </span>
+                  <span className="shrink-0 text-xs text-slate-500">
+                    {f.sukses
+                      ? `+${f.contents_baru} baru · ${f.contents_diupdate} update · ${f.metrics_rows} baris`
+                      : `Gagal: ${f.error}`}
+                    {f.baris_gagal.length > 0 &&
+                      ` · ${f.baris_gagal.length} baris gagal`}
+                  </span>
+                </button>
+                {fileTerbuka === f.filename && (
+                  <div className="border-t border-slate-100 px-4 py-3">
+                    {f.baris_gagal.length > 0 && (
+                      <div className="mb-3">
+                        <h4 className="mb-1.5 text-xs font-semibold uppercase text-slate-500">
+                          Baris gagal ({f.baris_gagal.length})
+                        </h4>
+                        <ul className="max-h-40 space-y-1 overflow-y-auto">
+                          {f.baris_gagal.map((b) => (
+                            <li
+                              key={b.baris}
+                              className="rounded-lg bg-red-50 px-3 py-1.5 text-sm text-red-800"
+                            >
+                              <strong>Baris {b.baris}:</strong> {b.alasan}
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
+                    )}
+                    {f.warnings.length > 0 && (
+                      <ul className="list-disc space-y-1 pl-5 text-sm text-amber-800">
+                        {f.warnings.map((w, i) => (
+                          <li key={i}>{w}</li>
+                        ))}
+                      </ul>
+                    )}
+                    {f.sukses && f.baris_gagal.length === 0 && f.warnings.length === 0 && (
+                      <p className="text-sm text-slate-500">
+                        Semua baris berhasil diproses.
+                      </p>
+                    )}
+                  </div>
+                )}
+              </div>
+            ))}
+          </div>
 
           <div className="mt-6 flex flex-wrap items-center gap-3">
+            <Select
+              label="Periode scoring"
+              value={presetSkor}
+              onChange={(e) => setPresetSkor(e.target.value)}
+            >
+              {PRESET_SKOR.map((p) => (
+                <option key={p.value} value={p.value}>
+                  {p.label}
+                </option>
+              ))}
+            </Select>
             <Button onClick={jalankanScoring} disabled={scoring}>
               {scoring ? "Menghitung…" : "Jalankan Scoring"}
             </Button>
             {skor && (
               <Alert kind="success">
                 Scoring selesai: <strong>{skor.diskor}</strong> konten diskor
-                ({skor.periode}).
+                ({typeof skor.periode === "string" ? skor.periode : presetLabel}).
               </Alert>
             )}
           </div>
           {brandId && (
-            <Link
-              href={`/brand/${brandId}`}
-              className="mt-4 inline-block text-sm font-medium text-indigo-600 hover:text-indigo-800"
-            >
-              Lihat dasbor analitik →
-            </Link>
+            <div className="mt-4 flex flex-wrap gap-4">
+              <Link
+                href={`/brand/${brandId}`}
+                className="text-sm font-medium text-indigo-600 hover:text-indigo-800"
+              >
+                Lihat dasbor analitik →
+              </Link>
+              <Link
+                href="/perbandingan"
+                className="text-sm font-medium text-indigo-600 hover:text-indigo-800"
+              >
+                Bandingkan MoM / YoY →
+              </Link>
+            </div>
           )}
         </Card>
       )}
@@ -302,7 +423,40 @@ function UploadIsi() {
   );
 }
 
-/** Simulasi hasil upload untuk mode demo: hitung baris CSV di sisi klien. */
+/** Simulasi hasil upload batch untuk mode demo: hitung baris CSV di sisi klien. */
+async function simulasiUploadBatchDemo(files: File[]): Promise<BatchUploadResult> {
+  const hasilFiles: BatchFileResult[] = [];
+  let total_baru = 0;
+  let total_diupdate = 0;
+  let total_metrics_rows = 0;
+  let total_baris_gagal = 0;
+  for (const file of files) {
+    const r: UploadResult = await simulasiUploadDemo(file);
+    total_baru += r.contents_baru;
+    total_diupdate += r.contents_diupdate;
+    total_metrics_rows += r.metrics_rows;
+    total_baris_gagal += r.baris_gagal.length;
+    hasilFiles.push({
+      filename: file.name,
+      sukses: true,
+      error: null,
+      contents_baru: r.contents_baru,
+      contents_diupdate: r.contents_diupdate,
+      metrics_rows: r.metrics_rows,
+      baris_gagal: r.baris_gagal,
+      warnings: r.warnings,
+    });
+  }
+  return {
+    files: hasilFiles,
+    total_baru,
+    total_diupdate,
+    total_metrics_rows,
+    total_baris_gagal,
+  };
+}
+
+/** Simulasi hasil upload satu file untuk mode demo: hitung baris CSV di sisi klien. */
 function simulasiUploadDemo(file: File): Promise<UploadResult> {
   return file.text().then((teks) => {
     const baris = teks.split(/\r?\n/).filter((b) => b.trim().length > 0);
