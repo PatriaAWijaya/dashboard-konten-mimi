@@ -72,6 +72,15 @@ class SmtpEmailService(EmailService):
 
     def _send(self, to_email: str, subject: str, body: str) -> None:
         settings = get_settings()
+        if not settings.SMTP_HOST:
+            # SMTP belum dikonfigurasi: jangan gagalkan alur (mis. registrasi).
+            # Cukup catat agar admin tahu email tidak terkirim.
+            logger.warning(
+                "SMTP_HOST belum dikonfigurasi; email '%s' ke %s tidak dikirim.",
+                subject,
+                to_email,
+            )
+            return
         msg = EmailMessage()
         msg["From"] = settings.SMTP_FROM
         msg["To"] = to_email

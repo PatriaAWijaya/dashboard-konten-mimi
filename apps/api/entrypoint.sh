@@ -48,6 +48,8 @@ else
     echo "[entrypoint] Mode hosting: SUPERUSER_DATABASE_URL tidak di-set, lewati pembuatan role."
     echo "[entrypoint] Menjalankan migrasi database..."
     alembic upgrade head
+    echo "[entrypoint] Menjalankan seed awal (idempotent: superadmin + paket + contoh)..."
+    python -m app.seed || echo "[entrypoint] PERINGATAN: seed gagal, aplikasi tetap dijalankan."
 fi
 
 if [ $# -eq 0 ]; then

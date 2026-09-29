@@ -1,5 +1,7 @@
 """Titik masuk aplikasi FastAPI."""
 
+import logging
+
 from fastapi import FastAPI, HTTPException, Request
 from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.cors import CORSMiddleware
@@ -12,6 +14,8 @@ from app.core.rate_limit import limiter
 from app.routers import admin, auth, billing, content, dev, fase2, onboarding, organizations
 
 settings = get_settings()
+
+logger = logging.getLogger(__name__)
 
 app = FastAPI(
     title="Dashboard Konten AI — API",
@@ -55,6 +59,8 @@ async def validation_exception_handler(request: Request, exc: RequestValidationE
 
 @app.exception_handler(Exception)
 async def unhandled_exception_handler(request: Request, exc: Exception):
+    # Catat traceback di log server; klien tetap hanya menerima pesan generik.
+    logger.exception("Unhandled exception pada %s %s", request.method, request.url.path)
     return JSONResponse(status_code=500, content={"detail": "Terjadi kesalahan pada server."})
 
 
