@@ -21,6 +21,7 @@ from app.models.billing import Coupon, CouponRedemption, MembershipPlan
 from app.models.organization import OrganizationMember
 from app.services.membership import ensure_membership
 from app.models.billing import MembershipStatus
+from app.core.deps import set_tenant
 
 
 def _now() -> datetime:
@@ -85,6 +86,8 @@ async def redeem_coupon(
     - Bila discount < 100%: redemption dicatat; diskon diterapkan saat
       pembuatan invoice berikutnya (lihat billing).
     """
+    # Pastikan tenant RLS di-set (tabel memberships ber-RLS).
+    await set_tenant(db, organization_id)
     # Idempoten: bila organisasi sudah pernah menukar kupon ini, kembalikan yang ada.
     existing = await db.execute(
         select(CouponRedemption).where(
@@ -151,6 +154,8 @@ async def redeem_coupon_for_user_orgs(
     ).all()
     hasil = []
     for (org_id,) in rows:
+        # Set tenant RLS agar operasi membership (tabel ber-RLS) diizinkan.
+        await set_tenant(db, org_id)
         redemption = await redeem_coupon(
             db, coupon=coupon, organization_id=org_id, user_id=user_id
         )
