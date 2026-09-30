@@ -246,12 +246,17 @@ function DasborBrandIsi() {
     }
   }
 
+  // Jumlah konten dari seluruh kartu platform (defensif: kunci platform
+  // boleh tidak ada bila backend lama / data kosong).
+  const jumlahKartu =
+    !loading && data
+      ? Object.values(data.kartu ?? {}).reduce(
+          (s, k) => s + (k?.jumlah_konten ?? 0),
+          0
+        )
+      : 0;
   const kosong =
-    !loading &&
-    data &&
-    data.konten.length === 0 &&
-    data.kartu.tiktok.jumlah_konten === 0 &&
-    data.kartu.instagram.jumlah_konten === 0;
+    !loading && !!data && data.konten.length === 0 && jumlahKartu === 0;
 
   return (
     <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6">
@@ -308,8 +313,12 @@ function DasborBrandIsi() {
       {!loading && !error && data && !kosong && (
         <>
           <div className="grid gap-4 md:grid-cols-2">
-            <KartuRingkasan judul="TikTok" data={data.kartu.tiktok} />
-            <KartuRingkasan judul="Instagram" data={data.kartu.instagram} />
+            {data.kartu?.tiktok && (
+              <KartuRingkasan judul="TikTok" data={data.kartu.tiktok} />
+            )}
+            {data.kartu?.instagram && (
+              <KartuRingkasan judul="Instagram" data={data.kartu.instagram} />
+            )}
           </div>
 
           <KartuRingkasanPekan brandId={brandId} />
