@@ -47,6 +47,29 @@ class EmailService(ABC):
     async def send_password_reset_email(self, *, to_email: str, name: str, token: str) -> None: ...
 
 
+# Frontend produksi (dipakai sebagai fallback bila FRONTEND_URL belum diisi
+# di environment, misalnya masih default localhost saat ENV=prod).
+PROD_FRONTEND_URL = "https://dashboard-konten-mimi.vercel.app"
+
+
+def verification_link(token: str) -> str:
+    """Tautan verifikasi email satu-klik untuk dikirim ke pengguna."""
+    settings = get_settings()
+    base = (settings.FRONTEND_URL or "").strip().rstrip("/")
+    if (not base or "localhost" in base or "127.0.0.1" in base) and not settings.is_dev:
+        base = PROD_FRONTEND_URL
+    return f"{base}/verify-email?token={token}"
+
+
+def password_reset_link(token: str) -> str:
+    """Tautan reset kata sandi satu-klik untuk dikirim ke pengguna."""
+    settings = get_settings()
+    base = (settings.FRONTEND_URL or "").strip().rstrip("/")
+    if (not base or "localhost" in base or "127.0.0.1" in base) and not settings.is_dev:
+        base = PROD_FRONTEND_URL
+    return f"{base}/reset-password?token={token}"
+
+
 class ConsoleEmailService(EmailService):
     """Implementasi dev: cetak token ke log + simpan di outbox in-memory."""
 
@@ -117,16 +140,21 @@ class SmtpEmailService(EmailService):
         logger.info("Email '%s' terkirim ke %s.", subject, to_email)
 
     async def send_verification_email(self, *, to_email: str, name: str, token: str) -> None:
+        link = verification_link(token)
         body = (
             f"Halo {name},\n\nTerima kasih telah mendaftar di Dashboard Konten AI.\n"
-            f"Gunakan token berikut untuk verifikasi email Anda (berlaku 24 jam):\n\n{token}\n"
+            f"Klik tautan berikut untuk memverifikasi email Anda (berlaku 24 jam):\n\n{link}\n\n"
+            f"Jika tautan tidak bisa diklik, salin token berikut lalu tempel di halaman verifikasi:\n\n{token}\n"
         )
         self._send(to_email, "Verifikasi Email — Dashboard Konten AI", body)
 
     async def send_password_reset_email(self, *, to_email: str, name: str, token: str) -> None:
+        link = password_reset_link(token)
         body = (
-            f"Halo {name},\n\nGunakan token berikut untuk mengatur ulang kata sandi Anda "
-            f"(berlaku 24 jam):\n\n{token}\n\nAbaikan email ini bila Anda tidak memintanya.\n"
+            f"Halo {name},\n\nGunakan tautan berikut untuk mengatur ulang kata sandi Anda "
+            f"(berlaku 24 jam):\n\n{link}\n\n"
+            f"Jika tautan tidak bisa diklik, salin token berikut lalu tempel di halaman reset kata sandi:\n\n{token}\n\n"
+            f"Abaikan email ini bila Anda tidak memintanya.\n"
         )
         self._send(to_email, "Reset Kata Sandi — Dashboard Konten AI", body)
 
@@ -153,7 +181,7 @@ class BrevoHttpEmailService(EmailService):
 
     API_URL = "https://api.brevo.com/v3/smtp/email"
 
-    def _send(self, to_email: str, subject: str, body: str) -> None:
+    def _send(self, to_email: str, subject: str, body: str, html: str | None = None) -> None:
         settings = get_settings()
         sender_name, sender_email = parseaddr(settings.SMTP_FROM)
         if not sender_email:
@@ -164,6 +192,8 @@ class BrevoHttpEmailService(EmailService):
             "subject": subject,
             "textContent": body,
         }
+        if html:
+            payload["htmlContent"] = html
         req = urllib.request.Request(
             self.API_URL,
             data=json.dumps(payload).encode("utf-8"),
@@ -188,15 +218,40 @@ class BrevoHttpEmailService(EmailService):
         logger.info("Email '%s' terkirim ke %s via Brevo HTTP API.", subject, to_email)
 
     async def send_verification_email(self, *, to_email: str, name: str, token: str) -> None:
+        link = verification_link(token)
         body = (
             f"Halo {name},\n\nTerima kasih telah mendaftar di Dashboard Konten AI.\n"
-            f"Gunakan token berikut untuk verifikasi email Anda (berlaku 24 jam):\n\n{token}\n"
+            f"Klik tautan berikut untuk memverifikasi email Anda (berlaku 24 jam):\n\n{link}\n\n"
+            f"Jika tautan tidak bisa diklik, salin token berikut lalu tempel di halaman verifikasi:\n\n{token}\n"
         )
-        self._send(to_email, "Verifikasi Email — Dashboard Konten AI", body)
+        html = (
+            f"<p>Halo {name},</p>"
+            f"<p>Terima kasih telah mendaftar di Dashboard Konten AI.</p>"
+            f"<p><a href=\"{link}\" style=\"display:inline-block;padding:12px 24px;"
+            f"background:#0f766e;color:#ffffff;text-decoration:none;border-radius:8px;\">"
+            f"Verifikasi Email Saya</a></p>"
+            f"<p>Atau klik tautan berikut (berlaku 24 jam):<br><a href=\"{link}\">{link}</a></p>"
+            f"<p>Jika tautan tidak bisa diklik, salin token berikut lalu tempel di halaman verifikasi:<br>"
+            f"<code>{token}</code></p>"
+        )
+        self._send(to_email, "Verifikasi Email — Dashboard Konten AI", body, html)
 
     async def send_password_reset_email(self, *, to_email: str, name: str, token: str) -> None:
+        link = password_reset_link(token)
         body = (
-            f"Halo {name},\n\nGunakan token berikut untuk mengatur ulang kata sandi Anda "
-            f"(berlaku 24 jam):\n\n{token}\n\nAbaikan email ini bila Anda tidak memintanya.\n"
+            f"Halo {name},\n\nGunakan tautan berikut untuk mengatur ulang kata sandi Anda "
+            f"(berlaku 24 jam):\n\n{link}\n\n"
+            f"Jika tautan tidak bisa diklik, salin token berikut lalu tempel di halaman reset kata sandi:\n\n{token}\n\n"
+            f"Abaikan email ini bila Anda tidak memintanya.\n"
         )
-        self._send(to_email, "Reset Kata Sandi — Dashboard Konten AI", body)
+        html = (
+            f"<p>Halo {name},</p>"
+            f"<p><a href=\"{link}\" style=\"display:inline-block;padding:12px 24px;"
+            f"background:#0f766e;color:#ffffff;text-decoration:none;border-radius:8px;\">"
+            f"Atur Ulang Kata Sandi</a></p>"
+            f"<p>Atau klik tautan berikut (berlaku 24 jam):<br><a href=\"{link}\">{link}</a></p>"
+            f"<p>Jika tautan tidak bisa diklik, salin token berikut lalu tempel di halaman reset kata sandi:<br>"
+            f"<code>{token}</code></p>"
+            f"<p>Abaikan email ini bila Anda tidak memintanya.</p>"
+        )
+        self._send(to_email, "Reset Kata Sandi — Dashboard Konten AI", body, html)
