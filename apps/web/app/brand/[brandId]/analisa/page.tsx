@@ -405,7 +405,7 @@ function AnalisaIsi() {
             ))}
           </div>
 
-          {/* 2. Konten bermasalah — dikelompokkan per jenis konten */}
+          {/* 2. Konten bermasalah — ringkasan per jenis konten */}
           <h2 className="mb-3 mt-8 text-lg font-semibold text-slate-900">
             Konten bermasalah ({data.bermasalah.length})
           </h2>
@@ -414,7 +414,7 @@ function AnalisaIsi() {
               Tidak ada konten bermasalah pada periode ini. Pertahankan polanya!
             </Alert>
           ) : (
-            <div className="space-y-6">
+            <div className="space-y-4">
               {(() => {
                 const grup: Record<string, typeof data.bermasalah> = {};
                 for (const k of data.bermasalah) {
@@ -422,73 +422,78 @@ function AnalisaIsi() {
                   if (!grup[fmt]) grup[fmt] = [];
                   grup[fmt].push(k);
                 }
+                // Total post per format dari ringkasan.
+                const totalPerFormat: Record<string, number> = {};
+                for (const r of data.ringkasan) {
+                  const fmt = (r.format || "").toLowerCase();
+                  totalPerFormat[fmt] = (totalPerFormat[fmt] || 0) + (r.jumlah || 0);
+                }
                 const urutan = ["carousel", "foto", "image", "reels", "story", "live"];
                 const keys = Object.keys(grup).sort(
                   (a, b) => (urutan.indexOf(a) === -1 ? 99 : urutan.indexOf(a)) -
                             (urutan.indexOf(b) === -1 ? 99 : urutan.indexOf(b))
                 );
-                return keys.map((fmt) => (
-                  <div key={fmt}>
-                    <h3 className="mb-3 text-sm font-semibold capitalize text-slate-700">
-                      {fmt === "foto" ? "Image" : fmt.replace(/_/g, " ")} ({grup[fmt].length} bermasalah)
-                    </h3>
-                    <div className="space-y-4">
-                      {grup[fmt].map((k) => (
-                <Card key={k.content_id}>
-                  <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
-                    <div>
-                      <p className="font-mono text-sm font-semibold text-slate-900">
-                        {k.post_id}
-                      </p>
-                      <p className="text-sm capitalize text-slate-500">
-                        {k.format.replace(/_/g, " ")} · tujuan {labelTujuan(k.tujuan)}
-                      </p>
-                    </div>
-                    <span
-                      className={`inline-flex items-center rounded-full px-3 py-1 text-xs font-semibold ring-1 ring-inset ${verdictTone(k.verdict)}`}
-                    >
-                      {k.verdict}
-                    </span>
-                  </div>
-
-                  <h3 className="mb-2 text-sm font-semibold text-slate-900">
-                    Diagnosis per metrik
-                  </h3>
-                  <div className="space-y-2">
-                    {k.diagnoses.map((d, j) => (
-                      <div key={j} className="rounded-xl bg-slate-50 p-3">
-                        <div className="flex flex-wrap items-baseline justify-between gap-2">
-                          <p className="text-sm font-semibold text-slate-800">
-                            {d.metrik}
-                          </p>
-                          <p className="text-sm">
-                            <span className="font-semibold text-red-700">{d.nilai}</span>
-                            <span className="text-slate-400"> vs </span>
-                            <span className="font-medium text-emerald-700">{d.harapan}</span>
-                          </p>
-                        </div>
-                        <p className="mt-1 text-sm text-slate-600">{d.masalah}</p>
+                const namaFormat = (fmt: string) =>
+                  fmt === "foto" ? "Image" : fmt.replace(/_/g, " ");
+                return keys.map((fmt) => {
+                  const items = grup[fmt];
+                  const total = totalPerFormat[fmt] ?? items.length;
+                  // Agregasi masalah: hitung per jenis metrik.
+                  const masalahCount: Record<string, { jumlah: number; contoh: string }> = {};
+                  for (const k of items) {
+                    for (const d of k.diagnoses) {
+                      const kunci = d.metrik;
+                      if (!masalahCount[kunci]) {
+                        masalahCount[kunci] = { jumlah: 0, contoh: d.masalah };
+                      }
+                      masalahCount[kunci].jumlah += 1;
+                    }
+                  }
+                  // Agregasi saran unik.
+                  const saranUnik: string[] = [];
+                  for (const k of items) {
+                    for (const s of k.suggestions) {
+                      if (!saranUnik.includes(s)) saranUnik.push(s);
+                    }
+                  }
+                  return (
+                    <Card key={fmt}>
+                      <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
+                        <h3 className="text-base font-bold capitalize text-slate-900">
+                          {namaFormat(fmt)}
+                        </h3>
+                        <span className="inline-flex items-center rounded-full bg-red-50 px-3 py-1 text-sm font-semibold text-red-700 ring-1 ring-inset ring-red-200">
+                          {items.length} bermasalah dari {total} post
+                        </span>
                       </div>
-                    ))}
-                  </div>
-
-                  {k.suggestions.length > 0 && (
-                    <>
-                      <h3 className="mb-2 mt-4 text-sm font-semibold text-slate-900">
-                        Saran perbaikan
-                      </h3>
-                      <ul className="list-disc space-y-1 pl-5 text-sm text-slate-700">
-                        {k.suggestions.map((s, j) => (
-                          <li key={j}>{s}</li>
+                      <h4 className="mb-2 text-sm font-semibold text-slate-800">
+                        Uraian masalah
+                      </h4>
+                      <ul className="mb-4 list-disc space-y-1.5 pl-5 text-sm text-slate-700">
+                        {Object.entries(masalahCount).map(([metrik, info]) => (
+                          <li key={metrik}>
+                            <span className="font-semibold text-slate-900">
+                              {info.jumlah} konten
+                            </span>{" "}
+                            — {info.contoh.split(".")[0]}.
+                          </li>
                         ))}
                       </ul>
-                    </>
-                  )}
-                </Card>
-                      ))}
-                    </div>
-                  </div>
-                ));
+                      {saranUnik.length > 0 && (
+                        <>
+                          <h4 className="mb-2 text-sm font-semibold text-slate-800">
+                            Saran perbaikan
+                          </h4>
+                          <ul className="list-disc space-y-1 pl-5 text-sm text-slate-700">
+                            {saranUnik.map((s, j) => (
+                              <li key={j}>{s}</li>
+                            ))}
+                          </ul>
+                        </>
+                      )}
+                    </Card>
+                  );
+                });
               })()}
             </div>
           )}
