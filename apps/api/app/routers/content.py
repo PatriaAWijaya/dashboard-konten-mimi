@@ -50,7 +50,6 @@ from app.schemas.content import (
     InterviewStartOut,
     JawabIn,
     JawabOut,
-    LaporanNicheOut,
     PerbandinganBulan,
     PerbandinganDelta,
     PerbandinganOut,
@@ -989,7 +988,7 @@ async def mulai_ulang_wawancara(
     )
 
 
-@router.post("/content/niche/interviews/{iid}/laporan", response_model=LaporanNicheOut)
+@router.post("/content/niche/interviews/{iid}/laporan", response_model=dict)
 async def laporan_wawancara(
     iid: Annotated[uuid.UUID, Path()],
     org_id: Annotated[uuid.UUID, Depends(parse_org_header)],
@@ -1006,4 +1005,4 @@ async def laporan_wawancara(
         )
     except ValueError as exc:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(exc))
-    return LaporanNicheOut(laporan=laporan)
+    return laporan

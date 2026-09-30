@@ -480,6 +480,7 @@ export interface SaranItem {
   dasar: string;
   contoh: {
     post_id: string;
+    post_url?: string | null;
     caption_singkat: string;
     wer: number;
     format: string;

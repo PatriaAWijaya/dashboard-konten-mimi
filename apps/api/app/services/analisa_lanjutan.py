@@ -338,20 +338,20 @@ async def analisa_lanjutan(
     komponen = []
     nilai_sinyal = min(10.0, (sinyal_rasio / 0.05) * 10)
     komponen.append({
-        "nama": "Sinyal engagement bermakna", "nilai": round(nilai_sinyal, 1), "bobot": 0.35,
+        "nama": "Sinyal engagement bermakna", "nilai": round(nilai_sinyal, 1), "bobot": 0.50,
         "penjelasan": (f"Saves, shares & comments = {sinyal_rasio * 100:.2f}% dari views "
-                       f"(skor penuh pada 5%). Algoritma membaca sinyal ini, bukan likes/views "
-                       f"(vanity metrics)."),
+                       f"(skor penuh pada 5%). Komponen TERBERAT: algoritma membaca sinyal ini, "
+                       f"bukan jumlah post, total views, atau followers (vanity metrics)."),
     })
     # Bab 1: lolos uji 200 orang pertama.
     lolos_200 = sum(1 for it in items if it["views"] >= AMBANG_UJI_200)
     prop_lolos = lolos_200 / n if n else 0
     nilai_200 = min(10.0, (prop_lolos / 0.9) * 10)
     komponen.append({
-        "nama": "Lolos uji 200 penonton", "nilai": round(nilai_200, 1), "bobot": 0.25,
+        "nama": "Lolos uji 200 penonton", "nilai": round(nilai_200, 1), "bobot": 0.15,
         "penjelasan": (f"{lolos_200} dari {n} konten ({prop_lolos * 100:.0f}%) lolos uji "
-                       f"200 penonton pertama (skor penuh pada ≥90%). Sisanya terjebak "
-                       f"'200-view jail' — hook 3 detik tidak memenangkan strangers."),
+                       f"200 penonton pertama (skor penuh pada ≥90%). Bobot dikecilkan: ini "
+                       f"sinyal distribusi, bukan ukuran nilai konten."),
     })
     # Bab 4: keseimbangan 3 pilar (Edukasi/Hiburan/Interaksi) + peran format.
     pilar_count = Counter(_pilar_dari_item(it) for it in items)
@@ -378,21 +378,23 @@ async def analisa_lanjutan(
     hari = max((akhir - awal).days + 1, 1)
     posting_per_minggu = n / hari * 7
     nilai_vol = min(10.0, posting_per_minggu / 5 * 10)
-    nilai_cta_vol = round(nilai_cta * 0.5 + nilai_vol * 0.5, 1)
+    # Volume posting bobotnya kecil: yang dinilai kualitas interaksi, bukan jumlah post.
+    nilai_cta_vol = round(nilai_cta * 0.7 + nilai_vol * 0.3, 1)
     komponen.append({
-        "nama": "Kekuatan CTA & konsistensi", "nilai": nilai_cta_vol, "bobot": 0.20,
+        "nama": "Kekuatan CTA & konsistensi", "nilai": nilai_cta_vol, "bobot": 0.15,
         "penjelasan": (f"{ber_cta} dari {n} konten ({prop_cta * 100:.0f}%) punya CTA jelas "
-                       f"(target ≥80%); {posting_per_minggu:.1f} postingan/minggu "
-                       f"(target ≥5/minggu — Continue & Consistence)."),
+                       f"(target ≥80%, bobot 70%); {posting_per_minggu:.1f} postingan/minggu "
+                       f"(target ≥5/minggu, bobot 30% — jumlah post bukan penentu utama)."),
     })
     skor = round(sum(k["nilai"] * k["bobot"] for k in komponen), 1)
     skor = max(1.0, min(10.0, skor))  # skala 1–10, min 1 untuk akun yang punya data
     skor_akun = {
         "skor": skor, "grade": _grade_skor(skor), "komponen": komponen,
-        "cara_hitung": ("Skor 1–10 ala framework Strategi Instagram Organik: sinyal engagement "
-                        "bermakna — saves/shares/comments, bukan vanity metrics (35%), lolos uji "
-                        "200 penonton pertama (25%), keseimbangan pilar & format (20%), "
-                        "kekuatan CTA & konsistensi (20%)."),
+        "cara_hitung": ("Skor 1–10 fokus ENGAGEMENT BERMAKNA: saves/shares/comments "
+                        "(50% — komponen terberat), keseimbangan pilar & format (20%), "
+                        "lolos uji 200 penonton pertama (15%), kekuatan CTA & konsistensi "
+                        "(15%, volume posting hanya 30% di dalamnya). Jumlah post, total "
+                        "views, dan followers TIDAK menjadi penentu skor."),
     }
 
     # ---- 6. Diagnosis kenapa stuck (bahasa framework: Bab 1, 4, 5, 7) ----
@@ -563,6 +565,7 @@ async def analisa_lanjutan(
             cap = (it["content"].caption or "").replace("\n", " ").strip()
             contoh.append({
                 "post_id": it["content"].post_id,
+                "post_url": it["content"].post_url,
                 "caption_singkat": cap[:120] + ("…" if len(cap) > 120 else ""),
                 "wer": round(it["wer"] * 100, 1),
                 "format": (it["content"].format or "lainnya").lower(),

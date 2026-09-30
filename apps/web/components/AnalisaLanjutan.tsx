@@ -490,6 +490,19 @@ export default function AnalisaLanjutan({
                         </span>{" "}
                         · {labelFormat(c.format)} ·{" "}
                         {c.caption_singkat}
+                        {c.post_url && (
+                          <>
+                            {" "}
+                            <a
+                              href={c.post_url}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="font-medium text-orange-600 underline hover:text-orange-700"
+                            >
+                              Lihat konten asli ↗
+                            </a>
+                          </>
+                        )}
                       </p>
                     ))}
                   </div>
