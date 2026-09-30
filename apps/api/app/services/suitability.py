@@ -204,6 +204,104 @@ def _rates_from_snapshot(snapshot: dict) -> dict:
     return agg
 
 
+def cek_kesehatan_framework(c: Content, snapshot: dict) -> tuple[list[dict], list[str]]:
+    """Cek kesehatan satu konten berdasarkan framework Strategi Instagram Organik.
+
+    Konten dianggap "tidak sehat" (di bawah standar framework) bila:
+    1. Gagal uji 200 penonton (views < 200) — terjebak "200-view jail"
+       (Framework Bab 1: Initial Sample Test Group).
+    2. Nol engagement bermakna (saves+shares+comments == 0) padahal ada views —
+       algoritma memprioritaskan sinyal bermakna, bukan likes (vanity metrics)
+       (Framework Bab 1: Watchtime Velocity & Signals).
+    3. Tanpa CTA jelas di caption
+       (Framework Bab 5: Strategi Interaksi & Konversi; Sticking Power).
+
+    Returns: (diagnoses, suggestions) — list diagnosis & saran berbasis framework.
+    """
+    # Lazy import untuk menghindari circular import (CTA_PATTERNS ada di analisa_lanjutan).
+    from app.services.analisa_lanjutan import CTA_TANPA, deteksi_cta
+
+    diagnoses: list[dict] = []
+    suggestions: list[str] = []
+
+    views = float(snapshot.get("views") or 0)
+    comments = float(snapshot.get("comments") or 0)
+    shares = float(snapshot.get("shares") or 0)
+    saves = float(snapshot.get("saves") or 0)
+
+    # 1. Uji 200 penonton.
+    if views < 200:
+        diagnoses.append(
+            {
+                "metrik": "views",
+                "nilai": int(views),
+                "harapan": 200,
+                "masalah": (
+                    f"Views ({int(views)}) di bawah 200 — konten terjebak di '200-view jail'. "
+                    "Menurut framework (Bab 1: Initial Sample Test Group), algoritma menguji "
+                    "konten ke ~200 orang pertama (mayoritas non-follower); bila mereka langsung "
+                    "swipe away, distribusi dihentikan."
+                ),
+            }
+        )
+        saran_hook = (
+            "Perkuat Stopping Power: buat hook visual + audio + teks yang spesifik di 3 detik "
+            "pertama — semakin spesifik masalah & keyword, semakin jelas algoritma mengenali "
+            "audiensnya. (Framework Bab 1 & Bab 4: Hook)"
+        )
+        if saran_hook not in suggestions:
+            suggestions.append(saran_hook)
+
+    # 2. Engagement bermakna.
+    bermakna = saves + shares + comments
+    if views >= 200 and bermakna == 0:
+        diagnoses.append(
+            {
+                "metrik": "engagement_bermakna",
+                "nilai": 0,
+                "harapan": "> 0",
+                "masalah": (
+                    f"Nol saves, shares, dan comments dari {int(views)} views. Menurut framework "
+                    "(Bab 1: Watchtime Velocity & Signals 2026), algoritma memprioritaskan saves "
+                    "(nilai informasi), shares (relevansi), dan comments (diskusi) — bukan likes "
+                    "yang termasuk vanity metrics."
+                ),
+            }
+        )
+        saran_3s = (
+            "Terapkan 3S Power: Stopping (hook 3 detik), Striking (storytelling yang membuat "
+            "audiens merasa 'ini gue banget'), Sticking (tutup dengan konklusi + CTA). Pastikan "
+            "setiap konten meminta 1 aksi bermakna: simpan, bagikan, atau komentar. "
+            "(Framework Bab 3 & Bab 6)"
+        )
+        if saran_3s not in suggestions:
+            suggestions.append(saran_3s)
+
+    # 3. CTA jelas.
+    if deteksi_cta(c.caption) == [CTA_TANPA]:
+        diagnoses.append(
+            {
+                "metrik": "cta",
+                "nilai": "Tanpa CTA jelas",
+                "harapan": "CTA jelas",
+                "masalah": (
+                    "Tidak terdeteksi CTA yang jelas di caption. Menurut framework (Bab 5: Strategi "
+                    "Interaksi & Konversi; Sticking Power), setiap konten harus ditutup dengan ajakan "
+                    "bertindak yang spesifik agar audiens tergerak."
+                ),
+            }
+        )
+        saran_cta = (
+            "Tambahkan CTA spesifik di akhir caption: 'Simpan postingan ini', 'Tag teman yang butuh "
+            "info ini', atau 'Ketik kata kunci di kolom komentar'. 90–99% audiens adalah lurkers "
+            "yang butuh dipicu. (Framework Bab 5)"
+        )
+        if saran_cta not in suggestions:
+            suggestions.append(saran_cta)
+
+    return diagnoses, suggestions
+
+
 async def analisa_report(
     db: AsyncSession,
     *,
@@ -288,27 +386,39 @@ async def analisa_report(
             }
         )
 
-    # Konten bermasalah: dominan 'kurang' atau verdict suitability bukan 'sesuai'.
+    # Konten bermasalah: dominan 'kurang', verdict suitability bukan 'sesuai',
+    # atau di bawah standar framework Strategi Instagram Organik.
     bermasalah: list[dict] = []
     for c in contents:
         sc = scores_by_content.get(c.id, [])
         if not sc:
             continue
         latest = max(sc, key=lambda s: (s.period_end, s.period_start))
-        agg = _rates_from_snapshot(dict(latest.metrics_snapshot or {}))
+        snapshot = dict(latest.metrics_snapshot or {})
+        agg = _rates_from_snapshot(snapshot)
         agg["format"] = c.format
         agg["tujuan"] = c.tujuan
         hasil = evaluate_suitability(agg)
-        if per_content_dominan[c.id] == "kurang" or hasil["verdict"] != "sesuai":
+        diag_fw, saran_fw = cek_kesehatan_framework(c, snapshot)
+        gagal_suitability = per_content_dominan[c.id] == "kurang" or hasil["verdict"] != "sesuai"
+        if gagal_suitability or diag_fw:
+            verdict = hasil["verdict"]
+            if diag_fw and verdict == "sesuai":
+                verdict = "tidak_sehat"
+            semua_diagnosis = list(hasil["diagnoses"]) + diag_fw
+            semua_saran = list(hasil["suggestions"])
+            for s in saran_fw:
+                if s not in semua_saran:
+                    semua_saran.append(s)
             bermasalah.append(
                 {
                     "content_id": str(c.id),
                     "post_id": c.post_id,
                     "format": c.format,
                     "tujuan": c.tujuan,
-                    "verdict": hasil["verdict"],
-                    "diagnoses": hasil["diagnoses"],
-                    "suggestions": hasil["suggestions"],
+                    "verdict": verdict,
+                    "diagnoses": semua_diagnosis,
+                    "suggestions": semua_saran,
                 }
             )
 
@@ -331,6 +441,34 @@ async def analisa_report(
         rekomendasi_pola.append(
             "Dorong distribusi konten berstatus data_belum_cukup agar menembus "
             "1.000 views sebelum dinilai."
+        )
+    # Rekomendasi berbasis framework dari konten yang tidak sehat.
+    jml_200jail = sum(
+        1 for k in bermasalah
+        for d in k["diagnoses"]
+        if d.get("metrik") == "views" and isinstance(d.get("nilai"), int)
+    )
+    jml_tanpa_cta = sum(
+        1 for k in bermasalah for d in k["diagnoses"] if d.get("metrik") == "cta"
+    )
+    jml_nol_bermakna = sum(
+        1 for k in bermasalah for d in k["diagnoses"] if d.get("metrik") == "engagement_bermakna"
+    )
+    if jml_200jail:
+        rekomendasi_pola.append(
+            f"{jml_200jail} konten terjebak 200-view jail — audit hook 3 detik pertama semua konten "
+            "baru sebelum posting (Framework Bab 1 & 4: Stopping Power)."
+        )
+    if jml_tanpa_cta:
+        rekomendasi_pola.append(
+            f"{jml_tanpa_cta} konten tanpa CTA jelas — jadikan CTA spesifik sebagai checklist wajib "
+            "sebelum publish (Framework Bab 5)."
+        )
+    if jml_nol_bermakna:
+        rekomendasi_pola.append(
+            f"{jml_nol_bermakna} konten nol engagement bermakna — terapkan filter 4 kriteria sebelum "
+            "produksi: Relevan, Non-Obvious, mudah Dicerna, jarak Implementasi singkat "
+            "(Framework Bab 6)."
         )
     if not bermasalah and ringkasan:
         rekomendasi_pola.append("Semua pola terpantau sehat — pertahankan konsistensi posting.")
