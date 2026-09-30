@@ -41,6 +41,12 @@ function fmtPersenFraksi(n: number | null | undefined): string {
   return (n * 100).toLocaleString("id-ID", { maximumFractionDigits: 1 }) + "%";
 }
 
+/** Persentase nilai engagement terhadap views, mis. "6,4% dari views". */
+function persenDariViews(nilai: number | null | undefined, views: number | null | undefined): string {
+  if (nilai === null || nilai === undefined || !views || views <= 0) return "-";
+  return ((nilai / views) * 100).toLocaleString("id-ID", { maximumFractionDigits: 2 }) + "% dari views";
+}
+
 function warnaSkor(skor: number): string {
   if (skor >= 8) return "text-emerald-600";
   if (skor >= 6.5) return "text-lime-600";
@@ -202,12 +208,18 @@ export default function AnalisaLanjutan({
                 <p className="mt-1 text-xl font-bold tabular-nums text-slate-900">
                   {fmt(komposisi[w.kunci as keyof typeof komposisi] as number)}
                 </p>
+                <p className="mt-0.5 text-[11px] tabular-nums text-slate-400">
+                  {persenDariViews(komposisi[w.kunci as keyof typeof komposisi] as number, komposisi.views)}
+                </p>
               </div>
             ))}
             <div className="rounded-xl bg-orange-50 p-3">
               <p className="text-xs font-medium text-orange-700">Total engagement</p>
               <p className="mt-1 text-xl font-bold tabular-nums text-orange-900">
                 {fmt(komposisi.total_engagement)}
+              </p>
+              <p className="mt-0.5 text-[11px] tabular-nums text-orange-600/70">
+                {persenDariViews(komposisi.total_engagement, komposisi.views)}
               </p>
             </div>
             <div className="rounded-xl bg-slate-50 p-3">
