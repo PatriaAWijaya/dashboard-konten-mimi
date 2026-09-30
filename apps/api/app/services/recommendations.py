@@ -548,6 +548,37 @@ async def generate_rekomendasi_struktur(
              "total_konten": total_konten, "bermasalah": total_bermasalah},
         )
 
+    # === Kerja engagement akun: Strategi 502 & $1.80 ===
+    await _simpan_struktur(
+        RecommendationType.UMUM,
+        "Strategi 502: pancing algoritma ke niche target",
+        (
+            "Setiap kali mau posting, lakukan 50 komentar di akun-akun dengan niche "
+            "yang sama dengan target audiensmu — dibagi 2 sesi: 25 komentar SEBELUM "
+            "posting, 25 komentar SESUDAH posting. Tujuannya: memaksa algoritma "
+            "mengenali akunmu sebagai bagian dari niche tersebut, sehingga kontenmu "
+            "diuji ke audiens yang tepat (bukan orang acak). Komentar harus relevan "
+            "dan bermakna — tanggapi isi postingannya, bukan sekadar emoji atau "
+            "'keren bang'. Pilih akun yang audiensnya adalah calon followersmu: "
+            "kompetitor se-niche, komunitas, atau kreator yang dibahas target audiensmu."
+        ),
+        {"strategi": "502", "komposisi": "25 sebelum + 25 sesudah posting"},
+    )
+    await _simpan_struktur(
+        RecommendationType.UMUM,
+        "Strategi $1.80: bangun kehadiran harian di niche",
+        (
+            "Setiap hari, tinggalkan komentar bermakna di 90 postingan dalam niche-mu: "
+            "cari 10 hashtag yang dipakai target audiensmu, lalu komentari 9 postingan "
+            "teratas di tiap hashtag. Setiap komentar yang thoughtful adalah 'investasi' "
+            "perhatian — total $1.80 per hari. Jangan jualan di komentar orang; berikan "
+            "wawasan, apresiasi spesifik, atau pertanyaan yang memancing balasan. "
+            "Konsistensi di sini membangun nama akunmu di komunitas niche sebelum "
+            "mereka melihat kontenmu."
+        ),
+        {"strategi": "$1.80", "komposisi": "9 postingan x 10 hashtag per hari"},
+    )
+
     # === BAGIAN 2: REKOMENDASI KHUSUS (per jenis post) ===
     for fmt_key in ("carousel", "foto", "reels"):
         info = METRIK_DOMINAN.get(fmt_key)
