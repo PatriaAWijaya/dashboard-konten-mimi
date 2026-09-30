@@ -227,11 +227,17 @@ export default function AnalisaLanjutan({
               <p className="mt-1 text-xl font-bold tabular-nums text-slate-900">
                 {fmt(komposisi.views)}
               </p>
+              <p className="mt-0.5 text-[11px] tabular-nums text-slate-400">
+                100% · baseline
+              </p>
             </div>
             <div className="rounded-xl bg-slate-50 p-3">
               <p className="text-xs font-medium text-slate-500">Reach</p>
               <p className="mt-1 text-xl font-bold tabular-nums text-slate-900">
                 {fmt(komposisi.reach)}
+              </p>
+              <p className="mt-0.5 text-[11px] tabular-nums text-slate-400">
+                {persenDariViews(komposisi.reach, komposisi.views)}
               </p>
             </div>
           </div>
