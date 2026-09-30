@@ -240,21 +240,36 @@ function DasborIsi() {
         </p>
       </div>
       <div className="grid gap-5 md:grid-cols-2">
-        <Card className="flex flex-col">
-          <div className="mb-4 flex h-14 w-14 items-center justify-center rounded-2xl bg-slate-100 text-2xl">
-            🔗
-          </div>
-          <h3 className="text-base font-bold text-slate-900">
-            Hubungkan akun TikTok / Instagram
-          </h3>
-          <p className="mt-2 flex-1 text-sm text-slate-500">
-            Sinkronisasi otomatis data performa dari akun TikTok dan Instagram
-            brand Anda.
-          </p>
-          <div className="mt-4">
-            <span className="inline-flex items-center rounded-full bg-amber-100 px-3 py-1 text-xs font-semibold text-amber-800">
-              Segera hadir — Fase 1
-            </span>
+        <Card className="relative flex flex-col overflow-hidden">
+          {/* Latar gradien lembut — eye-catching tapi minimalis */}
+          <div
+            aria-hidden
+            className="pointer-events-none absolute inset-0"
+            style={{
+              background:
+                "radial-gradient(420px 220px at 15% 0%, rgba(99,102,241,0.14), transparent 60%), radial-gradient(360px 220px at 90% 100%, rgba(236,72,153,0.12), transparent 60%)",
+            }}
+          />
+          <div className="relative flex flex-1 flex-col">
+            <div className="mb-4 flex h-14 w-14 items-center justify-center rounded-2xl bg-white/80 text-2xl shadow-sm">
+              🔗
+            </div>
+            <h3 className="text-base font-bold text-slate-900">Coming Soon</h3>
+            <p className="mt-2 flex-1 text-sm text-slate-500">
+              Analisa realtime performa sosial media — sinkronisasi otomatis
+              dari akun TikTok dan Instagram brand Anda.
+            </p>
+            <div className="mt-4 flex items-center gap-2.5">
+              <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-slate-900 text-base text-white shadow-sm">
+                🎵
+              </span>
+              <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-tr from-amber-400 via-pink-500 to-purple-600 text-base text-white shadow-sm">
+                📸
+              </span>
+              <span className="text-xs font-medium text-slate-400">
+                TikTok & Instagram
+              </span>
+            </div>
           </div>
         </Card>
         <Card className="flex flex-col">
