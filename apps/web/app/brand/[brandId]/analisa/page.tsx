@@ -175,12 +175,14 @@ function AnalisaIsi() {
     !bandingLoading && !bandingError && banding && banding.bulan.every((b) => b.jumlah_konten === 0);
   const labelMetrik = METRIK_BANDING.find((m) => m.value === bandingMetrik)?.label ?? bandingMetrik;
   const warnaMetrik = METRIK_BANDING.find((m) => m.value === bandingMetrik)?.warna ?? "#4f46e5";
-  const grafikBanding = (banding?.bulan ?? []).map((b) => ({
-    label: b.label,
-    Nilai: b[bandingMetrik] ?? 0,
-    mom: deltaUntuk(b, "mom", bandingMetrik),
-    yoy: deltaUntuk(b, "yoy", bandingMetrik),
-  }));
+  const grafikBanding = (banding?.bulan ?? [])
+    .filter((b) => (b[bandingMetrik] ?? 0) > 0)
+    .map((b) => ({
+      label: b.label,
+      Nilai: b[bandingMetrik] ?? 0,
+      mom: deltaUntuk(b, "mom", bandingMetrik),
+      yoy: deltaUntuk(b, "yoy", bandingMetrik),
+    }));
 
   const muat = useCallback(async () => {
     setLoading(true);
@@ -315,7 +317,9 @@ function AnalisaIsi() {
                   </tr>
                 </thead>
                 <tbody>
-                  {banding.bulan.map((b) => (
+                  {banding.bulan
+                    .filter((b) => (b[bandingMetrik] ?? 0) > 0)
+                    .map((b) => (
                     <tr key={b.bulan} className="border-b border-slate-100 last:border-0 hover:bg-slate-50">
                       <td className="py-2.5 pr-3 font-medium text-slate-900">{b.label}</td>
                       <td className="py-2.5 pr-3 text-right tabular-nums">{fmtAngka(b[bandingMetrik])}</td>
