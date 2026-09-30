@@ -193,15 +193,13 @@ async def _agregat_per_konten(
 
 
 def _grade_skor(skor: float) -> str:
+    if skor >= 9.1:
+        return "Top Perform"
     if skor >= 8:
-        return "Sangat baik"
-    if skor >= 6.5:
-        return "Baik"
-    if skor >= 5:
-        return "Cukup"
-    if skor >= 3.5:
-        return "Kurang"
-    return "Kritis"
+        return "Excellent"
+    if skor >= 6.1:
+        return "Average"
+    return "Under Perform"
 
 
 async def analisa_lanjutan(
