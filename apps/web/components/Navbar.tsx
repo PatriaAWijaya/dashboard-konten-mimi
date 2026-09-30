@@ -84,11 +84,6 @@ export default function Navbar() {
       label: "Analitik",
       match: "/brand/",
     },
-    {
-      href: brandId ? `/brand/${brandId}/niche` : "/pilih-brand?next=niche",
-      label: "Niche Finder",
-      match: "/niche",
-    },
     { href: "/tagihan", label: "Tagihan" },
   ];
   if (user?.is_superadmin) navLinks.push({ href: "/admin", label: "Admin" });
