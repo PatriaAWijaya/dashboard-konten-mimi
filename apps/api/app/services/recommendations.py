@@ -105,6 +105,130 @@ def _dedup_key(
     return inti[:120]  # kolom dedup_key String(120)
 
 
+# Label tujuan yang mudah dibaca.
+_LABEL_TUJUAN = {
+    "edukasi": "edukasi",
+    "hiburan": "hiburan",
+    "interaksi": "interaksi",
+    "jualan": "jualan",
+    "branding": "branding",
+    "account_growth": "menambah followers",
+}
+
+
+def _nama_format(fmt: str | None) -> str:
+    f = (fmt or "").lower()
+    if f == "foto":
+        return "Image"
+    return f.capitalize() if f else "Konten"
+
+
+# Metrik dominan per format (dari framework strategi Instagram organik).
+METRIK_DOMINAN = {
+    "carousel": {
+        "nama": "Carousel",
+        "metrik": "saves",
+        "label_metrik": "Saves",
+        "penjelasan": (
+            "Carousel adalah mesin saves. Format ini dirancang untuk edukasi mendalam "
+            "yang layak disimpan dan dibuka kembali — semakin banyak yang menyimpan, "
+            "semakin kuat sinyal bahwa kontenmu bernilai."
+        ),
+    },
+    "foto": {
+        "nama": "Image",
+        "metrik": "comments_shares",
+        "label_metrik": "Comments & Shares",
+        "penjelasan": (
+            "Image mengandalkan comments dan shares. Satu gambar yang kuat harus memicu "
+            "diskusi di kolom komentar atau cukup relevan untuk dibagikan ke orang lain."
+        ),
+    },
+    "image": {
+        "nama": "Image",
+        "metrik": "comments_shares",
+        "label_metrik": "Comments & Shares",
+        "penjelasan": (
+            "Image mengandalkan comments dan shares. Satu gambar yang kuat harus memicu "
+            "diskusi di kolom komentar atau cukup relevan untuk dibagikan ke orang lain."
+        ),
+    },
+    "reels": {
+        "nama": "Reels",
+        "metrik": "shares_comments",
+        "label_metrik": "Shares & Comments",
+        "penjelasan": (
+            "Reels adalah mesin jangkauan. Format ini dirancang untuk menjangkau audiens "
+            "baru — shares membawa penonton baru, comments menandakan kontenmu memicu "
+            "reaksi."
+        ),
+    },
+}
+
+
+def _narasi_sederhana(tipe: str, ctx: dict) -> str:
+    """Narasi bahasa sehari-hari (gaya sama seperti Rekomendasi Umum/Khusus).
+
+    Menggantikan output LLM yang teknis ("win rate 0,0%", "status 'menang'", ...).
+    """
+    fmt = _nama_format(ctx.get("format"))
+    tjn = _LABEL_TUJUAN.get(str(ctx.get("tujuan") or ""), str(ctx.get("tujuan") or ""))
+    n = int(ctx.get("n") or 0)
+    menang = int(ctx.get("menang") or 0)
+
+    if tipe == RecommendationType.PERBANYAK:
+        return (
+            f"Pola {fmt} untuk {tjn} terbukti bekerja di akunmu: {menang} dari {n} konten "
+            f"berkinerja baik. Audiensmu merespons pola ini dengan positif. "
+            f"Perbanyak dengan variasi topik yang masih sejalur — pertahankan rumusnya, "
+            f"variasikan angle dan contohnya agar tidak monoton."
+        )
+    if tipe == RecommendationType.KURANGI:
+        return (
+            f"Pola {fmt} untuk {tjn} kurang direspons audiensmu: hanya {menang} dari {n} "
+            f"konten yang berkinerja baik. Daripada terus memproduksi pola yang tidak "
+            f"bekerja, kurangi porsinya dan alihkan energimu ke format yang terbukti "
+            f"disukai audiens."
+        )
+    if tipe == RecommendationType.PERBAIKI:
+        info = METRIK_DOMINAN.get(str(ctx.get("format") or "").lower(), {})
+        label_metrik = info.get("label_metrik", "engagement")
+        saran = {
+            "carousel": (
+                "akhiri dengan ringkasan atau checklist yang layak di-screenshot dan "
+                "tambahkan ajakan 'Simpan postingan ini'"
+            ),
+            "foto": (
+                "tulis caption yang mengundang cerita audiens dan tutup dengan pertanyaan "
+                "terbuka"
+            ),
+            "image": (
+                "tulis caption yang mengundang cerita audiens dan tutup dengan pertanyaan "
+                "terbuka"
+            ),
+            "reels": (
+                "buka dengan pertanyaan yang memancing opini dan tutup dengan ajakan "
+                "'Tag teman yang perlu tahu ini'"
+            ),
+        }.get(str(ctx.get("format") or "").lower(), "perkuat hook di 3 detik pertama")
+        return (
+            f"Ada {n} konten {fmt} untuk {tjn} yang performanya di bawah standar. "
+            f"Masalah utamanya ada di {label_metrik} — metrik yang paling menentukan "
+            f"untuk format ini. Sebelum membuat pola seperti ini lagi, {saran}. "
+            f"Lihat contoh konten acuan di bawah untuk gambaran konkretnya."
+        )
+    if tipe == RecommendationType.COBA_BARU:
+        niche = ctx.get("niche")
+        dasar = f" untuk niche {niche}" if niche else ""
+        return (
+            f"Kombinasi {fmt} untuk {tjn}{dasar} belum pernah kamu coba di periode ini. "
+            f"Melihat pola yang sudah bekerja di akunmu, kombinasi ini layak diuji. "
+            f"Mulai dengan 3-5 konten sebagai eksperimen kecil, evaluasi hasilnya "
+            f"setelah 2 minggu, lalu putuskan lanjut atau stop."
+        )
+    return ""
+
+
 async def _dedup_ditolak(db: AsyncSession, brand_id: uuid.UUID, dedup_key: str) -> bool:
     row = await db.scalar(
         select(func.count())
@@ -119,15 +243,17 @@ async def _dedup_ditolak(db: AsyncSession, brand_id: uuid.UUID, dedup_key: str) 
 
 
 def _judul(tipe: str, fmt: str | None, tujuan: str | None, niche: str | None) -> str:
+    nf = _nama_format(fmt)
+    nt = _LABEL_TUJUAN.get(str(tujuan or ""), str(tujuan or ""))
     if tipe == RecommendationType.PERBANYAK:
-        return f"Perbanyak {fmt} {tujuan}"
+        return f"Perbanyak {nf} untuk {nt}"
     if tipe == RecommendationType.KURANGI:
-        return f"Kurangi {fmt} {tujuan}"
+        return f"Kurangi {nf} untuk {nt}"
     if tipe == RecommendationType.PERBAIKI:
-        return f"Perbaiki {fmt} {tujuan}"
+        return f"Perbaiki {nf} untuk {nt}"
     if niche:
-        return f"Coba {fmt} untuk niche {niche}"
-    return f"Eksperimen {fmt} × {tujuan}"
+        return f"Coba {nf} untuk niche {niche}"
+    return f"Eksperimen {nf} untuk {nt}"
 
 
 async def generate_recommendations(
@@ -204,7 +330,6 @@ async def generate_recommendations(
             calon.sort(key=lambda cs: 0 if cs[1].status == status_utama else 1)
         return [c.post_id for c, _ in calon[:limit]]
 
-    llm = await get_llm_provider_for_db(db)
     baru: list[Recommendation] = []
 
     async def _simpan(
@@ -213,7 +338,8 @@ async def generate_recommendations(
         key = _dedup_key(tipe, fmt, tujuan, period_start, period_end, config_version, niche)
         if await _dedup_ditolak(db, brand.id, key):
             return  # pernah ditolak user -> jangan munculkan lagi
-        narrative = await llm.narrate("rekomendasi", context)
+        # Narasi bahasa sehari-hari (gaya Umum/Khusus), bukan output LLM yang teknis.
+        narrative = _narasi_sederhana(tipe, context)
         rec = Recommendation(
             organization_id=organization_id,
             brand_id=brand.id,
@@ -386,49 +512,6 @@ async def set_recommendation_status(
 # ---------------------------------------------------------------------------
 # Rekomendasi terstruktur: Umum (akun) + Khusus (per jenis post)
 # ---------------------------------------------------------------------------
-
-# Metrik dominan per format (dari framework strategi Instagram organik).
-METRIK_DOMINAN = {
-    "carousel": {
-        "nama": "Carousel",
-        "metrik": "saves",
-        "label_metrik": "Saves",
-        "penjelasan": (
-            "Carousel adalah mesin saves. Format ini dirancang untuk edukasi mendalam "
-            "yang layak disimpan dan dibuka kembali — semakin banyak yang menyimpan, "
-            "semakin kuat sinyal bahwa kontenmu bernilai."
-        ),
-    },
-    "foto": {
-        "nama": "Image",
-        "metrik": "comments_shares",
-        "label_metrik": "Comments & Shares",
-        "penjelasan": (
-            "Image mengandalkan comments dan shares. Satu gambar yang kuat harus memicu "
-            "diskusi di kolom komentar atau cukup relevan untuk dibagikan ke orang lain."
-        ),
-    },
-    "image": {
-        "nama": "Image",
-        "metrik": "comments_shares",
-        "label_metrik": "Comments & Shares",
-        "penjelasan": (
-            "Image mengandalkan comments dan shares. Satu gambar yang kuat harus memicu "
-            "diskusi di kolom komentar atau cukup relevan untuk dibagikan ke orang lain."
-        ),
-    },
-    "reels": {
-        "nama": "Reels",
-        "metrik": "shares_comments",
-        "label_metrik": "Shares & Comments",
-        "penjelasan": (
-            "Reels adalah mesin jangkauan. Format ini dirancang untuk menjangkau audiens "
-            "baru — shares membawa penonton baru, comments menandakan kontenmu memicu "
-            "reaksi."
-        ),
-    },
-}
-
 
 async def generate_rekomendasi_struktur(
     db: AsyncSession,
