@@ -31,6 +31,15 @@ const LABEL_DIAGNOSIS: Record<DiagnosisItem["tingkat"], string> = {
   baik: "Baik",
 };
 
+/** Warna ikon peringkat konten terbaik: emas, perak, perunggu, lalu oranye. */
+const WARNA_RANK = [
+  "bg-amber-400 text-amber-950",
+  "bg-slate-300 text-slate-800",
+  "bg-amber-700 text-white",
+  "bg-orange-500 text-white",
+  "bg-orange-200 text-orange-800",
+];
+
 function fmt(n: number | null | undefined): string {
   if (n === null || n === undefined) return "-";
   return n.toLocaleString("id-ID");
@@ -461,28 +470,74 @@ export default function AnalisaLanjutan({
       </Card>
 
       {/* 5. Diagnosis & saran */}
-      <div className="grid gap-6 lg:grid-cols-2">
-        <Card>
-          <h2 className="text-lg font-semibold text-slate-900">Kenapa Akun Stuck?</h2>
-          <p className="mb-4 text-sm text-slate-500">
-            Diagnosis berbasis data pada periode ini.
-          </p>
-          <div className="space-y-3">
-            {data.diagnosis.map((d, i) => (
-              <div key={i} className={`rounded-xl border-l-4 p-3 ${TONE_DIAGNOSIS[d.tingkat]}`}>
-                <p className="mb-1 flex items-center gap-2">
-                  <span
-                    className={`inline-block rounded-full px-2 py-0.5 text-[11px] font-semibold ${BADGE_DIAGNOSIS[d.tingkat]}`}
-                  >
-                    {LABEL_DIAGNOSIS[d.tingkat]}
-                  </span>
-                  <span className="text-sm font-semibold text-slate-900">{d.judul}</span>
+      <div className="grid items-start gap-6 lg:grid-cols-2">
+        <div className="space-y-6">
+          <Card>
+            <h2 className="text-lg font-semibold text-slate-900">Kenapa Akun Stuck?</h2>
+            <p className="mb-4 text-sm text-slate-500">
+              Diagnosis berbasis data pada periode ini.
+            </p>
+            <div className="space-y-3">
+              {data.diagnosis.map((d, i) => (
+                <div key={i} className={`rounded-xl border-l-4 p-3 ${TONE_DIAGNOSIS[d.tingkat]}`}>
+                  <p className="mb-1 flex items-center gap-2">
+                    <span
+                      className={`inline-block rounded-full px-2 py-0.5 text-[11px] font-semibold ${BADGE_DIAGNOSIS[d.tingkat]}`}
+                    >
+                      {LABEL_DIAGNOSIS[d.tingkat]}
+                    </span>
+                    <span className="text-sm font-semibold text-slate-900">{d.judul}</span>
+                  </p>
+                  <p className="text-sm text-slate-600">{d.detail}</p>
+                </div>
+              ))}
+            </div>
+          </Card>
+          {(() => {
+            const saranWinning = data.saran.find((s) => s.contoh && s.contoh.length > 0);
+            if (!saranWinning?.contoh) return null;
+            return (
+              <Card>
+                <h2 className="text-lg font-semibold text-slate-900">
+                  {saranWinning.contoh.length} Konten Terbaik
+                </h2>
+                <p className="mb-4 text-sm text-slate-500">
+                  WER tertinggi pada periode ini — bahan growth loop.
                 </p>
-                <p className="text-sm text-slate-600">{d.detail}</p>
-              </div>
-            ))}
-          </div>
-        </Card>
+                <div className="space-y-3">
+                  {saranWinning.contoh.map((c, idx) => (
+                    <div key={c.post_id} className="flex items-start gap-3 rounded-xl bg-slate-50 p-3">
+                      <span
+                        className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-sm font-bold ${WARNA_RANK[idx % WARNA_RANK.length]}`}
+                        title={`Peringkat ${idx + 1}`}
+                      >
+                        {idx + 1}
+                      </span>
+                      <div className="min-w-0">
+                        <p className="text-xs font-semibold text-slate-800">
+                          WER {c.wer.toLocaleString("id-ID")}% · {labelFormat(c.format)}
+                        </p>
+                        <p className="mt-0.5 break-words text-xs text-slate-600">
+                          {c.caption_singkat}
+                        </p>
+                        {c.post_url && (
+                          <a
+                            href={c.post_url}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="mt-1 inline-block text-xs font-medium text-orange-600 underline hover:text-orange-700"
+                          >
+                            Lihat konten asli ↗
+                          </a>
+                        )}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </Card>
+            );
+          })()}
+        </div>
         <Card>
           <h2 className="text-lg font-semibold text-slate-900">Saran Perbaikan Pola</h2>
           <p className="mb-4 text-sm text-slate-500">
@@ -499,32 +554,6 @@ export default function AnalisaLanjutan({
                 </p>
                 <p className="mt-1.5 text-sm text-slate-600">{s.detail}</p>
                 <p className="mt-1 text-xs italic text-slate-400">{s.dasar}</p>
-                {s.contoh && s.contoh.length > 0 && (
-                  <div className="mt-2 space-y-1.5 border-t border-slate-200 pt-2">
-                    {s.contoh.map((c) => (
-                      <p key={c.post_id} className="break-words text-xs text-slate-600">
-                        <span className="font-semibold text-slate-800">
-                          WER {c.wer.toLocaleString("id-ID")}%
-                        </span>{" "}
-                        · {labelFormat(c.format)} ·{" "}
-                        {c.caption_singkat}
-                        {c.post_url && (
-                          <>
-                            {" "}
-                            <a
-                              href={c.post_url}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              className="font-medium text-orange-600 underline hover:text-orange-700"
-                            >
-                              Lihat konten asli ↗
-                            </a>
-                          </>
-                        )}
-                      </p>
-                    ))}
-                  </div>
-                )}
               </div>
             ))}
           </div>
