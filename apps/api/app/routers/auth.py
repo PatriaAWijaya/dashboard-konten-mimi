@@ -217,6 +217,10 @@ async def login(
         )
 
     user = await _become(db, row["id"])
+    # Buat token & konversi ke public SEBELUM operasi kupon —
+    # objek user expired setelah commit.
+    user_public = UserPublic.model_validate(user)
+    access_token = create_access_token(user.id, user.is_superadmin)
     refresh_token, _, expires_at = create_refresh_token(user.id)
     db.add(RefreshToken(user_id=user.id, token_hash=hash_token(refresh_token), expires_at=expires_at))
     await db.flush()
@@ -243,10 +247,10 @@ async def login(
             coupon_error = "Gagal menerapkan kupon. Silakan coba lagi."
 
     return LoginResponse(
-        access_token=create_access_token(user.id, user.is_superadmin),
+        access_token=access_token,
         refresh_token=refresh_token,
         token_type="bearer",
-        user=UserPublic.model_validate(user),
+        user=user_public,
         coupon_applied=coupon_applied,
         coupon_error=coupon_error,
     )
