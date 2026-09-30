@@ -83,7 +83,6 @@ export default function Navbar() {
   // Tab "Analisa" global: ke halaman analisa brand aktif, atau pilih brand dulu.
   const analisaHref = brandId ? `/brand/${brandId}/analisa` : "/pilih-brand?next=analisa";
   const navLinks: { href: string; label: string; match?: string; matchIncludes?: string }[] = [
-    { href: "/dashboard", label: "Dasbor" },
     { href: analisaHref, label: "Analisa", matchIncludes: "/analisa" },
     { href: "/upload", label: "Upload" },
     { href: "/tagihan", label: "Tagihan" },
@@ -218,10 +217,23 @@ export default function Navbar() {
                 <button
                   type="button"
                   onClick={() => setUserMenuOpen((v) => !v)}
-                  className="flex h-10 w-10 items-center justify-center rounded-full bg-orange-100 text-sm font-bold text-orange-700 hover:bg-orange-200"
+                  className="flex items-center gap-0.5 rounded-full p-1 hover:bg-slate-100"
                   title={user.name}
+                  aria-haspopup="menu"
+                  aria-expanded={userMenuOpen}
                 >
-                  {user.name.charAt(0).toUpperCase()}
+                  <span className="flex h-10 w-10 items-center justify-center rounded-full bg-orange-100 text-sm font-bold text-orange-700">
+                    {user.name.charAt(0).toUpperCase()}
+                  </span>
+                  <svg
+                    className={`h-4 w-4 text-slate-400 transition-transform ${userMenuOpen ? "rotate-180" : ""}`}
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                    strokeWidth={2}
+                  >
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 8.25l-7.5 7.5-7.5-7.5" />
+                  </svg>
                 </button>
                 {userMenuOpen && (
                   <div className="absolute right-0 mt-2 w-56 overflow-hidden rounded-xl border border-slate-200 bg-white shadow-lg">
@@ -262,6 +274,16 @@ export default function Navbar() {
                       )}
                     </div>
                     <div className="py-1">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setUserMenuOpen(false);
+                          router.push("/dashboard");
+                        }}
+                        className="block w-full px-4 py-2.5 text-left text-sm text-slate-700 hover:bg-slate-50"
+                      >
+                        Dasbor
+                      </button>
                       <button
                         type="button"
                         onClick={() => {
