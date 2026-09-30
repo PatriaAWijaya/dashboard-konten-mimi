@@ -357,6 +357,39 @@ async def upload_csv_batch(
 
 
 # ---------------------------------------------------------------------------
+# Hapus konten
+# ---------------------------------------------------------------------------
+
+@router.delete("/content/brands/{brand_id}/by-post-id/{post_id}")
+async def hapus_konten_by_post_id(
+    org_id: Annotated[uuid.UUID, Depends(parse_org_header)],
+    brand_id: Annotated[uuid.UUID, Path()],
+    post_id: Annotated[str, Path()],
+    user: Annotated[User, Depends(get_current_user)],
+    db: Annotated[AsyncSession, Depends(get_db)],
+):
+    """Hapus satu konten berdasarkan post_id (mis. bersih-bersih data tes).
+
+    Metrik harian dan skor ikut terhapus via cascade. Hanya untuk brand
+    milik organisasi sendiri dengan peran minimal editor.
+    """
+    ctx = await get_org_context(db, user, org_id, min_role=ROLE_EDITOR)
+    brand = await _get_brand(db, brand_id, ctx.organization.id)
+    hasil = await db.execute(
+        select(Content).where(Content.brand_id == brand.id, Content.post_id == post_id)
+    )
+    konten = hasil.scalar_one_or_none()
+    if konten is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="Konten tidak ditemukan."
+        )
+    label = f"{konten.platform}:{konten.post_id}"
+    await db.delete(konten)
+    await db.commit()
+    return {"ok": True, "dihapus": label}
+
+
+# ---------------------------------------------------------------------------
 # Skoring
 # ---------------------------------------------------------------------------
 
