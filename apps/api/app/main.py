@@ -61,7 +61,8 @@ async def validation_exception_handler(request: Request, exc: RequestValidationE
 async def unhandled_exception_handler(request: Request, exc: Exception):
     # Catat traceback di log server; klien tetap hanya menerima pesan generik.
     logger.exception("Unhandled exception pada %s %s", request.method, request.url.path)
-    return JSONResponse(status_code=500, content={"detail": "Terjadi kesalahan pada server."})
+    detail = f"Terjadi kesalahan pada server: {type(exc).__name__}: {exc}"
+    return JSONResponse(status_code=500, content={"detail": detail})
 
 
 @app.middleware("http")
