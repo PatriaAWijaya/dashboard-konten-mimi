@@ -212,9 +212,9 @@ function DasborIsi() {
             dianalisis.
           </p>
           <div className="mt-4">
-            <span className="inline-flex items-center rounded-full bg-amber-100 px-3 py-1 text-xs font-semibold text-amber-800">
-              Segera hadir — Fase 1
-            </span>
+            <Link href="/upload">
+              <Button>Unggah sekarang</Button>
+            </Link>
           </div>
         </Card>
       </div>
