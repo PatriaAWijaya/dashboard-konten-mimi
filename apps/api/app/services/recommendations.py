@@ -566,17 +566,17 @@ async def generate_rekomendasi_struktur(
     )
     await _simpan_struktur(
         RecommendationType.UMUM,
-        "Strategi $1.80: bangun kehadiran harian di niche",
+        "Strategi 90 Komentar: bangun kehadiran harian di niche",
         (
-            "Setiap hari, tinggalkan komentar bermakna di 90 postingan dalam niche-mu: "
+            "Setiap hari, tinggalkan 90 komentar bermakna di postingan dalam niche-mu: "
             "cari 10 hashtag yang dipakai target audiensmu, lalu komentari 9 postingan "
-            "teratas di tiap hashtag. Setiap komentar yang thoughtful adalah 'investasi' "
-            "perhatian — total $1.80 per hari. Jangan jualan di komentar orang; berikan "
+            "teratas di tiap hashtag. Anggap setiap komentar sebagai investasi perhatian "
+            "kecil yang dikumpulkan setiap hari. Jangan jualan di komentar orang; berikan "
             "wawasan, apresiasi spesifik, atau pertanyaan yang memancing balasan. "
             "Konsistensi di sini membangun nama akunmu di komunitas niche sebelum "
             "mereka melihat kontenmu."
         ),
-        {"strategi": "$1.80", "komposisi": "9 postingan x 10 hashtag per hari"},
+        {"strategi": "90 komentar", "komposisi": "9 postingan x 10 hashtag per hari"},
     )
 
     # === BAGIAN 2: REKOMENDASI KHUSUS (per jenis post) ===
