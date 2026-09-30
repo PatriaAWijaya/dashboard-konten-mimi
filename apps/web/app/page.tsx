@@ -2,8 +2,11 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { api } from "@/lib/api";
 import { formatRupiah } from "@/lib/format";
+import { useAuth } from "@/lib/auth";
+import { getSelectedBrandId } from "@/lib/content";
 import type { Plan } from "@/lib/types";
 
 const FITUR = [
@@ -111,6 +114,28 @@ function RingkasanHarga() {
 }
 
 export default function LandingPage() {
+  const router = useRouter();
+  const { user, loading } = useAuth();
+  const [pengalihan, setPengalihan] = useState(false);
+
+  // User yang sudah login langsung diarahkan ke halaman analisa.
+  useEffect(() => {
+    if (loading) return;
+    if (user) {
+      setPengalihan(true);
+      const brandId = getSelectedBrandId();
+      router.replace(brandId ? `/brand/${brandId}/analisa` : "/pilih-brand?next=analisa");
+    }
+  }, [user, loading, router]);
+
+  if (loading || pengalihan) {
+    return (
+      <div className="flex min-h-[60vh] items-center justify-center">
+        <p className="text-sm text-slate-500">Memuat…</p>
+      </div>
+    );
+  }
+
   return (
     <div className="bg-white">
       {/* Hero */}

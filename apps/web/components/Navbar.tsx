@@ -5,6 +5,7 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useAuth } from "@/lib/auth";
 import { api } from "@/lib/api";
+import { getSelectedBrandId } from "@/lib/content";
 import type { OrganizationDetail } from "@/lib/types";
 import { MembershipBadge } from "./badges";
 
@@ -26,6 +27,19 @@ export default function Navbar() {
   const [userMenuOpen, setUserMenuOpen] = useState(false);
   const orgMenuRef = useRef<HTMLDivElement>(null);
   const userMenuRef = useRef<HTMLDivElement>(null);
+
+  // Brand aktif untuk tab "Analisa" (disimpan di localStorage oleh BrandSelector).
+  const [brandId, setBrandId] = useState<string | null>(null);
+  useEffect(() => {
+    setBrandId(getSelectedBrandId());
+    const segarkan = () => setBrandId(getSelectedBrandId());
+    window.addEventListener("dkai:brand-change", segarkan);
+    window.addEventListener("storage", segarkan);
+    return () => {
+      window.removeEventListener("dkai:brand-change", segarkan);
+      window.removeEventListener("storage", segarkan);
+    };
+  }, [pathname]);
 
   const hideNavbar = HIDDEN_PATHS.some((p) => pathname?.startsWith(p));
 
@@ -66,20 +80,25 @@ export default function Navbar() {
 
   // Link "Analitik" dihapus: duplikat dengan tab "Dasbor" di BrandNav
   // (keduanya mengarah ke /brand/{brandId}). Navigasi brand ditangani BrandNav.
-  const navLinks: { href: string; label: string; match?: string }[] = [
+  // Tab "Analisa" global: ke halaman analisa brand aktif, atau pilih brand dulu.
+  const analisaHref = brandId ? `/brand/${brandId}/analisa` : "/pilih-brand?next=analisa";
+  const navLinks: { href: string; label: string; match?: string; matchIncludes?: string }[] = [
     { href: "/dashboard", label: "Dasbor" },
+    { href: analisaHref, label: "Analisa", matchIncludes: "/analisa" },
     { href: "/upload", label: "Upload" },
     { href: "/tagihan", label: "Tagihan" },
   ];
   if (user?.is_superadmin) navLinks.push({ href: "/admin", label: "Admin" });
 
-  const linkAktif = (l: { href: string; match?: string }) =>
-    pathname?.startsWith(l.match ?? l.href) ?? false;
+  const linkAktif = (l: { href: string; match?: string; matchIncludes?: string }) => {
+    if (l.matchIncludes) return pathname?.includes(l.matchIncludes) ?? false;
+    return pathname?.startsWith(l.match ?? l.href) ?? false;
+  };
 
   return (
     <header className="sticky top-0 z-40 border-b border-slate-200 bg-white/95 backdrop-blur">
       <div className="mx-auto flex h-16 max-w-7xl items-center gap-3 px-4 sm:px-6">
-        <Link href={user ? "/dashboard" : "/"} className="flex items-center gap-2">
+        <Link href={user ? analisaHref : "/"} className="flex items-center gap-2">
           <img
             src="/logo.png"
             alt="MySocial Watch"

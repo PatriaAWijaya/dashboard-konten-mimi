@@ -38,6 +38,8 @@ export function setSelectedBrandId(id: string | null) {
   if (typeof window === "undefined") return;
   if (id) window.localStorage.setItem(BRAND_KEY, id);
   else window.localStorage.removeItem(BRAND_KEY);
+  // Beri tahu komponen lain (mis. Navbar) bahwa brand aktif berubah.
+  window.dispatchEvent(new CustomEvent("dkai:brand-change", { detail: id }));
 }
 
 export interface ApiResult<T> {
