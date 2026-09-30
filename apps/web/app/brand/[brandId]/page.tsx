@@ -205,16 +205,21 @@ function DasborBrandIsi() {
   const muat = useCallback(async () => {
     setLoading(true);
     setError("");
-    const q = new URLSearchParams({ preset: periode.preset });
-    if (periode.start) q.set("start", periode.start);
-    if (periode.end) q.set("end", periode.end);
-    const { data: d, demo: isDemo } = await apiOrDemo(
-      () => api.get<BrandDashboard>(`/content/brands/${brandId}/dashboard?${q}`),
-      demoDashboard
-    );
-    setData(d);
-    setDemo(isDemo);
-    setLoading(false);
+    try {
+      const q = new URLSearchParams({ preset: periode.preset });
+      if (periode.start) q.set("start", periode.start);
+      if (periode.end) q.set("end", periode.end);
+      const { data: d, demo: isDemo } = await apiOrDemo(
+        () => api.get<BrandDashboard>(`/content/brands/${brandId}/dashboard?${q}`),
+        demoDashboard
+      );
+      setData(d);
+      setDemo(isDemo);
+    } catch (err) {
+      setError(err instanceof ApiError ? err.message : "Gagal memuat dasbor brand.");
+    } finally {
+      setLoading(false);
+    }
   }, [brandId, periode]);
 
   useEffect(() => {

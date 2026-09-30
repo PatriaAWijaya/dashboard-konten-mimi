@@ -7,7 +7,7 @@
 // FLAG: DEMO_FALLBACK = true berarti halaman sedang menampilkan data contoh,
 // bukan data nyata. Jangan hapus flag ini sampai backend benar-benar live.
 
-import { api } from "./api";
+import { api, ApiError } from "./api";
 import type {
   AnalisaKesesuaian,
   AnalisaLanjutan,
@@ -45,7 +45,9 @@ export interface ApiResult<T> {
   demo: boolean; // true = data contoh (backend belum tersedia)
 }
 
-/** Coba panggil API; bila gagal (backend belum siap), pakai data contoh. */
+/** Coba panggil API; bila backend tidak terjangkau (network error), pakai data contoh.
+ *  Error HTTP dari backend (401/403/404/422/500) TIDAK ditelan — dilempar agar
+ *  UI menampilkan pesan error yang sebenarnya, bukan diam-diam memakai data contoh. */
 export async function apiOrDemo<T>(
   panggil: () => Promise<T>,
   contoh: T | (() => T | Promise<T>)
@@ -53,7 +55,9 @@ export async function apiOrDemo<T>(
   try {
     const data = await panggil();
     return { data, demo: false };
-  } catch {
+  } catch (err) {
+    // Backend menjawab dengan error HTTP → teruskan, jangan tutupi dengan demo.
+    if (err instanceof ApiError) throw err;
     const mentah = typeof contoh === "function" ? (contoh as () => T | Promise<T>)() : contoh;
     const data = mentah instanceof Promise ? await mentah : mentah;
     return { data, demo: DEMO_FALLBACK };

@@ -37,6 +37,11 @@ export default function BrandSelector({
         const valid = data.find((b) => b.id === tersimpan);
         setSelected(valid ? valid.id : "");
       })
+      .catch(() => {
+        // Error HTTP (mis. 401/403) tidak ditelan jadi demo; biarkan daftar kosong.
+        // Halaman utama menampilkan pesan error yang sebenarnya.
+        if (!batal) setBrands([]);
+      })
       .finally(() => {
         if (!batal) setLoading(false);
       });

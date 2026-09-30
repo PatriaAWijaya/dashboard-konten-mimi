@@ -185,16 +185,21 @@ function AnalisaIsi() {
   const muat = useCallback(async () => {
     setLoading(true);
     setError("");
-    const q = new URLSearchParams({ preset: periode.preset });
-    if (periode.start) q.set("start", periode.start);
-    if (periode.end) q.set("end", periode.end);
-    const { data: d, demo: isDemo } = await apiOrDemo(
-      () => api.get<AnalisaKesesuaian>(`/content/brands/${brandId}/analisa?${q}`),
-      demoAnalisa
-    );
-    setData(d);
-    setDemo(isDemo);
-    setLoading(false);
+    try {
+      const q = new URLSearchParams({ preset: periode.preset });
+      if (periode.start) q.set("start", periode.start);
+      if (periode.end) q.set("end", periode.end);
+      const { data: d, demo: isDemo } = await apiOrDemo(
+        () => api.get<AnalisaKesesuaian>(`/content/brands/${brandId}/analisa?${q}`),
+        demoAnalisa
+      );
+      setData(d);
+      setDemo(isDemo);
+    } catch (err) {
+      setError(err instanceof ApiError ? err.message : "Gagal memuat analisa.");
+    } finally {
+      setLoading(false);
+    }
   }, [brandId, periode]);
 
   useEffect(() => {

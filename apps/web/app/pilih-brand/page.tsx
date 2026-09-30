@@ -3,7 +3,7 @@
 import { Suspense, useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { RequireAuth, useAuth } from "@/lib/auth";
-import { api } from "@/lib/api";
+import { api, ApiError } from "@/lib/api";
 import {
   apiOrDemo,
   demoBrands,
@@ -22,6 +22,7 @@ function PilihBrandIsi() {
   const [brands, setBrands] = useState<Brand[]>([]);
   const [loading, setLoading] = useState(true);
   const [demo, setDemo] = useState(false);
+  const [error, setError] = useState("");
 
   useEffect(() => {
     if (!selectedOrgId) {
@@ -29,6 +30,7 @@ function PilihBrandIsi() {
       return;
     }
     let batal = false;
+    setError("");
     apiOrDemo(
       () => api.get<Brand[]>(`/organizations/${selectedOrgId}/brands`),
       demoBrands
@@ -36,6 +38,10 @@ function PilihBrandIsi() {
       if (batal) return;
       setBrands(data);
       setDemo(d);
+      setLoading(false);
+    }).catch((err) => {
+      if (batal) return;
+      setError(err instanceof ApiError ? err.message : "Gagal memuat daftar brand.");
       setLoading(false);
     });
     return () => {
@@ -57,7 +63,10 @@ function PilihBrandIsi() {
         action={<DemoBadge tampil={demo} />}
       />
       {loading && <Spinner label="Memuat daftar brand…" />}
-      {!loading && getSelectedBrandId() && brands.some((b) => b.id === getSelectedBrandId()) && (
+      {!loading && error && (
+        <Alert kind="error">{error}</Alert>
+      )}
+      {!loading && !error && getSelectedBrandId() && brands.some((b) => b.id === getSelectedBrandId()) && (
         <Alert kind="info">
           Brand aktif saat ini:{" "}
           <strong>{brands.find((b) => b.id === getSelectedBrandId())?.name}</strong>.

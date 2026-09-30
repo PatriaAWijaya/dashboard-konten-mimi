@@ -132,17 +132,22 @@ function RekomendasiIsi() {
   const muat = useCallback(async () => {
     setLoading(true);
     setError("");
-    const { data, demo: isDemo } = await apiOrDemo(
-      () => api.get<Rekomendasi[]>(`/content/brands/${brandId}/recommendations`),
-      demoRekomendasi.map((r) => ({ ...r, status: "baru" as StatusRekomendasi }))
-    );
-    setItems(data);
-    setDemo(isDemo);
-    // Bila backend nyata menjawab dengan <10 rekomendasi/data, sampaikan apa adanya.
-    if (!isDemo && data.length > 0 && data.length < 10) setDataSedikit(true);
-    else if (isDemo) setDataSedikit(data.length < 10);
-    else setDataSedikit(false);
-    setLoading(false);
+    try {
+      const { data, demo: isDemo } = await apiOrDemo(
+        () => api.get<Rekomendasi[]>(`/content/brands/${brandId}/recommendations`),
+        demoRekomendasi.map((r) => ({ ...r, status: "baru" as StatusRekomendasi }))
+      );
+      setItems(data);
+      setDemo(isDemo);
+      // Bila backend nyata menjawab dengan <10 rekomendasi/data, sampaikan apa adanya.
+      if (!isDemo && data.length > 0 && data.length < 10) setDataSedikit(true);
+      else if (isDemo) setDataSedikit(data.length < 10);
+      else setDataSedikit(false);
+    } catch (err) {
+      setError(err instanceof ApiError ? err.message : "Gagal memuat rekomendasi.");
+    } finally {
+      setLoading(false);
+    }
   }, [brandId]);
 
   useEffect(() => {

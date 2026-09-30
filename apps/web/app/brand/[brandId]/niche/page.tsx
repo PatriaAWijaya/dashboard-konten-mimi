@@ -167,34 +167,42 @@ function NicheIsi() {
     let batal = false;
     (async () => {
       setLoading(true);
-      const { data, demo: isDemo } = await apiOrDemo<Interview>(
-        async () => {
-          const dibuat = await api.post<{ id: string; current_step: number; status: string }>(
-            `/content/brands/${brandId}/niche/interviews`, {}
-          );
-          return api.get<Interview>(`/content/niche/interviews/${dibuat.id}`);
-        },
-        () => ({
-          id: "interview-demo-1",
-          brand_id: brandId,
-          current_step: 0,
-          answers: {},
-          skipped: [],
-          status: "berjalan",
-          questions: demoNicheQuestions,
-        })
-      );
-      if (batal) return;
-      setInterview(data);
-      setDemo(isDemo);
-      if (data.status === "selesai") {
-        setFase("selesai");
-      } else {
-        const idx = Math.min(data.current_step, data.questions.length - 1);
-        setPosisi(idx);
-        setDraf(drafAwal(data.questions[idx], data.answers[data.questions[idx].key]));
+      setError("");
+      try {
+        const { data, demo: isDemo } = await apiOrDemo<Interview>(
+          async () => {
+            const dibuat = await api.post<{ id: string; current_step: number; status: string }>(
+              `/content/brands/${brandId}/niche/interviews`, {}
+            );
+            return api.get<Interview>(`/content/niche/interviews/${dibuat.id}`);
+          },
+          () => ({
+            id: "interview-demo-1",
+            brand_id: brandId,
+            current_step: 0,
+            answers: {},
+            skipped: [],
+            status: "berjalan",
+            questions: demoNicheQuestions,
+          })
+        );
+        if (batal) return;
+        setInterview(data);
+        setDemo(isDemo);
+        if (data.status === "selesai") {
+          setFase("selesai");
+        } else {
+          const idx = Math.min(data.current_step, data.questions.length - 1);
+          setPosisi(idx);
+          setDraf(drafAwal(data.questions[idx], data.answers[data.questions[idx].key]));
+        }
+      } catch (err) {
+        if (!batal) {
+          setError(err instanceof ApiError ? err.message : "Gagal memuat kuesioner. Periksa koneksi ke backend.");
+        }
+      } finally {
+        if (!batal) setLoading(false);
       }
-      setLoading(false);
     })();
     return () => {
       batal = true;
