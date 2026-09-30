@@ -1018,12 +1018,12 @@ function LaporanView(props: { laporan: LaporanNiche; onMulaiUlang: () => void; m
         <p className="mb-3 text-xs italic text-slate-500">{str(bio.catatan)}</p>
         <div className="grid gap-3 md:grid-cols-3">
           {(arr(bio.opsi) as { nama: string; baris: string[]; nada: string }[]).map((o, i) => (
-            <div key={i} className="rounded-2xl bg-slate-900 p-4 text-white">
-              <p className="mb-2 text-xs font-bold uppercase tracking-wide text-amber-400">{o.nama}</p>
+            <div key={i} className="rounded-2xl border border-orange-200 bg-orange-50 p-4">
+              <p className="mb-2 text-xs font-bold uppercase tracking-wide text-orange-700">{o.nama}</p>
               {(o.baris as string[]).map((br, j) => (
-                <p key={j} className="text-sm leading-relaxed">{br}</p>
+                <p key={j} className="text-sm leading-relaxed text-slate-800">{br}</p>
               ))}
-              <p className="mt-2 border-t border-white/15 pt-2 text-xs italic text-slate-300">{o.nada}</p>
+              <p className="mt-2 border-t border-orange-200 pt-2 text-xs italic text-slate-500">{o.nada}</p>
             </div>
           ))}
         </div>
