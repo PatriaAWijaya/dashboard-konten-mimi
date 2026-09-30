@@ -63,8 +63,8 @@ export async function apiOrDemo<T>(
 // ============================================================
 
 export const demoBrands: Brand[] = [
-  { id: "brand-demo-1", name: "Kopi Senja (Demo)", industry: "F&B" },
-  { id: "brand-demo-2", name: "Sakinah Skincare (Demo)", industry: "Beauty" },
+  { id: "brand-demo-1", name: "@kopisenja", platform: "instagram", display_name: "Instagram @kopisenja", industry: "F&B" },
+  { id: "brand-demo-2", name: "@sakinahskincare", platform: "tiktok", display_name: "TikTok @sakinahskincare", industry: "Beauty" },
 ];
 
 export const demoCsvColumns: CsvColumnInfo[] = [

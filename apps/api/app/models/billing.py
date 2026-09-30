@@ -1,7 +1,7 @@
 import uuid
 from datetime import datetime
 
-from sqlalchemy import BigInteger, DateTime, ForeignKey, Integer, String, Text, UniqueConstraint
+from sqlalchemy import BigInteger, Boolean, DateTime, ForeignKey, Integer, String, Text, UniqueConstraint
 from sqlalchemy.dialects.postgresql import JSONB, UUID as PG_UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
@@ -118,3 +118,47 @@ class Payment(BaseModel):
     uploaded_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
 
     invoice: Mapped["Invoice"] = relationship(back_populates="payments")
+
+
+class Coupon(BaseModel):
+    """Kode kupon diskon — dimasukkan saat login untuk mendapat potongan harga.
+
+    Nilai discount_percent bisa diubah admin kapan saja ("ditentukan kemudian").
+    Kupon "@1717": discount 100% selama 365 hari → akses penuh tanpa pembayaran.
+    """
+
+    __tablename__ = "coupons"
+
+    code: Mapped[str] = mapped_column(String(40), nullable=False, unique=True, index=True)
+    discount_percent: Mapped[int] = mapped_column(Integer, nullable=False, default=0)  # 0–100
+    duration_days: Mapped[int] = mapped_column(Integer, nullable=False, default=365)
+    max_uses: Mapped[int | None] = mapped_column(Integer, nullable=True)  # None = tanpa batas
+    used_count: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+    is_active: Mapped[bool] = mapped_column(Boolean, nullable=False, default=True)
+    description: Mapped[str | None] = mapped_column(Text, nullable=True)
+
+    redemptions: Mapped[list["CouponRedemption"]] = relationship(back_populates="coupon")
+
+
+class CouponRedemption(BaseModel):
+    """Riwayat penukaran kupon per organisasi (satu kupon sekali per organisasi)."""
+
+    __tablename__ = "coupon_redemptions"
+    __table_args__ = (
+        UniqueConstraint("coupon_id", "organization_id", name="uq_redemption_coupon_org"),
+    )
+
+    coupon_id: Mapped[uuid.UUID] = mapped_column(
+        PG_UUID(as_uuid=True), ForeignKey("coupons.id", ondelete="CASCADE"), nullable=False, index=True
+    )
+    organization_id: Mapped[uuid.UUID] = mapped_column(
+        PG_UUID(as_uuid=True), ForeignKey("organizations.id", ondelete="CASCADE"), nullable=False, index=True
+    )
+    user_id: Mapped[uuid.UUID | None] = mapped_column(
+        PG_UUID(as_uuid=True), ForeignKey("users.id", ondelete="SET NULL"), nullable=True
+    )
+    discount_percent: Mapped[int] = mapped_column(Integer, nullable=False)
+    redeemed_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+    expires_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+
+    coupon: Mapped["Coupon"] = relationship(back_populates="redemptions")

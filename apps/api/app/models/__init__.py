@@ -1,6 +1,13 @@
 from app.db.base import Base  # noqa: F401  (dipakai alembic env)
 from app.models.audit import AuditLog  # noqa: F401
-from app.models.billing import Invoice, Membership, MembershipPlan, Payment  # noqa: F401
+from app.models.billing import (  # noqa: F401
+    Coupon,
+    CouponRedemption,
+    Invoice,
+    Membership,
+    MembershipPlan,
+    Payment,
+)
 from app.models.brand import Brand  # noqa: F401
 from app.models.content import (  # noqa: F401
     BrandDNACard,

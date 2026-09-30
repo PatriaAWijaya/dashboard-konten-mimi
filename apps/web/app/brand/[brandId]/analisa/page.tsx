@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import { useParams } from "next/navigation";
+import { useParams, useSearchParams } from "next/navigation";
 import {
   Bar,
   BarChart,
@@ -118,8 +118,19 @@ function deltaUntuk(
 
 function AnalisaIsi() {
   const params = useParams();
+  const searchParams = useSearchParams();
   const brandId = params.brandId as string;
-  const [periode, setPeriode] = useState<PilihanPeriode>({ preset: "30d" });
+  // Deep-link dari dasbor: ?bulan=YYYY-MM → periode custom satu bulan penuh.
+  const [periode, setPeriode] = useState<PilihanPeriode>(() => {
+    const b = searchParams.get("bulan");
+    if (b && /^\d{4}-\d{2}$/.test(b)) {
+      const [th, bl] = b.split("-").map(Number);
+      const last = new Date(th, bl, 0).getDate();
+      const pad = String(bl).padStart(2, "0");
+      return { preset: "custom", start: `${th}-${pad}-01`, end: `${th}-${pad}-${last}` };
+    }
+    return { preset: "30d" };
+  });
   const [data, setData] = useState<AnalisaKesesuaian | null>(null);
   const [demo, setDemo] = useState(false);
   const [loading, setLoading] = useState(true);

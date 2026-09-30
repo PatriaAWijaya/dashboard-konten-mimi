@@ -35,6 +35,8 @@ export interface OrganizationDetail {
 export interface Brand {
   id: string;
   name: string;
+  platform?: string | null;
+  display_name?: string;
   industry?: string | null;
 }
 

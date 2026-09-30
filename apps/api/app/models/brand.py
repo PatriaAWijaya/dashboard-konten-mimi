@@ -18,5 +18,18 @@ class Brand(BaseModel):
     # Onboarding (migrasi 0004): logo & kategori industri untuk template threshold.
     logo_url: Mapped[str | None] = mapped_column(String(512), nullable=True)
     industry_category: Mapped[str | None] = mapped_column(String(60), nullable=True)
+    # Platform sosial media yang dianalisa: instagram | facebook | tiktok.
+    # Nama tampil otomatis: "[Platform] nama akun", mis. "Instagram @insanmandiri.id".
+    platform: Mapped[str | None] = mapped_column(String(20), nullable=True)
 
     organization: Mapped["Organization"] = relationship(back_populates="brands")
+
+    @property
+    def display_name(self) -> str:
+        """Format '[Platform] nama akun', mis. 'Instagram @insanmandiri.id'."""
+        if self.platform:
+            label = {"instagram": "Instagram", "facebook": "Facebook", "tiktok": "TikTok"}.get(
+                self.platform.lower(), self.platform.capitalize()
+            )
+            return f"{label} {self.name}"
+        return self.name

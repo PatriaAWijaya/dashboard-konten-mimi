@@ -19,6 +19,7 @@ from app.core.deps import (
 from app.core.permissions import ROLE_ADMIN, ROLE_OWNER
 from app.models.billing import Membership, MembershipStatus
 from app.models.brand import Brand
+from app.models.content import Content
 from app.models.organization import Organization, OrganizationMember
 from app.models.user import User
 from app.schemas.organization import (
@@ -168,6 +169,7 @@ async def create_brand(
         organization_id=ctx.organization.id,
         name=data.name.strip(),
         industry=data.industry.strip() if data.industry else None,
+        platform=data.platform,
     )
     db.add(brand)
     await db.flush()
@@ -185,6 +187,68 @@ async def list_brands(
         select(Brand).where(Brand.organization_id == org_id).order_by(Brand.created_at.desc())
     )
     return [BrandOut.model_validate(b) for b in result.scalars().all()]
+
+
+_NAMA_BULAN = [
+    "Januari", "Februari", "Maret", "April", "Mei", "Juni",
+    "Juli", "Agustus", "September", "Oktober", "November", "Desember",
+]
+
+
+@router.get("/organizations/{org_id}/ringkasan-data")
+async def ringkasan_data(
+    org_id: Annotated[uuid.UUID, Path()],
+    user: Annotated[User, Depends(get_current_user)],
+    db: Annotated[AsyncSession, Depends(get_db)],
+):
+    """Ringkasan data konten per brand: platform, nama akun, dan daftar
+    tahun-bulan yang sudah ada datanya. Dipakai dasbor untuk menampilkan
+    'Data yang sudah diinput' bagi member yang sudah pernah upload."""
+    await _ctx_with_membership(db, user, org_id, min_role=None, write=False)
+    brands = (
+        await db.execute(
+            select(Brand).where(Brand.organization_id == org_id).order_by(Brand.created_at.desc())
+        )
+    ).scalars().all()
+
+    hasil = []
+    for b in brands:
+        rows = (
+            await db.execute(
+                select(
+                    func.extract("year", Content.posted_at).label("tahun"),
+                    func.extract("month", Content.posted_at).label("bulan"),
+                    func.count().label("jumlah"),
+                )
+                .where(
+                    Content.brand_id == b.id,
+                    Content.organization_id == org_id,
+                    Content.posted_at.is_not(None),
+                )
+                .group_by("tahun", "bulan")
+                .order_by("tahun", "bulan")
+            )
+        ).all()
+        periode = []
+        total = 0
+        for r in rows:
+            tahun, bulan, jumlah = int(r.tahun), int(r.bulan), int(r.jumlah)
+            total += jumlah
+            periode.append({
+                "tahun": tahun,
+                "bulan": bulan,
+                "label": f"{_NAMA_BULAN[bulan - 1]} {tahun}",
+                "jumlah_konten": jumlah,
+            })
+        hasil.append({
+            "id": str(b.id),
+            "name": b.name,
+            "platform": b.platform,
+            "display_name": b.display_name,
+            "total_konten": total,
+            "periode": periode,
+        })
+    return {"brands": hasil}
 
 
 # ---------------------------------------------------------------------------

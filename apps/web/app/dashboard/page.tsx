@@ -1,7 +1,8 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { Suspense, useEffect, useState } from "react";
 import Link from "next/link";
+import { useSearchParams } from "next/navigation";
 import { useAuth, RequireAuth } from "@/lib/auth";
 import { api, ApiError } from "@/lib/api";
 import { formatTanggal } from "@/lib/format";
@@ -84,11 +85,52 @@ function WizardOrganisasi({ onSelesai }: { onSelesai: () => void }) {
   );
 }
 
+interface PeriodeData {
+  tahun: number;
+  bulan: number;
+  label: string;
+  jumlah_konten: number;
+}
+
+interface BrandRingkasan {
+  id: string;
+  name: string;
+  platform: string | null;
+  display_name: string;
+  total_konten: number;
+  periode: PeriodeData[];
+}
+
 function DasborIsi() {
   const { organizations, orgsLoading, selectedOrgId, refreshOrgs } = useAuth();
+  const searchParams = useSearchParams();
   const [org, setOrg] = useState<OrganizationDetail | null>(null);
+  const [ringkasan, setRingkasan] = useState<BrandRingkasan[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const [couponBanner, setCouponBanner] = useState<{ kind: "success" | "error"; text: string } | null>(null);
+
+  useEffect(() => {
+    const ok = searchParams.get("coupon_ok");
+    const exp = searchParams.get("coupon_exp");
+    const err = searchParams.get("coupon_error");
+    if (ok) {
+      setCouponBanner({
+        kind: "success",
+        text: `Kupon diterapkan: diskon ${ok}%${exp ? `, berlaku hingga ${exp}` : ""}.`,
+      });
+    } else if (err) {
+      setCouponBanner({ kind: "error", text: err });
+    }
+    // Bersihkan query param agar banner tidak muncul lagi saat refresh.
+    if (ok || err) {
+      const url = new URL(window.location.href);
+      url.searchParams.delete("coupon_ok");
+      url.searchParams.delete("coupon_exp");
+      url.searchParams.delete("coupon_error");
+      window.history.replaceState({}, "", url.toString());
+    }
+  }, [searchParams]);
 
   useEffect(() => {
     if (orgsLoading) return;
@@ -99,9 +141,16 @@ function DasborIsi() {
     }
     setLoading(true);
     setError("");
-    api
-      .get<OrganizationDetail>(`/organizations/${selectedOrgId}`)
-      .then((d) => setOrg(d))
+    Promise.all([
+      api.get<OrganizationDetail>(`/organizations/${selectedOrgId}`),
+      api
+        .get<{ brands: BrandRingkasan[] }>(`/organizations/${selectedOrgId}/ringkasan-data`)
+        .catch(() => ({ brands: [] as BrandRingkasan[] })),
+    ])
+      .then(([d, r]) => {
+        setOrg(d);
+        setRingkasan(r.brands || []);
+      })
       .catch((err) =>
         setError(
           err instanceof ApiError
@@ -121,9 +170,15 @@ function DasborIsi() {
   }
 
   const membership = org?.membership;
+  const brandsBerdata = ringkasan.filter((b) => b.periode.length > 0);
 
   return (
     <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6">
+      {couponBanner && (
+        <div className="mb-4">
+          <Alert kind={couponBanner.kind}>{couponBanner.text}</Alert>
+        </div>
+      )}
       <PageHeader
         title={`Halo, selamat datang di ${org?.name ?? "dasbor Anda"}`}
         subtitle="Pantau status keanggotaan dan mulai analisis konten Anda."
@@ -218,6 +273,44 @@ function DasborIsi() {
           </div>
         </Card>
       </div>
+
+      {/* Data yang sudah diinput — hanya tampil bila member sudah pernah upload */}
+      {brandsBerdata.length > 0 && (
+        <>
+          <div className="mb-4 mt-10">
+            <h2 className="text-lg font-bold text-slate-900">Data yang sudah diinput</h2>
+            <p className="text-sm text-slate-500">
+              Daftar akun dan periode data yang sudah pernah Anda masukkan.
+            </p>
+          </div>
+          <div className="space-y-4">
+            {brandsBerdata.map((b) => (
+              <Card key={b.id}>
+                <div className="flex flex-wrap items-center justify-between gap-2">
+                  <h3 className="text-base font-bold text-slate-900">
+                    {b.display_name}
+                  </h3>
+                  <span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold text-slate-600">
+                    {b.total_konten} konten
+                  </span>
+                </div>
+                <div className="mt-3 flex flex-wrap gap-2">
+                  {b.periode.map((p) => (
+                    <Link
+                      key={`${p.tahun}-${p.bulan}`}
+                      href={`/brand/${b.id}/analisa?bulan=${p.tahun}-${String(p.bulan).padStart(2, "0")}`}
+                      className="inline-flex items-center gap-1.5 rounded-full border border-slate-200 bg-slate-50 px-3 py-1.5 text-xs font-medium text-slate-700 transition hover:border-indigo-300 hover:bg-indigo-50 hover:text-indigo-700"
+                    >
+                      📅 {p.label}
+                      <span className="text-slate-400">· {p.jumlah_konten}</span>
+                    </Link>
+                  ))}
+                </div>
+              </Card>
+            ))}
+          </div>
+        </>
+      )}
     </div>
   );
 }
@@ -225,7 +318,9 @@ function DasborIsi() {
 export default function DashboardPage() {
   return (
     <RequireAuth>
-      <DasborIsi />
+      <Suspense fallback={<Spinner label="Memuat dasbor…" />}>
+        <DasborIsi />
+      </Suspense>
     </RequireAuth>
   );
 }

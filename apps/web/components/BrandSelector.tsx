@@ -79,7 +79,7 @@ export default function BrandSelector({
         </option>
         {brands.map((b) => (
           <option key={b.id} value={b.id}>
-            {b.name}
+            {b.display_name || b.name}
             {b.industry ? ` · ${b.industry}` : ""}
           </option>
         ))}

@@ -221,11 +221,29 @@ async def login(
     db.add(RefreshToken(user_id=user.id, token_hash=hash_token(refresh_token), expires_at=expires_at))
     await db.flush()
 
+    # Kupon opsional saat login: validasi & terapkan diskon ke organisasi member.
+    # Kode salah TIDAK menggagalkan login — error dikembalikan agar UI bisa
+    # menampilkannya.
+    coupon_applied: list[dict] | None = None
+    coupon_error: str | None = None
+    if data.coupon_code and data.coupon_code.strip():
+        from app.services.coupon import redeem_coupon_for_user_orgs
+        try:
+            coupon_applied = await redeem_coupon_for_user_orgs(
+                db, code=data.coupon_code.strip(), user_id=user.id
+            )
+            await db.commit()
+        except HTTPException as e:
+            await db.rollback()
+            coupon_error = e.detail if isinstance(e.detail, str) else "Kode kupon tidak valid."
+
     return LoginResponse(
         access_token=create_access_token(user.id, user.is_superadmin),
         refresh_token=refresh_token,
         token_type="bearer",
         user=UserPublic.model_validate(user),
+        coupon_applied=coupon_applied,
+        coupon_error=coupon_error,
     )
 
 

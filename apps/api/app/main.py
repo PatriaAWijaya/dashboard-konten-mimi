@@ -11,7 +11,7 @@ from slowapi.errors import RateLimitExceeded
 
 from app.core.config import get_settings
 from app.core.rate_limit import limiter
-from app.routers import admin, auth, billing, content, dev, fase2, onboarding, organizations
+from app.routers import admin, auth, billing, content, coupons, dev, fase2, onboarding, organizations
 
 settings = get_settings()
 
@@ -97,6 +97,7 @@ async def health():
 
 API_PREFIX = "/api/v1"
 app.include_router(auth.router, prefix=API_PREFIX)
+app.include_router(coupons.router, prefix=API_PREFIX)
 app.include_router(organizations.router, prefix=API_PREFIX)
 app.include_router(billing.router, prefix=API_PREFIX)
 app.include_router(content.router, prefix=API_PREFIX)

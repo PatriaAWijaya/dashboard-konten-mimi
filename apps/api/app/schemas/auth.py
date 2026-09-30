@@ -40,6 +40,9 @@ class ResendVerificationRequest(BaseModel):
 class LoginRequest(BaseModel):
     email: EmailStr
     password: str
+    # Kode kupon opsional — bila valid, diskon diterapkan ke organisasi member
+    # (mis. kupon "@1717" = diskon 100% selama 1 tahun, akses penuh tanpa bayar).
+    coupon_code: str | None = None
 
 
 class UserPublic(BaseModel):
@@ -56,6 +59,9 @@ class LoginResponse(BaseModel):
     refresh_token: str
     token_type: str = "bearer"
     user: UserPublic
+    # Info kupon bila kode kupon disertakan saat login.
+    coupon_applied: list[dict] | None = None
+    coupon_error: str | None = None
 
 
 class RefreshRequest(BaseModel):

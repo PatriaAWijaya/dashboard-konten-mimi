@@ -14,16 +14,28 @@ function LoginInner() {
   const { login } = useAuth();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [couponCode, setCouponCode] = useState("");
   const [error, setError] = useState("");
+  const [couponInfo, setCouponInfo] = useState("");
   const [loading, setLoading] = useState(false);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setError("");
+    setCouponInfo("");
     setLoading(true);
     try {
-      await login(email.trim(), password);
-      router.push("/dashboard");
+      const res = await login(email.trim(), password, couponCode);
+      const params = new URLSearchParams();
+      if (res.coupon_error) {
+        params.set("coupon_error", res.coupon_error);
+      } else if (res.coupon_applied && res.coupon_applied.length > 0) {
+        const d = res.coupon_applied[0];
+        params.set("coupon_ok", `${d.discount_percent}`);
+        if (d.expires_at) params.set("coupon_exp", d.expires_at.slice(0, 10));
+      }
+      const qs = params.toString();
+      router.push(qs ? `/dashboard?${qs}` : "/dashboard");
     } catch (err) {
       setError(
         err instanceof ApiError
@@ -64,6 +76,7 @@ function LoginInner() {
               </Alert>
             )}
             {error && <Alert kind="error">{error}</Alert>}
+            {couponInfo && <Alert kind="success">{couponInfo}</Alert>}
             <Input
               label="Email"
               type="email"
@@ -81,6 +94,12 @@ function LoginInner() {
               placeholder="••••••••"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
+            />
+            <Input
+              label="Kode kupon (opsional)"
+              placeholder="Punya kode kupon? Masukkan di sini"
+              value={couponCode}
+              onChange={(e) => setCouponCode(e.target.value)}
             />
             <div className="text-right">
               <Link

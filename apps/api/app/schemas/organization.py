@@ -12,6 +12,18 @@ def _validate_role(cls, v: str) -> str:
     return v
 
 
+VALID_PLATFORMS = ("instagram", "facebook", "tiktok")
+
+
+def _validate_platform(cls, v: str | None) -> str | None:
+    if v is None:
+        return v
+    v = v.strip().lower()
+    if v not in VALID_PLATFORMS:
+        raise ValueError(f"Platform tidak valid. Pilihan: {', '.join(VALID_PLATFORMS)}.")
+    return v
+
+
 class OrganizationCreate(BaseModel):
     name: str = Field(min_length=2, max_length=160)
 
@@ -45,6 +57,9 @@ class OrganizationDetail(BaseModel):
 class BrandCreate(BaseModel):
     name: str = Field(min_length=2, max_length=160)
     industry: str | None = Field(default=None, max_length=120)
+    platform: str | None = Field(default=None, description="instagram | facebook | tiktok")
+
+    _platform = field_validator("platform")(classmethod(_validate_platform))
 
 
 class BrandOut(BaseModel):
@@ -52,6 +67,8 @@ class BrandOut(BaseModel):
 
     id: uuid.UUID
     name: str
+    platform: str | None
+    display_name: str
     industry: str | None
     organization_id: uuid.UUID
     created_at: datetime

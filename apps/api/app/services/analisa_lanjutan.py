@@ -18,7 +18,7 @@ from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models.brand import Brand
-from app.models.content import Content, ContentMetricsDaily, ContentScore
+from app.models.content import Content, ContentMetricsDaily
 from app.services.scoring import compute_weighted_er
 
 # ---------------------------------------------------------------------------
@@ -84,11 +84,36 @@ def deteksi_kategori(caption: str | None) -> str:
 
 
 # ---------------------------------------------------------------------------
-# Agregasi
+# Pilar konten ala framework Strategi Instagram Organik
+# Edukasi → memicu saves | Hiburan/Entertain → memicu shares |
+# Interaksi → mengubah penonton pasif jadi audiens aktif
 # ---------------------------------------------------------------------------
+PILAR_DARI_KATEGORI = {
+    "edukasi": "edukasi",
+    "hiburan": "hiburan",
+    "inspirasi": "hiburan",
+    "interaksi": "interaksi",
+    "donasi_sosial": "konversi",
+    "promo": "konversi",
+    "info_program": "konversi",
+    "lainnya": "konversi",
+}
+PILAR_LABELS = {
+    "edukasi": "Edukasi",
+    "hiburan": "Hiburan",
+    "interaksi": "Interaksi",
+    "konversi": "Konversi",
+}
+
+# Ambang "uji 200 orang pertama" — algoritma menguji konten pada ±200
+# penonton awal; yang gagal relate berhenti di sini ("200-view jail").
+AMBANG_UJI_200 = 200
+
+
+def _pilar_dari_item(it: dict) -> str:
+    return PILAR_DARI_KATEGORI.get(it["kategori"], "konversi")
 
 _BULAN_SINGKAT = ["Jan", "Feb", "Mar", "Apr", "Mei", "Jun", "Jul", "Agu", "Sep", "Okt", "Nov", "Des"]
-BASELINE_WER_IG = 0.05  # ambang batas bawah WER Instagram yang sehat
 
 
 def _label_bulan(tahun: int, bulan: int) -> str:
@@ -304,105 +329,158 @@ async def analisa_lanjutan(
             })
     detail.sort(key=lambda d: (-d["total_engagement"], d["tanggal"]))
 
-    # ---- 5. Skor akun 1-10 ----
+    # ---- 5. Skor akun 1-10 (selaras framework Strategi Instagram Organik) ----
+    # Bab 1 (algoritma = makcomblang): yang dinilai SINYAL engagement
+    # (saves, shares, comments) bukan vanity metrics (views, likes).
     avg_wer = komposisi["rata_wer"]
+    tot_views = tot["views"] or 1
+    sinyal_rasio = (tot["saves"] * 5 + tot["shares"] * 5 + tot["comments"] * 3) / tot_views
     komponen = []
-    # (a) Kualitas engagement — 30%
-    nilai_wer = min(10.0, (avg_wer / (BASELINE_WER_IG * 1.5)) * 10) if avg_wer > 0 else 0.0
+    nilai_sinyal = min(10.0, (sinyal_rasio / 0.05) * 10)
     komponen.append({
-        "nama": "Kualitas engagement", "nilai": round(nilai_wer, 1), "bobot": 0.30,
-        "penjelasan": (f"Rata-rata WER {avg_wer * 100:.1f}% vs baseline sehat "
-                       f"{BASELINE_WER_IG * 100:.0f}% (skor penuh pada 1,5× baseline)."),
+        "nama": "Sinyal engagement bermakna", "nilai": round(nilai_sinyal, 1), "bobot": 0.35,
+        "penjelasan": (f"Saves, shares & comments = {sinyal_rasio * 100:.2f}% dari views "
+                       f"(skor penuh pada 5%). Algoritma membaca sinyal ini, bukan likes/views "
+                       f"(vanity metrics)."),
     })
-    # (b) Volume & konsistensi — 20%
+    # Bab 1: lolos uji 200 orang pertama.
+    lolos_200 = sum(1 for it in items if it["views"] >= AMBANG_UJI_200)
+    prop_lolos = lolos_200 / n if n else 0
+    nilai_200 = min(10.0, (prop_lolos / 0.9) * 10)
+    komponen.append({
+        "nama": "Lolos uji 200 penonton", "nilai": round(nilai_200, 1), "bobot": 0.25,
+        "penjelasan": (f"{lolos_200} dari {n} konten ({prop_lolos * 100:.0f}%) lolos uji "
+                       f"200 penonton pertama (skor penuh pada ≥90%). Sisanya terjebak "
+                       f"'200-view jail' — hook 3 detik tidak memenangkan strangers."),
+    })
+    # Bab 4: keseimbangan 3 pilar (Edukasi/Hiburan/Interaksi) + peran format.
+    pilar_count = Counter(_pilar_dari_item(it) for it in items)
+    tiga_pilar = ["edukasi", "hiburan", "interaksi"]
+    total_tiga = sum(pilar_count.get(p, 0) for p in tiga_pilar) or 1
+    share_maks_pilar = max(pilar_count.get(p, 0) / total_tiga for p in tiga_pilar)
+    nilai_pilar = max(0.0, 10.0 - max(0.0, (share_maks_pilar - 0.5) * 2) * 10)
+    fmt_count = Counter((it["content"].format or "lainnya").lower() for it in items)
+    punya_reels = fmt_count.get("reels", 0) > 0
+    punya_carousel = fmt_count.get("carousel", 0) > 0
+    nilai_format = 10.0 if (punya_reels and punya_carousel) else 6.0 if (punya_reels or punya_carousel) else 3.0
+    nilai_pilar_format = round((nilai_pilar * 0.6 + nilai_format * 0.4), 1)
+    pilar_str = ", ".join(f"{PILAR_LABELS[p]} {pilar_count.get(p, 0)}" for p in tiga_pilar)
+    komponen.append({
+        "nama": "Keseimbangan pilar & format", "nilai": nilai_pilar_format, "bobot": 0.20,
+        "penjelasan": (f"Pilar: {pilar_str}. Reels = jangkauan audiens baru; "
+                       f"Carousel = edukasi mendalam (saves). Skor penuh bila 3 pilar seimbang "
+                       f"dan Reels + Carousel sama-sama dipakai."),
+    })
+    # Bab 5 & 7: kekuatan CTA + konsistensi (Continue & Consistence).
+    ber_cta = sum(1 for it in items if any(c != CTA_TANPA for c in it["cta"]))
+    prop_cta = ber_cta / n if n else 0
+    nilai_cta = min(10.0, (prop_cta / 0.8) * 10)
     hari = max((akhir - awal).days + 1, 1)
     posting_per_minggu = n / hari * 7
     nilai_vol = min(10.0, posting_per_minggu / 5 * 10)
+    nilai_cta_vol = round(nilai_cta * 0.5 + nilai_vol * 0.5, 1)
     komponen.append({
-        "nama": "Volume & konsistensi", "nilai": round(nilai_vol, 1), "bobot": 0.20,
-        "penjelasan": f"{posting_per_minggu:.1f} postingan/minggu (skor penuh pada ≥5/minggu).",
-    })
-    # (c) Tren pertumbuhan views — 25%
-    tren_nilai, tren_jelas = 5.0, "belum cukup data bulanan untuk tren"
-    if len(bulan_urut) >= 2:
-        ambil = bulan_urut[-4:]  # maks 3 perbandingan MoM
-        views_bulan: dict[str, int] = defaultdict(int)
-        for it in items:
-            p = it["content"].posted_at
-            if p:
-                views_bulan[f"{p.year:04d}-{p.month:02d}"] += it["views"]
-        deltas = []
-        for i in range(1, len(ambil)):
-            sblm, skrg = views_bulan.get(ambil[i - 1], 0), views_bulan.get(ambil[i], 0)
-            if sblm > 0:
-                deltas.append((skrg - sblm) / sblm)
-        if deltas:
-            rata_delta = sum(deltas) / len(deltas)
-            tren_nilai = max(0.0, min(10.0, 5 + (rata_delta / 0.2) * 5))
-            arah = "naik" if rata_delta >= 0 else "turun"
-            tren_jelas = (f"Views {arah} rata-rata {abs(rata_delta) * 100:.1f}% per bulan "
-                          f"({len(deltas)} perbandingan terakhir).")
-    komponen.append({
-        "nama": "Tren pertumbuhan", "nilai": round(tren_nilai, 1), "bobot": 0.25,
-        "penjelasan": tren_jelas,
-    })
-    # (d) Proporsi konten kuat — 25%
-    cids = [c.id for c in contents]
-    kuat_nilai, kuat_jelas = 0.0, "belum ada konten yang diskor"
-    if cids:
-        skor_rows = (
-            await db.execute(
-                select(ContentScore).where(
-                    ContentScore.content_id.in_(cids),
-                    ContentScore.period_start <= akhir,
-                    ContentScore.period_end >= awal,
-                )
-            )
-        ).scalars().all()
-        terbaru: dict = {}
-        for s in skor_rows:
-            lama = terbaru.get(s.content_id)
-            if lama is None or (s.period_end, s.period_start) > (lama.period_end, lama.period_start):
-                terbaru[s.content_id] = s
-        if terbaru:
-            kuat = sum(1 for s in terbaru.values() if s.status in ("menang", "cukup"))
-            prop = kuat / len(terbaru)
-            kuat_nilai = min(10.0, prop / 0.3 * 10)
-            kuat_jelas = (f"{kuat} dari {len(terbaru)} konten yang diskor berstatus "
-                          f"menang/cukup ({prop * 100:.0f}%; skor penuh pada ≥30%).")
-    komponen.append({
-        "nama": "Proporsi konten kuat", "nilai": round(kuat_nilai, 1), "bobot": 0.25,
-        "penjelasan": kuat_jelas,
+        "nama": "Kekuatan CTA & konsistensi", "nilai": nilai_cta_vol, "bobot": 0.20,
+        "penjelasan": (f"{ber_cta} dari {n} konten ({prop_cta * 100:.0f}%) punya CTA jelas "
+                       f"(target ≥80%); {posting_per_minggu:.1f} postingan/minggu "
+                       f"(target ≥5/minggu — Continue & Consistence)."),
     })
     skor = round(sum(k["nilai"] * k["bobot"] for k in komponen), 1)
     skor = max(1.0, min(10.0, skor))  # skala 1–10, min 1 untuk akun yang punya data
     skor_akun = {
         "skor": skor, "grade": _grade_skor(skor), "komponen": komponen,
-        "cara_hitung": ("Skor 1–10 gabungan empat komponen berbobot: kualitas engagement (30%), "
-                        "volume & konsistensi (20%), tren pertumbuhan (25%), proporsi konten kuat (25%)."),
+        "cara_hitung": ("Skor 1–10 ala framework Strategi Instagram Organik: sinyal engagement "
+                        "bermakna — saves/shares/comments, bukan vanity metrics (35%), lolos uji "
+                        "200 penonton pertama (25%), keseimbangan pilar & format (20%), "
+                        "kekuatan CTA & konsistensi (20%)."),
     }
 
-    # ---- 6. Diagnosis kenapa stuck ----
+    # ---- 6. Diagnosis kenapa stuck (bahasa framework: Bab 1, 4, 5, 7) ----
     diagnosis: list[dict] = []
-    if avg_wer < BASELINE_WER_IG * 0.5:
+    terjebak_200 = n - lolos_200
+    prop_terjebak = terjebak_200 / n if n else 0
+    if prop_terjebak >= 0.3:
         diagnosis.append({
-            "tingkat": "kritis", "judul": "Engagement per tayangan terlalu rendah",
-            "detail": (f"Rata-rata WER {avg_wer * 100:.1f}% — kurang dari setengah baseline sehat "
-                       f"{BASELINE_WER_IG * 100:.0f}%. Artinya konten ditonton tapi tidak memicu "
-                       f"aksi (like, komen, save, share). Masalahnya di hook & CTA, bukan di jangkauan."),
+            "tingkat": "kritis", "judul": "Terjebak 200-view jail",
+            "detail": (f"{terjebak_200} dari {n} konten ({prop_terjebak * 100:.0f}%) berhenti di "
+                       f"bawah {AMBANG_UJI_200} views — tidak lolos uji 200 penonton pertama. "
+                       f"Algoritma (makcomblang) menilai strangers tidak relate lalu menahan distribusi. "
+                       f"Perbaiki hook 3 detik pertama (Stopping Power), bukan tambah jumlah posting."),
         })
-    elif avg_wer < BASELINE_WER_IG:
+    elif prop_terjebak > 0:
         diagnosis.append({
-            "tingkat": "perhatian", "judul": "Engagement di bawah baseline",
-            "detail": (f"Rata-rata WER {avg_wer * 100:.1f}% masih di bawah baseline "
-                       f"{BASELINE_WER_IG * 100:.0f}%. Perlu penguatan CTA dan relevansi konten."),
+            "tingkat": "perhatian", "judul": "Sebagian konten gagal lolos uji 200",
+            "detail": (f"{terjebak_200} dari {n} konten tidak lolos uji 200 penonton pertama. "
+                       f"Bedah hook konten yang lolos vs yang gagal."),
         })
     else:
         diagnosis.append({
-            "tingkat": "baik", "judul": "Engagement di atas baseline",
-            "detail": f"Rata-rata WER {avg_wer * 100:.1f}% sudah melewati baseline. Pertahankan polanya.",
+            "tingkat": "baik", "judul": "Semua konten lolos uji 200",
+            "detail": "Tidak ada konten yang terjebak 200-view jail. Hook awal bekerja untuk strangers.",
         })
-    # Hitung delta MoM views untuk diagnosis.
+    # Jebakan vanity metrics: likes/views oke tapi sinyal bermakna rendah.
+    if sinyal_rasio < 0.01:
+        diagnosis.append({
+            "tingkat": "kritis", "judul": "Jebakan vanity metrics",
+            "detail": (f"Sinyal bermakna (saves/shares/comments) hanya {sinyal_rasio * 100:.2f}% dari views. "
+                       f"Konten mungkin ditonton & di-like tapi tidak dianggap PENTING oleh algoritma — "
+                       f"tidak disimpan, tidak dibagikan. Fokus ke konten yang memicu save (Edukasi) "
+                       f"dan share (Hiburan), bukan sekadar views."),
+        })
+    elif sinyal_rasio < 0.03:
+        diagnosis.append({
+            "tingkat": "perhatian", "judul": "Sinyal engagement belum kuat",
+            "detail": (f"Sinyal bermakna {sinyal_rasio * 100:.2f}% dari views — algoritma butuh sinyal "
+                       f"lebih kuat (saves, shares, comments) untuk memperluas distribusi."),
+        })
+    # Blended fit score: kategori terlalu menyebar → algoritma bingung memilih sampel.
+    kat_count = Counter(it["kategori"] for it in items)
+    kat_teratas, kat_n = kat_count.most_common(1)[0]
+    if kat_n / n < 0.4 and len(kat_count) >= 4:
+        diagnosis.append({
+            "tingkat": "perhatian", "judul": "Blended fit score — topik gado-gado",
+            "detail": (f"Kategori teratas ({KATEGORI_LABELS.get(kat_teratas, kat_teratas)}) hanya "
+                       f"{kat_n / n * 100:.0f}% dari konten, tersebar ke {len(kat_count)} kategori. "
+                       f"Topik yang berubah-ubah membuat algoritma bingung memilih 200 sampel awal. "
+                       f"Kunci 1 niche + 3–4 pilar pendukung (Creator DNA)."),
+        })
+    # Pilar timpang.
+    if share_maks_pilar > 0.6:
+        pilar_dom, _ = Counter({p: pilar_count.get(p, 0) for p in tiga_pilar}).most_common(1)[0]
+        diagnosis.append({
+            "tingkat": "perhatian", "judul": f"Pilar {PILAR_LABELS[pilar_dom]} terlalu dominan",
+            "detail": (f"{share_maks_pilar * 100:.0f}% konten menumpuk di satu pilar. Sinyal algoritma "
+                       f"jadi timpang: Edukasi memicu saves, Hiburan memicu shares, Interaksi mengaktifkan "
+                       f"penonton pasif. Seimbangkan ketiganya."),
+        })
+    # CTA berfriksi: dominan link-di-bio / tanpa CTA.
+    cta_count = Counter(c for it in items for c in it["cta"])
+    tanpa_cta_n = cta_count.get(CTA_TANPA, 0)
+    link_bio_n = cta_count.get("link_bio", 0)
+    if tanpa_cta_n / n > 0.5:
+        diagnosis.append({
+            "tingkat": "perhatian", "judul": "Mayoritas konten tanpa CTA jelas",
+            "detail": (f"{tanpa_cta_n} dari {n} konten tanpa ajakan bertindak yang terdeteksi. "
+                       f"90–99% audiens adalah lurkers — tanpa mekanisme pemicu, mereka tidak akan "
+                       f"bergerak. Tambahkan CTA spesifik di tiap konten."),
+        })
+    elif link_bio_n / n > 0.4:
+        diagnosis.append({
+            "tingkat": "perhatian", "judul": "CTA 'link di bio' terlalu dominan",
+            "detail": (f"{link_bio_n} dari {n} konten memakai CTA link di bio — CTA berfriksi tinggi: "
+                       f"penonton harus buka profil → klik link → cari produk, dan algoritma membaca "
+                       f"mereka meninggalkan postingan. Uji DM automation (ketik kata kunci di komentar) "
+                       f"yang menjaga penonton tetap di dalam aplikasi."),
+        })
+    # Konsistensi (Bab 7: Continue & Consistence).
+    if posting_per_minggu < 3:
+        diagnosis.append({
+            "tingkat": "perhatian", "judul": "Konsistensi putus — sinyal melemah",
+            "detail": (f"Hanya {posting_per_minggu:.1f} postingan/minggu. Algoritma menyukai "
+                       f"publishing cadence yang konsisten; account embedding melemah saat jeda panjang. "
+                       f"Targetkan 3–5 postingan/minggu dengan sistem batch production."),
+        })
+    # Tren MoM views (tetap dipertahankan sebagai konteks).
     mom_views: list[float] = []
     if len(bulan_urut) >= 2:
         vb: dict[str, int] = defaultdict(int)
@@ -424,31 +502,13 @@ async def analisa_lanjutan(
                            f"{len(mom_views)} bulan terakhir. Pola konten saat ini kehilangan daya tarik "
                            f"atau kalah bersaing di feed."),
             })
-        elif rata_mom < 0:
-            diagnosis.append({
-                "tingkat": "perhatian", "judul": "Jangkauan cenderung turun",
-                "detail": f"Views turun rata-rata {abs(rata_mom) * 100:.1f}% per bulan. Waspadai sebelum makin dalam.",
-            })
-        else:
+        elif rata_mom >= 0:
             diagnosis.append({
                 "tingkat": "baik", "judul": "Jangkauan tumbuh",
-                "detail": f"Views naik rata-rata {rata_mom * 100:.1f}% per bulan. Momentum positif.",
+                "detail": f"Views naik rata-rata {rata_mom * 100:.1f}% per bulan. Momentum positif — lanjutkan pola yang bekerja.",
             })
-    if kuat_jelas.startswith("0 dari") or "0 dari" in kuat_jelas:
-        diagnosis.append({
-            "tingkat": "kritis", "judul": "Belum ada pola winning yang lolos ambang",
-            "detail": ("Tidak satu pun konten berstatus menang/cukup — semua di bawah ambang skor. "
-                        "Akun belum menemukan formula yang terbukti bekerja; saran di bawah memakai "
-                        "10% konten terbaik relatif sebagai acuan sementara."),
-        })
-    if posting_per_minggu < 2:
-        diagnosis.append({
-            "tingkat": "perhatian", "judul": "Frekuensi posting rendah",
-            "detail": (f"Hanya {posting_per_minggu:.1f} postingan/minggu. Algoritma dan audiens butuh "
-                        "keteraturan — targetkan minimal 3–5 postingan/minggu."),
-        })
 
-    # ---- 7. Saran berbasis pola winning (10% WER teratas, min 3 konten) ----
+    # ---- 7. Saran berbasis pola winning + framework (3S Power, growth loop) ----
     layak = [it for it in items if it["views"] >= 500]
     layak.sort(key=lambda x: x["wer"], reverse=True)
     topn = max(3, int(len(layak) * 0.1))
@@ -459,10 +519,14 @@ async def analisa_lanjutan(
         fmt_top = Counter((it["content"].format or "lainnya").lower() for it in top)
         fmt_umum, fmt_n = fmt_top.most_common(1)[0]
         wer_fmt = sum(it["wer"] for it in top if (it["content"].format or "lainnya").lower() == fmt_umum) / fmt_n
+        peran_format = {"reels": "menjangkau audiens baru (watch time & shares)",
+                        "carousel": "edukasi mendalam (saves & shares)",
+                        "foto": "menjangkau audiens baru"}.get(fmt_umum, "menarik perhatian")
         saran.append({
             "judul": f"Perbanyak format {fmt_umum}",
             "detail": (f"{fmt_n} dari {len(top)} konten terbaik adalah {fmt_umum} "
-                       f"(rata-rata WER {wer_fmt * 100:.1f}%). Jadikan format utama minggu ini."),
+                       f"(rata-rata WER {wer_fmt * 100:.1f}%). Peran format ini: {peran_format}. "
+                       f"Jadikan format utama minggu ini."),
             "dasar": dasar,
         })
         cta_top = Counter(c for it in top for c in it["cta"] if c != CTA_TANPA)
@@ -471,7 +535,8 @@ async def analisa_lanjutan(
             saran.append({
                 "judul": f"CTA '{CTA_LABELS[cta_umum]}' terbukti memicu aksi",
                 "detail": (f"CTA ini muncul di {cta_n} dari {len(top)} konten terbaik. "
-                           f"Terapkan pola kalimat CTA yang sama di konten berikutnya."),
+                           f"Terapkan pola kalimat CTA yang sama di konten berikutnya — "
+                           f"90–99% audiens adalah lurkers yang butuh dipicu."),
                 "dasar": dasar,
             })
         kat_top = Counter(it["kategori"] for it in top)
@@ -503,17 +568,55 @@ async def analisa_lanjutan(
                 "format": (it["content"].format or "lainnya").lower(),
             })
         saran.append({
-            "judul": "Replikasi 3 konten terbaik ini",
-            "detail": "Bedah dan tiru struktur hook, isi, dan CTA dari tiga konten dengan WER tertinggi.",
+            "judul": "Jalankan growth loop dari 3 konten terbaik ini",
+            "detail": ("Ambil 1 konten terbaik → ubah jadi Carousel 5–7 slide (pemicu saves) → "
+                        "buat Story Poll tentang topiknya (relationship depth) → kembangkan jadi "
+                        "Signature Series. 1 ide terbukti dilipatgandakan, bukan cari ide baru dari nol."),
             "dasar": dasar, "contoh": contoh,
         })
     else:
         saran.append({
             "judul": "Kumpulkan data dulu",
             "detail": ("Belum ada konten dengan ≥500 views untuk dianalisis polanya. "
-                        "Fokus dulu menaikkan jangkauan: perbaiki hook 3 detik pertama dan posting konsisten."),
+                        "Fokus dulu menaikkan jangkauan: menangkan 3 detik pertama (Stopping Power) "
+                        "dan posting konsisten 3–5x/minggu."),
             "dasar": "Data belum mencukupi.",
         })
+    # Saran framework yang dipicu kondisi (bukan hanya dari top konten).
+    if prop_terjebak >= 0.3:
+        saran.append({
+            "judul": "Terapkan 3S Power untuk lolos 200-view jail",
+            "detail": ("Stopping Power: hook visual + audio + teks di 3 detik pertama, semakin spesifik "
+                       "masalah & keyword semakin jelas audiensnya. Striking Power: storytelling yang "
+                       "membuat audiens merasa 'ini gue banget'. Sticking Power: selalu tutup dengan "
+                       "konklusi + CTA agar audiens refresh dan mau bertindak."),
+            "dasar": "Framework Strategi Instagram Organik — Bab 3 (Attract).",
+        })
+    if share_maks_pilar > 0.6:
+        pilar_lemah = [p for p in tiga_pilar if pilar_count.get(p, 0) / n < 0.2]
+        pilar_lemah_str = ", ".join(PILAR_LABELS[p] for p in pilar_lemah) or "pilar yang kurang"
+        saran.append({
+            "judul": f"Seimbangkan pilar: tambah porsi {pilar_lemah_str}",
+            "detail": ("Edukasi mendorong saves (konten dianggap penting), Hiburan mendorong shares "
+                       "(kedekatan emosional), Interaksi mengubah penonton pasif jadi aktif. Pilar yang "
+                       "timpang = sinyal algoritma timpang."),
+            "dasar": "Framework Strategi Instagram Organik — Bab 4 (Value).",
+        })
+    if link_bio_n / n > 0.4:
+        saran.append({
+            "judul": "Uji DM automation pengganti 'link di bio'",
+            "detail": ("Minta audiens ketik kata kunci di komentar (mis. 'Ketik PANDUAN'), lalu kirim "
+                       "materi/link via DM otomatis. Lonjakan komentar = sinyal kuat ke algoritma, "
+                       "penonton tetap di dalam aplikasi, dan Anda membangun database kontak sendiri."),
+            "dasar": "Framework Strategi Instagram Organik — Bab 5 (Engagement).",
+        })
+    saran.append({
+        "judul": "Saring ide dengan 4 kriteria sebelum produksi",
+        "detail": ("1) Relevan: memecahkan masalah nyata audiens? 2) Non-obvious: ada sudut pandang baru "
+                   "yang bikin 'wah, baru tahu'? 3) Mudah dicerna: bisa dipahami anak 10 tahun? "
+                   "4) Aplikatif: bisa dipraktikkan <5 menit untuk quick win?"),
+        "dasar": "Framework Strategi Instagram Organik — Bab 6 (Konten yang Baik).",
+    })
 
     return {
         "kosong": False,

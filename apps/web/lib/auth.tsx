@@ -24,12 +24,18 @@ interface LoginResponse {
   refresh_token: string;
   token_type: string;
   user: User;
+  coupon_applied?: Array<{
+    organization_id: string;
+    discount_percent: number;
+    expires_at: string | null;
+  }> | null;
+  coupon_error?: string | null;
 }
 
 interface AuthContextValue {
   user: User | null;
   loading: boolean;
-  login: (email: string, password: string) => Promise<void>;
+  login: (email: string, password: string, couponCode?: string) => Promise<LoginResponse>;
   logout: () => void;
   refreshUser: () => Promise<void>;
   organizations: OrganizationSummary[];
@@ -93,14 +99,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, [refreshUser]);
 
   const login = useCallback(
-    async (email: string, password: string) => {
+    async (email: string, password: string, couponCode?: string) => {
       const res = await api.post<LoginResponse>("/auth/login", {
         email,
         password,
+        ...(couponCode?.trim() ? { coupon_code: couponCode.trim() } : {}),
       });
       setTokens(res.access_token, res.refresh_token);
       setUser(res.user);
       await refreshOrgs();
+      return res;
     },
     [refreshOrgs]
   );

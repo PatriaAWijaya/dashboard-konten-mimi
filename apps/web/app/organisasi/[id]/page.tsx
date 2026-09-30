@@ -47,6 +47,7 @@ function KelolaOrganisasi() {
 
   // Form brand
   const [namaBrand, setNamaBrand] = useState("");
+  const [platformBrand, setPlatformBrand] = useState("");
   const [industri, setIndustri] = useState("");
   const [brandError, setBrandError] = useState("");
   const [brandLoading, setBrandLoading] = useState(false);
@@ -94,10 +95,12 @@ function KelolaOrganisasi() {
     try {
       const baru = await api.post<Brand>(`/organizations/${orgId}/brands`, {
         name: namaBrand.trim(),
+        ...(platformBrand ? { platform: platformBrand } : {}),
         ...(industri.trim() ? { industry: industri.trim() } : {}),
       });
       setBrands((prev) => [...prev, baru]);
       setNamaBrand("");
+      setPlatformBrand("");
       setIndustri("");
     } catch (err) {
       setBrandError(
@@ -226,10 +229,20 @@ function KelolaOrganisasi() {
 
           <form onSubmit={tambahBrand} className="mt-4 space-y-3">
             {brandError && <Alert kind="error">{brandError}</Alert>}
+            <Select
+              label="Platform"
+              value={platformBrand}
+              onChange={(e) => setPlatformBrand(e.target.value)}
+            >
+              <option value="">Pilih platform…</option>
+              <option value="instagram">Instagram</option>
+              <option value="facebook">Facebook</option>
+              <option value="tiktok">TikTok</option>
+            </Select>
             <Input
-              label="Nama brand"
+              label="Nama akun"
               required
-              placeholder="Contoh: Kopi Nusantara"
+              placeholder="Contoh: @insanmandiri.id"
               value={namaBrand}
               onChange={(e) => setNamaBrand(e.target.value)}
             />
@@ -256,7 +269,9 @@ function KelolaOrganisasi() {
                 className="flex items-center justify-between rounded-xl border border-slate-200 px-4 py-3"
               >
                 <div>
-                  <p className="text-sm font-semibold text-slate-900">{b.name}</p>
+                  <p className="text-sm font-semibold text-slate-900">
+                    {b.display_name || b.name}
+                  </p>
                   {b.industry && (
                     <p className="text-xs text-slate-500">{b.industry}</p>
                   )}
