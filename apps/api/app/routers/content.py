@@ -592,8 +592,8 @@ def _label_bulan(tahun: int, bulan: int) -> str:
     return f"{_BULAN_SINGKAT[bulan - 1]} {tahun}"
 
 
-def _pct_perubahan(sekarang: float, pembanding: float | None) -> float | None:
-    if pembanding is None or pembanding == 0:
+def _pct_perubahan(sekarang: float | None, pembanding: float | None) -> float | None:
+    if sekarang is None or pembanding is None or pembanding == 0:
         return None
     return round((sekarang - pembanding) / pembanding * 100, 1)
 
