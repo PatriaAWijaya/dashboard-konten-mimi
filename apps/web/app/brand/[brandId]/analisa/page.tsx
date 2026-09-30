@@ -405,7 +405,7 @@ function AnalisaIsi() {
             ))}
           </div>
 
-          {/* 2. Konten bermasalah */}
+          {/* 2. Konten bermasalah — dikelompokkan per jenis konten */}
           <h2 className="mb-3 mt-8 text-lg font-semibold text-slate-900">
             Konten bermasalah ({data.bermasalah.length})
           </h2>
@@ -414,8 +414,26 @@ function AnalisaIsi() {
               Tidak ada konten bermasalah pada periode ini. Pertahankan polanya!
             </Alert>
           ) : (
-            <div className="space-y-4">
-              {data.bermasalah.map((k) => (
+            <div className="space-y-6">
+              {(() => {
+                const grup: Record<string, typeof data.bermasalah> = {};
+                for (const k of data.bermasalah) {
+                  const fmt = (k.format || "lainnya").toLowerCase();
+                  if (!grup[fmt]) grup[fmt] = [];
+                  grup[fmt].push(k);
+                }
+                const urutan = ["carousel", "foto", "image", "reels", "story", "live"];
+                const keys = Object.keys(grup).sort(
+                  (a, b) => (urutan.indexOf(a) === -1 ? 99 : urutan.indexOf(a)) -
+                            (urutan.indexOf(b) === -1 ? 99 : urutan.indexOf(b))
+                );
+                return keys.map((fmt) => (
+                  <div key={fmt}>
+                    <h3 className="mb-3 text-sm font-semibold capitalize text-slate-700">
+                      {fmt === "foto" ? "Image" : fmt.replace(/_/g, " ")} ({grup[fmt].length} bermasalah)
+                    </h3>
+                    <div className="space-y-4">
+                      {grup[fmt].map((k) => (
                 <Card key={k.content_id}>
                   <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
                     <div>
@@ -467,7 +485,11 @@ function AnalisaIsi() {
                     </>
                   )}
                 </Card>
-              ))}
+                      ))}
+                    </div>
+                  </div>
+                ));
+              })()}
             </div>
           )}
 
