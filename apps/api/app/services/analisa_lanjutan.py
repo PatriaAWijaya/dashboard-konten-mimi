@@ -559,9 +559,9 @@ async def analisa_lanjutan(
                            f"(WIB, sesuai waktu posting). Uji jadwalkan konten penting di jam tersebut."),
                 "dasar": dasar,
             })
-        # Contoh konkret: 3 teratas
+        # Contoh konkret: 5 teratas
         contoh = []
-        for it in top[:3]:
+        for it in top[:5]:
             cap = (it["content"].caption or "").replace("\n", " ").strip()
             contoh.append({
                 "post_id": it["content"].post_id,
@@ -571,7 +571,7 @@ async def analisa_lanjutan(
                 "format": (it["content"].format or "lainnya").lower(),
             })
         saran.append({
-            "judul": "Jalankan growth loop dari 3 konten terbaik ini",
+            "judul": "Jalankan growth loop dari 5 konten terbaik ini",
             "detail": ("Ambil 1 konten terbaik → ubah jadi Carousel 5–7 slide (pemicu saves) → "
                         "buat Story Poll tentang topiknya (relationship depth) → kembangkan jadi "
                         "Signature Series. 1 ide terbukti dilipatgandakan, bukan cari ide baru dari nol."),
