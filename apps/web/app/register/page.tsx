@@ -128,8 +128,13 @@ export default function RegisterPage() {
               alt="MySocial Watch"
               className="h-10 w-10 rounded-xl"
             />
-            <span className="text-xl font-bold text-slate-900">
-              MySocial Watch
+            <span className="flex flex-col items-start leading-none">
+              <span className="text-xl font-bold text-slate-900">
+                MySocial Watch
+              </span>
+              <span className="mt-0.5 text-[11px] font-medium text-slate-400">
+                by Patria
+              </span>
             </span>
           </Link>
           <h1 className="mt-6 text-2xl font-bold text-slate-900">
