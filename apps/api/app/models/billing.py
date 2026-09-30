@@ -5,7 +5,7 @@ from sqlalchemy import BigInteger, Boolean, DateTime, ForeignKey, Integer, Strin
 from sqlalchemy.dialects.postgresql import JSONB, UUID as PG_UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
-from app.db.base import BaseModel
+from app.db.base import Base, BaseModel
 
 
 class MembershipStatus:
@@ -140,13 +140,21 @@ class Coupon(BaseModel):
     redemptions: Mapped[list["CouponRedemption"]] = relationship(back_populates="coupon")
 
 
-class CouponRedemption(BaseModel):
-    """Riwayat penukaran kupon per organisasi (satu kupon sekali per organisasi)."""
+class CouponRedemption(Base):
+    """Riwayat penukaran kupon per organisasi (satu kupon sekali per organisasi).
+
+    SEMENTARA: inherit dari Base (bukan BaseModel) karena migrasi 0008
+    (created_at/updated_at) belum jalan di produksi. Setelah migrasi
+    terkonfirmasi jalan, kembalikan ke BaseModel.
+    TODO: revert ke BaseModel setelah migrasi 0008 live.
+    """
 
     __tablename__ = "coupon_redemptions"
     __table_args__ = (
         UniqueConstraint("coupon_id", "organization_id", name="uq_redemption_coupon_org"),
     )
+
+    id: Mapped[uuid.UUID] = mapped_column(PG_UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
 
     coupon_id: Mapped[uuid.UUID] = mapped_column(
         PG_UUID(as_uuid=True), ForeignKey("coupons.id", ondelete="CASCADE"), nullable=False, index=True
