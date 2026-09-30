@@ -282,7 +282,7 @@ export default function Navbar() {
                         }}
                         className="block w-full px-4 py-2.5 text-left text-sm text-slate-700 hover:bg-slate-50"
                       >
-                        Dasbor
+                        Pengaturan
                       </button>
                       <button
                         type="button"
