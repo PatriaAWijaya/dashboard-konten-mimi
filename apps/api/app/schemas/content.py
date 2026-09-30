@@ -124,6 +124,11 @@ class PerbandinganDelta(BaseModel):
     jumlah_konten_pct: float | None = None
     reach_pct: float | None = None
     rata_skor_pct: float | None = None
+    likes_pct: float | None = None
+    comments_pct: float | None = None
+    shares_pct: float | None = None
+    saves_pct: float | None = None
+    follows_pct: float | None = None
 
 
 class PerbandinganBulan(BaseModel):
@@ -135,6 +140,7 @@ class PerbandinganBulan(BaseModel):
     comments: int = 0
     shares: int = 0
     saves: int = 0
+    follows: int = 0
     reach: int = 0
     engagement: int = Field(default=0, description="likes+comments+shares+saves.")
     rata_skor: float | None = None
@@ -233,3 +239,104 @@ class NicheOut(BaseModel):
 
 class PilihNicheIn(BaseModel):
     ids: list[uuid.UUID] = Field(min_length=1, max_length=2, description="1-2 ID niche yang dipilih.")
+
+
+class KomposisiEngagement(BaseModel):
+    views: int
+    reach: int
+    likes: int
+    comments: int
+    saves: int
+    shares: int
+    follows: int
+    total_engagement: int = Field(description="likes+comments+saves+shares.")
+    jumlah_konten: int
+    rata_engagement_per_konten: float
+    rata_wer: float = Field(description="Rata-rata weighted engagement rate (fraksi).")
+
+
+class FormatTotal(BaseModel):
+    format: str
+    jumlah: int
+    views: int
+    reach: int
+    likes: int
+    comments: int
+    saves: int
+    shares: int
+    follows: int
+    total_engagement: int
+    rata_wer: float
+
+
+class OpsiLabel(BaseModel):
+    value: str
+    label: str
+
+
+class FilterOptions(BaseModel):
+    bulan: list[OpsiLabel]
+    format: list[str]
+    kategori: list[OpsiLabel]
+    cta: list[OpsiLabel]
+    heuristik: str = Field(description="Penjelasan bahwa CTA & kategori terdeteksi heuristik.")
+
+
+class KontenDetailItem(BaseModel):
+    content_id: uuid.UUID
+    post_id: str
+    tanggal: str
+    format: str
+    caption: str
+    views: int
+    reach: int
+    likes: int
+    comments: int
+    saves: int
+    shares: int
+    follows: int
+    total_engagement: int
+    wer: float
+    cta: list[str]
+    cta_label: list[str]
+    kategori: str
+    kategori_label: str
+
+
+class SkorKomponen(BaseModel):
+    nama: str
+    nilai: float = Field(description="0-10.")
+    bobot: float
+    penjelasan: str
+
+
+class SkorAkun(BaseModel):
+    skor: float = Field(description="Skor performa akun 1-10.")
+    grade: str
+    komponen: list[SkorKomponen]
+    cara_hitung: str
+
+
+class DiagnosisItem(BaseModel):
+    tingkat: str = Field(description="kritis | perhatian | baik.")
+    judul: str
+    detail: str
+
+
+class SaranItem(BaseModel):
+    judul: str
+    detail: str
+    dasar: str = Field(description="Data yang mendasari saran.")
+    contoh: list = Field(default_factory=list, description="Contoh konten terbaik bila ada.")
+
+
+class AnalisaLanjutanOut(BaseModel):
+    kosong: bool = False
+    komposisi: KomposisiEngagement | None = None
+    per_format: list[FormatTotal] = Field(default_factory=list)
+    filter_options: FilterOptions | None = None
+    bulan_aktif: str | None = None
+    detail_bulanan: list[KontenDetailItem] = Field(default_factory=list)
+    skor_akun: SkorAkun | None = None
+    diagnosis: list[DiagnosisItem] = Field(default_factory=list)
+    saran: list[SaranItem] = Field(default_factory=list)

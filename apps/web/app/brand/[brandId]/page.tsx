@@ -349,7 +349,7 @@ function DasborBrandIsi() {
                     />
                     <Legend />
                     <Line type="monotone" dataKey="rata_skor" name="Rata-rata skor" stroke="#4f46e5" strokeWidth={2} dot={false} />
-                    <Line type="monotone" dataKey="rata_wer" name="Rata-rata WER (%)" stroke="#0ea5e9" strokeWidth={2} dot={false} />
+                    <Line type="monotone" dataKey="rata_wer" name="Rata-rata WER (%)" stroke="#f59e0b" strokeWidth={2} dot={false} />
                   </LineChart>
                 </ResponsiveContainer>
               </div>

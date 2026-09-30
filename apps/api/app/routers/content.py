@@ -37,6 +37,7 @@ from app.models.content import (
 )
 from app.models.user import User
 from app.schemas.content import (
+    AnalisaLanjutanOut,
     AnalisaOut,
     BatchFileOut,
     BatchUploadOut,
@@ -62,6 +63,7 @@ from app.schemas.content import (
     RecommendationOut,
     ScoreOut,
 )
+from app.services.analisa_lanjutan import analisa_lanjutan
 from app.services.csv_import import AUTO_PLATFORM, EXPECTED_COLUMNS, import_csv
 from app.services.niche import (
     QUESTIONS,
@@ -152,6 +154,7 @@ _COLUMN_DOCS: dict[str, tuple[str, bool]] = {
     "comments": ("Jumlah komentar.", False),
     "shares": ("Jumlah share.", False),
     "saves": ("Jumlah simpanan.", False),
+    "follows": ("Jumlah follows/pengikut baru dari konten.", False),
     "avg_watch_seconds": ("Rata-rata detik tonton.", False),
     "profile_clicks": ("Jumlah klik profil.", False),
     "link_clicks": ("Jumlah klik tautan.", False),
@@ -541,6 +544,34 @@ async def brand_analisa(
     )
 
 
+@router.get("/content/brands/{brand_id}/analisa-lanjutan", response_model=AnalisaLanjutanOut)
+async def brand_analisa_lanjutan(
+    brand_id: Annotated[uuid.UUID, Path()],
+    org_id: Annotated[uuid.UUID, Depends(parse_org_header)],
+    user: Annotated[User, Depends(get_current_user)],
+    db: Annotated[AsyncSession, Depends(get_db)],
+    preset: Annotated[str | None, Query(description="Preset: 7d, 30d, bulan_ini, custom.")] = "30d",
+    start: Annotated[date | None, Query(description="Tanggal mulai (custom).")] = None,
+    end: Annotated[date | None, Query(description="Tanggal selesai (custom).")] = None,
+    bulan: Annotated[str | None, Query(description="Bulan detail YYYY-MM (default: terbaru).")] = None,
+    format: Annotated[str | None, Query(description="Filter jenis post: carousel, image, reels, ...")] = None,
+    kategori: Annotated[str | None, Query(description="Filter kategori post (heuristik).")] = None,
+    cta: Annotated[str | None, Query(description="Filter tipe CTA (heuristik).")] = None,
+):
+    """Analisa lanjutan: komposisi engagement, total per format, detail per bulan,
+    skor akun 1-10, diagnosis, dan saran berbasis pola winning."""
+    ctx = await get_org_context(db, user, org_id, min_role=ROLE_VIEWER)
+    brand = await _get_brand(db, brand_id, ctx.organization.id)
+    periode = _periode_dari_query(preset, start, end) or PeriodeIn()
+    awal, akhir = _resolve_period(periode)
+    hasil = await analisa_lanjutan(
+        db, brand=brand, organization_id=ctx.organization.id,
+        awal=awal, akhir=akhir, bulan=bulan,
+        format_filter=format, kategori_filter=kategori, cta_filter=cta,
+    )
+    return AnalisaLanjutanOut(**hasil)
+
+
 # ---------------------------------------------------------------------------
 # Perbandingan MoM & YoY
 # ---------------------------------------------------------------------------
@@ -633,13 +664,14 @@ async def brand_perbandingan(
         for r in rows:
             m = metrik_per_konten.setdefault(
                 r.content_id,
-                {"views": 0, "likes": 0, "comments": 0, "shares": 0, "saves": 0, "reach": 0},
+                {"views": 0, "likes": 0, "comments": 0, "shares": 0, "saves": 0, "follows": 0, "reach": 0},
             )
             m["views"] += r.views or 0
             m["likes"] += r.likes or 0
             m["comments"] += r.comments or 0
             m["shares"] += r.shares or 0
             m["saves"] += r.saves or 0
+            m["follows"] += r.follows or 0
             m["reach"] += r.reach or 0
 
     # Skor terbaru per konten (seperti dashboard).
@@ -666,9 +698,9 @@ async def brand_perbandingan(
         a = agregat.setdefault(
             kunci,
             {"n": 0, "views": 0, "likes": 0, "comments": 0, "shares": 0,
-             "saves": 0, "reach": 0, "wer": 0.0, "skor": 0.0, "n_skor": 0},
+             "saves": 0, "follows": 0, "reach": 0, "wer": 0.0, "skor": 0.0, "n_skor": 0},
         )
-        m = metrik_per_konten.get(content.id, {"views": 0, "likes": 0, "comments": 0, "shares": 0, "saves": 0, "reach": 0})
+        m = metrik_per_konten.get(content.id, {"views": 0, "likes": 0, "comments": 0, "shares": 0, "saves": 0, "follows": 0, "reach": 0})
         views = m["views"]
         wer = compute_weighted_er(m["likes"], m["comments"], m["shares"], m["saves"], views)
         skor = skor_terbaru.get(content.id)
@@ -679,6 +711,7 @@ async def brand_perbandingan(
         a["comments"] += m["comments"]
         a["shares"] += m["shares"]
         a["saves"] += m["saves"]
+        a["follows"] += m["follows"]
         a["reach"] += m["reach"]
         a["wer"] += wer
         if nilai_skor is not None:
@@ -701,6 +734,11 @@ async def brand_perbandingan(
             ),
             jumlah_konten_pct=_pct_perubahan(cur["n"], prev["n"]),
             reach_pct=_pct_perubahan(cur["reach"], prev["reach"]),
+            likes_pct=_pct_perubahan(cur["likes"], prev["likes"]),
+            comments_pct=_pct_perubahan(cur["comments"], prev["comments"]),
+            shares_pct=_pct_perubahan(cur["shares"], prev["shares"]),
+            saves_pct=_pct_perubahan(cur["saves"], prev["saves"]),
+            follows_pct=_pct_perubahan(cur["follows"], prev["follows"]),
             rata_skor_pct=_pct_perubahan(
                 cur["skor"] / cur["n_skor"] if cur["n_skor"] else None,
                 prev["skor"] / prev["n_skor"] if prev["n_skor"] else None,
@@ -713,8 +751,8 @@ async def brand_perbandingan(
     while (t, b) <= (akhir.year, akhir.month):
         kunci = _kunci_bulan(t, b)
         a = agregat.get(kunci, {"n": 0, "views": 0, "likes": 0, "comments": 0,
-                               "shares": 0, "saves": 0, "reach": 0, "wer": 0.0,
-                               "skor": 0.0, "n_skor": 0})
+                               "shares": 0, "saves": 0, "follows": 0, "reach": 0,
+                               "wer": 0.0, "skor": 0.0, "n_skor": 0})
         n = a["n"]
         kunci_mom = _kunci_bulan(*_geser_bulan(t, b, -1))
         kunci_yoy = _kunci_bulan(*_geser_bulan(t, b, -12))
@@ -728,6 +766,7 @@ async def brand_perbandingan(
                 comments=a["comments"],
                 shares=a["shares"],
                 saves=a["saves"],
+                follows=a["follows"],
                 reach=a["reach"],
                 engagement=a["likes"] + a["comments"] + a["shares"] + a["saves"],
                 rata_skor=round(a["skor"] / a["n_skor"], 2) if a["n_skor"] else None,

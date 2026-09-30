@@ -137,6 +137,7 @@ class ContentMetricsDaily(BaseModel):
     comments: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
     shares: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
     saves: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
+    follows: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
     avg_watch_seconds: Mapped[float] = mapped_column(Float, default=0, nullable=False)
     profile_clicks: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
     link_clicks: Mapped[int] = mapped_column(Integer, default=0, nullable=False)

@@ -152,6 +152,11 @@ export interface PerbandinganDelta {
   jumlah_konten_pct: number | null;
   reach_pct: number | null;
   rata_skor_pct: number | null;
+  likes_pct: number | null;
+  comments_pct: number | null;
+  shares_pct: number | null;
+  saves_pct: number | null;
+  follows_pct: number | null;
 }
 
 export interface PerbandinganBulan {
@@ -163,6 +168,7 @@ export interface PerbandinganBulan {
   comments: number;
   shares: number;
   saves: number;
+  follows: number;
   reach: number;
   engagement: number;
   rata_skor: number | null;
@@ -312,4 +318,114 @@ export interface NicheSuggestion {
   persaingan: string;
   label_sumber: LabelSumber;
   is_selected: boolean;
+}
+
+// ---------------------------------------------------------------------------
+// Analisa lanjutan (endpoint /content/brands/{id}/analisa-lanjutan)
+// ---------------------------------------------------------------------------
+
+export interface KomposisiEngagement {
+  views: number;
+  reach: number;
+  likes: number;
+  comments: number;
+  saves: number;
+  shares: number;
+  follows: number;
+  total_engagement: number;
+  jumlah_konten: number;
+  rata_engagement_per_konten: number;
+  rata_wer: number;
+}
+
+export interface FormatTotal {
+  format: string;
+  jumlah: number;
+  views: number;
+  reach: number;
+  likes: number;
+  comments: number;
+  saves: number;
+  shares: number;
+  follows: number;
+  total_engagement: number;
+  rata_wer: number;
+}
+
+export interface OpsiLabel {
+  value: string;
+  label: string;
+}
+
+export interface FilterOptions {
+  bulan: OpsiLabel[];
+  format: string[];
+  kategori: OpsiLabel[];
+  cta: OpsiLabel[];
+  heuristik: string;
+}
+
+export interface KontenDetailItem {
+  content_id: string;
+  post_id: string;
+  tanggal: string;
+  format: string;
+  caption: string;
+  views: number;
+  reach: number;
+  likes: number;
+  comments: number;
+  saves: number;
+  shares: number;
+  follows: number;
+  total_engagement: number;
+  wer: number;
+  cta: string[];
+  cta_label: string[];
+  kategori: string;
+  kategori_label: string;
+}
+
+export interface SkorKomponen {
+  nama: string;
+  nilai: number;
+  bobot: number;
+  penjelasan: string;
+}
+
+export interface SkorAkun {
+  skor: number;
+  grade: string;
+  komponen: SkorKomponen[];
+  cara_hitung: string;
+}
+
+export interface DiagnosisItem {
+  tingkat: "kritis" | "perhatian" | "baik";
+  judul: string;
+  detail: string;
+}
+
+export interface SaranItem {
+  judul: string;
+  detail: string;
+  dasar: string;
+  contoh: {
+    post_id: string;
+    caption_singkat: string;
+    wer: number;
+    format: string;
+  }[];
+}
+
+export interface AnalisaLanjutan {
+  kosong: boolean;
+  komposisi: KomposisiEngagement | null;
+  per_format: FormatTotal[];
+  filter_options: FilterOptions | null;
+  bulan_aktif: string | null;
+  detail_bulanan: KontenDetailItem[];
+  skor_akun: SkorAkun | null;
+  diagnosis: DiagnosisItem[];
+  saran: SaranItem[];
 }

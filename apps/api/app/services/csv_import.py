@@ -42,6 +42,7 @@ EXPECTED_COLUMNS = [
     "comments",
     "shares",
     "saves",
+    "follows",
     "avg_watch_seconds",
     "profile_clicks",
     "link_clicks",
@@ -70,6 +71,7 @@ _META_COLUMN_MAP = {
     "comments": "comments",
     "shares": "shares",
     "saves": "saves",
+    "follows": "follows",
 }
 
 _META_POST_TYPE_FORMAT = {
@@ -268,9 +270,10 @@ async def import_csv(
                         continue
                     row_platform = platform_arg
 
-            # Tujuan: isi default bila CSV tidak punya kolom tujuan (kasus export Meta).
-            if not (row.get("tujuan") or "").strip():
-                row["tujuan"] = tujuan_def
+            # Tujuan: selalu pakai tujuan_default (UI tanpa opsi tujuan — semua
+            # konten sosmed dinilai sebagai account_growth & engagement rate).
+            # Ini juga memastikan upload ulang file lama menimpa tujuan lama.
+            row["tujuan"] = tujuan_def
 
             try:
                 normalized = normalize_content_row(row_platform, row)

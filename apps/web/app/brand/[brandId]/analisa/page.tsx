@@ -23,15 +23,30 @@ import type {
 import { Alert, Card, EmptyBox, PageHeader, Select, Spinner } from "@/components/ui";
 import { StatusKontenBadge, statusKontenTone, statusKontenLabel, verdictTone } from "@/components/badges";
 import BrandNav from "@/components/BrandNav";
+import AnalisaLanjutan from "@/components/AnalisaLanjutan";
 import DemoBadge from "@/components/DemoBadge";
 import PeriodPicker, { type PilihanPeriode } from "@/components/PeriodPicker";
 
-type MetrikBanding = "views" | "engagement" | "jumlah_konten" | "reach";
-const METRIK_BANDING: { value: MetrikBanding; label: string }[] = [
-  { value: "views", label: "Views" },
-  { value: "engagement", label: "Engagement" },
-  { value: "jumlah_konten", label: "Jumlah konten" },
-  { value: "reach", label: "Reach" },
+type MetrikBanding =
+  | "views"
+  | "engagement"
+  | "jumlah_konten"
+  | "reach"
+  | "likes"
+  | "comments"
+  | "saves"
+  | "shares"
+  | "follows";
+const METRIK_BANDING: { value: MetrikBanding; label: string; warna: string }[] = [
+  { value: "views", label: "Views", warna: "#4f46e5" },
+  { value: "engagement", label: "Engagement", warna: "#059669" },
+  { value: "jumlah_konten", label: "Jumlah konten", warna: "#64748b" },
+  { value: "reach", label: "Reach", warna: "#0284c7" },
+  { value: "likes", label: "Likes", warna: "#e11d48" },
+  { value: "comments", label: "Komentar", warna: "#d97706" },
+  { value: "saves", label: "Simpanan", warna: "#7c3aed" },
+  { value: "shares", label: "Share", warna: "#0d9488" },
+  { value: "follows", label: "Follows", warna: "#db2777" },
 ];
 const RENTANG_BANDING = [
   { value: "6", label: "6 bulan terakhir" },
@@ -92,7 +107,12 @@ function deltaUntuk(
     | "views_pct"
     | "engagement_pct"
     | "jumlah_konten_pct"
-    | "reach_pct";
+    | "reach_pct"
+    | "likes_pct"
+    | "comments_pct"
+    | "saves_pct"
+    | "shares_pct"
+    | "follows_pct";
   return d[kunci] ?? null;
 }
 
@@ -143,6 +163,7 @@ function AnalisaIsi() {
   const bandingKosong =
     !bandingLoading && !bandingError && banding && banding.bulan.every((b) => b.jumlah_konten === 0);
   const labelMetrik = METRIK_BANDING.find((m) => m.value === bandingMetrik)?.label ?? bandingMetrik;
+  const warnaMetrik = METRIK_BANDING.find((m) => m.value === bandingMetrik)?.warna ?? "#4f46e5";
   const grafikBanding = (banding?.bulan ?? []).map((b) => ({
     label: b.label,
     Nilai: b[bandingMetrik] ?? 0,
@@ -259,7 +280,7 @@ function AnalisaIsi() {
                       return [fmtAngka(typeof value === "number" ? value : null), ket.join(" · ") || labelMetrik];
                     }}
                   />
-                  <Bar dataKey="Nilai" fill="#4f46e5" radius={[6, 6, 0, 0]} name={labelMetrik} />
+                  <Bar dataKey="Nilai" fill={warnaMetrik} radius={[6, 6, 0, 0]} name={labelMetrik} />
                 </BarChart>
               </ResponsiveContainer>
             </div>
@@ -301,6 +322,9 @@ function AnalisaIsi() {
           </>
         )}
       </Card>
+
+      {/* Analisa lanjutan: skor akun, komposisi engagement, per format, detail bulanan, diagnosis & saran */}
+      {!loading && !error && !kosong && <AnalisaLanjutan brandId={brandId} periode={periode} />}
 
       {loading && <Spinner label="Menganalisa konten…" />}
       {error && <Alert kind="error">{error}</Alert>}

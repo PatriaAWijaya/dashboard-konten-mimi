@@ -27,6 +27,7 @@ INT_COLUMNS = [
     "comments",
     "shares",
     "saves",
+    "follows",
     "profile_clicks",
     "link_clicks",
     "replies",

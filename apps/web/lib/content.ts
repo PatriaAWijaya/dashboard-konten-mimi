@@ -10,6 +10,7 @@
 import { api } from "./api";
 import type {
   AnalisaKesesuaian,
+  AnalisaLanjutan,
   Brand,
   BrandDNA,
   BrandDashboard,
@@ -447,7 +448,18 @@ export const demoNiches: NicheSuggestion[] = [
 export function demoPerbandingan(): Promise<PerbandinganData> {
   const namaBulan = ["Jan", "Feb", "Mar", "Apr", "Mei", "Jun", "Jul", "Agu", "Sep", "Okt", "Nov", "Des"];
   const sekarang = new Date();
-  const historis: { views: number; engagement: number; jumlah_konten: number; reach: number; rata_skor: number }[] = [];
+  const historis: {
+    views: number;
+    engagement: number;
+    jumlah_konten: number;
+    reach: number;
+    rata_skor: number;
+    likes: number;
+    comments: number;
+    shares: number;
+    saves: number;
+    follows: number;
+  }[] = [];
   for (let i = 23; i >= 0; i--) {
     const faktor = 1 + Math.sin(i / 2.4) * 0.35 + (23 - i) * 0.03;
     const views = Math.round(12000 * faktor);
@@ -458,6 +470,11 @@ export function demoPerbandingan(): Promise<PerbandinganData> {
       jumlah_konten: 8 + (i % 5),
       reach: Math.round(views * 0.8),
       rata_skor: 0.55 + Math.sin(i / 3) * 0.15,
+      likes: Math.round(engagement * 0.6),
+      comments: Math.round(engagement * 0.2),
+      shares: Math.round(engagement * 0.12),
+      saves: Math.round(engagement * 0.08),
+      follows: Math.round(engagement * 0.05),
     });
   }
   const bulan: PerbandinganBulan[] = [];
@@ -479,6 +496,11 @@ export function demoPerbandingan(): Promise<PerbandinganData> {
       jumlah_konten_pct: delta(h.jumlah_konten, momH?.jumlah_konten),
       reach_pct: delta(h.reach, momH?.reach),
       rata_skor_pct: delta(h.rata_skor, momH?.rata_skor),
+      likes_pct: delta(h.likes, momH?.likes),
+      comments_pct: delta(h.comments, momH?.comments),
+      shares_pct: delta(h.shares, momH?.shares),
+      saves_pct: delta(h.saves, momH?.saves),
+      follows_pct: delta(h.follows, momH?.follows),
     };
     const yoy: PerbandinganDelta = {
       bulan_pembanding: yoyH ? `${d.getFullYear() - 1}-${String(d.getMonth() + 1).padStart(2, "0")}` : null,
@@ -487,16 +509,22 @@ export function demoPerbandingan(): Promise<PerbandinganData> {
       jumlah_konten_pct: delta(h.jumlah_konten, yoyH?.jumlah_konten),
       reach_pct: delta(h.reach, yoyH?.reach),
       rata_skor_pct: delta(h.rata_skor, yoyH?.rata_skor),
+      likes_pct: delta(h.likes, yoyH?.likes),
+      comments_pct: delta(h.comments, yoyH?.comments),
+      shares_pct: delta(h.shares, yoyH?.shares),
+      saves_pct: delta(h.saves, yoyH?.saves),
+      follows_pct: delta(h.follows, yoyH?.follows),
     };
     bulan.push({
       bulan: kunci,
       label: `${namaBulan[d.getMonth()]} ${d.getFullYear()}`,
       jumlah_konten: h.jumlah_konten,
       views: h.views,
-      likes: Math.round(h.engagement * 0.6),
-      comments: Math.round(h.engagement * 0.2),
-      shares: Math.round(h.engagement * 0.12),
-      saves: Math.round(h.engagement * 0.08),
+      likes: h.likes,
+      comments: h.comments,
+      shares: h.shares,
+      saves: h.saves,
+      follows: h.follows,
       reach: h.reach,
       engagement: h.engagement,
       rata_skor: Math.round(h.rata_skor * 100) / 100,
@@ -509,5 +537,178 @@ export function demoPerbandingan(): Promise<PerbandinganData> {
     rentang: { mulai: bulan[0].bulan + "-01", selesai: "demo" },
     platform: "semua",
     bulan,
+  });
+}
+
+/** Data contoh untuk seksi analisa lanjutan (dipakai bila backend tak menjawab). */
+export function demoAnalisaLanjutan(): Promise<AnalisaLanjutan> {
+  const sekarang = new Date();
+  const kunciBulan = `${sekarang.getFullYear()}-${String(sekarang.getMonth() + 1).padStart(2, "0")}`;
+  const labelBulan = sekarang.toLocaleDateString("id-ID", { month: "short", year: "numeric" });
+  const detail = [
+    {
+      content_id: "demo-1",
+      post_id: "DcyaotLP3_M",
+      tanggal: `${kunciBulan}-12`,
+      format: "reels",
+      caption:
+        "Alhamdulillah, amanah kebaikan kembali tersampaikan untuk warga terdampak gempa. Salurkan donasi terbaikmu melalui link di bio. Like, save, dan share ke teman-temanmu!",
+      views: 5291,
+      reach: 4213,
+      likes: 224,
+      comments: 15,
+      saves: 12,
+      shares: 31,
+      follows: 8,
+      total_engagement: 282,
+      wer: 0.0533,
+      cta: ["konversi", "link_bio", "share", "simpan", "like"],
+      cta_label: ["Donasi / Beli / Daftar", "Link di bio", "Share / Tag", "Simpan", "Like"],
+      kategori: "donasi_sosial",
+      kategori_label: "Donasi & Aksi Sosial",
+    },
+    {
+      content_id: "demo-2",
+      post_id: "DcvLhuCj4CZ",
+      tanggal: `${kunciBulan}-05`,
+      format: "carousel",
+      caption:
+        "5 tips healing untuk pikiran yang penuh. Simpan dulu biar bisa dibaca ulang. Komen pendapatmu di bawah ya!",
+      views: 2161,
+      reach: 1659,
+      likes: 105,
+      comments: 12,
+      saves: 55,
+      shares: 22,
+      follows: 3,
+      total_engagement: 194,
+      wer: 0.0897,
+      cta: ["simpan", "komentar"],
+      cta_label: ["Simpan", "Komentar"],
+      kategori: "edukasi",
+      kategori_label: "Edukasi",
+    },
+  ];
+  return Promise.resolve({
+    kosong: false,
+    komposisi: {
+      views: 7452,
+      reach: 5872,
+      likes: 329,
+      comments: 27,
+      saves: 67,
+      shares: 53,
+      follows: 11,
+      total_engagement: 476,
+      jumlah_konten: 2,
+      rata_engagement_per_konten: 238,
+      rata_wer: 0.0715,
+    },
+    per_format: [
+      {
+        format: "reels",
+        jumlah: 1,
+        views: 5291,
+        reach: 4213,
+        likes: 224,
+        comments: 15,
+        saves: 12,
+        shares: 31,
+        follows: 8,
+        total_engagement: 282,
+        rata_wer: 0.0533,
+      },
+      {
+        format: "carousel",
+        jumlah: 1,
+        views: 2161,
+        reach: 1659,
+        likes: 105,
+        comments: 12,
+        saves: 55,
+        shares: 22,
+        follows: 3,
+        total_engagement: 194,
+        rata_wer: 0.0897,
+      },
+    ],
+    filter_options: {
+      bulan: [{ value: kunciBulan, label: labelBulan }],
+      format: ["reels", "carousel"],
+      kategori: [
+        { value: "donasi_sosial", label: "Donasi & Aksi Sosial" },
+        { value: "edukasi", label: "Edukasi" },
+      ],
+      cta: [
+        { value: "konversi", label: "Donasi / Beli / Daftar" },
+        { value: "simpan", label: "Simpan" },
+        { value: "komentar", label: "Komentar" },
+      ],
+      heuristik:
+        "CTA & kategori terdeteksi otomatis dari kata kunci caption (heuristik, bukan klasifikasi manual).",
+    },
+    bulan_aktif: kunciBulan,
+    detail_bulanan: detail,
+    skor_akun: {
+      skor: 6.8,
+      grade: "Baik",
+      komponen: [
+        {
+          nama: "Kualitas engagement",
+          nilai: 9.5,
+          bobot: 0.3,
+          penjelasan: "Rata-rata WER 7,1% vs baseline sehat 5% (skor penuh pada 1,5× baseline).",
+        },
+        {
+          nama: "Volume & konsistensi",
+          nilai: 2.8,
+          bobot: 0.2,
+          penjelasan: "1,4 postingan/minggu (skor penuh pada ≥5/minggu).",
+        },
+        {
+          nama: "Tren pertumbuhan",
+          nilai: 5,
+          bobot: 0.25,
+          penjelasan: "belum cukup data bulanan untuk tren",
+        },
+        {
+          nama: "Proporsi konten kuat",
+          nilai: 6.7,
+          bobot: 0.25,
+          penjelasan: "2 dari 2 konten yang diskor berstatus menang/cukup (100%; skor penuh pada ≥30%).",
+        },
+      ],
+      cara_hitung:
+        "Skor 1–10 gabungan empat komponen berbobot: kualitas engagement (30%), volume & konsistensi (20%), tren pertumbuhan (25%), proporsi konten kuat (25%).",
+    },
+    diagnosis: [
+      {
+        tingkat: "baik",
+        judul: "Engagement di atas baseline",
+        detail: "Rata-rata WER 7,1% sudah melewati baseline. Pertahankan polanya.",
+      },
+      {
+        tingkat: "perhatian",
+        judul: "Frekuensi posting rendah",
+        detail:
+          "Hanya 1,4 postingan/minggu. Algoritma dan audiens butuh keteraturan — targetkan minimal 3–5 postingan/minggu.",
+      },
+    ],
+    saran: [
+      {
+        judul: "Perbanyak format carousel",
+        detail:
+          "1 dari 2 konten terbaik adalah carousel (rata-rata WER 9,0%). Jadikan format utama minggu ini.",
+        dasar: "Berdasarkan 2 konten terbaik (10% WER teratas, min. 500 views).",
+        contoh: [
+          {
+            post_id: "DcvLhuCj4CZ",
+            caption_singkat: "5 tips healing untuk pikiran yang penuh. Simpan dulu biar bisa dibaca ulang…",
+            wer: 9.0,
+            format: "carousel",
+          },
+        ],
+      },
+    ],
   });
 }
