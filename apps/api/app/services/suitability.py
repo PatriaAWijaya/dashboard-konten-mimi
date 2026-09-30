@@ -237,7 +237,7 @@ def cek_kesehatan_framework(c: Content, snapshot: dict) -> tuple[list[dict], lis
                 "harapan": 200,
                 "masalah": (
                     f"Views ({int(views)}) di bawah 200 — konten terjebak di '200-view jail'. "
-                    "Menurut framework (Bab 1: Initial Sample Test Group), algoritma menguji "
+                    "Algoritma menguji "
                     "konten ke ~200 orang pertama (mayoritas non-follower); bila mereka langsung "
                     "swipe away, distribusi dihentikan."
                 ),
@@ -246,7 +246,7 @@ def cek_kesehatan_framework(c: Content, snapshot: dict) -> tuple[list[dict], lis
         saran_hook = (
             "Perkuat Stopping Power: buat hook visual + audio + teks yang spesifik di 3 detik "
             "pertama — semakin spesifik masalah & keyword, semakin jelas algoritma mengenali "
-            "audiensnya. (Framework Bab 1 & Bab 4: Hook)"
+            "audiensnya."
         )
         if saran_hook not in suggestions:
             suggestions.append(saran_hook)
@@ -265,15 +265,14 @@ def cek_kesehatan_framework(c: Content, snapshot: dict) -> tuple[list[dict], lis
                     "masalah": (
                         f"Carousel ini hanya menghasilkan saves {rasio*100:.1f}% dari views "
                         f"({int(saves)} saves dari {int(views)} views), di bawah standar 10%. "
-                        "Menurut framework, Carousel adalah mesin saves untuk edukasi mendalam — "
+                        "Carousel adalah mesin saves untuk edukasi mendalam — "
                         "bila saves rendah, konten tidak dianggap bernilai untuk disimpan."
                     ),
                 }
             )
             saran = (
                 "Perkuat nilai simpan Carousel: akhiri dengan ringkasan/checklist yang layak "
-                "di-screenshot, tambahkan CTA spesifik 'Simpan postingan ini'. "
-                "(Framework: Sticking Power & CTA)"
+                "di-screenshot, tambahkan CTA spesifik 'Simpan postingan ini'."
             )
             if saran not in suggestions:
                 suggestions.append(saran)
@@ -289,7 +288,7 @@ def cek_kesehatan_framework(c: Content, snapshot: dict) -> tuple[list[dict], lis
                     "masalah": (
                         f"Reels ini hanya menghasilkan shares+comments {rasio*100:.1f}% dari views "
                         f"({int(bermakna)} dari {int(views)} views), di bawah standar 10%. "
-                        "Menurut framework, Reels adalah mesin jangkauan audiens baru — bila "
+                        "Reels adalah mesin jangkauan audiens baru — bila "
                         "shares & comments rendah, algoritma tidak mendapat sinyal relevansi "
                         "untuk distribusi lebih luas."
                     ),
@@ -298,7 +297,7 @@ def cek_kesehatan_framework(c: Content, snapshot: dict) -> tuple[list[dict], lis
             saran = (
                 "Dorong shares & comments di Reels: ajukan pertanyaan yang memancing opini di "
                 "caption, tambahkan CTA 'Tag teman yang perlu tahu ini' atau 'Ketik pendapatmu "
-                "di komentar'. (Framework: 3S Power — Striking & Sticking)"
+                "di komentar'."
             )
             if saran not in suggestions:
                 suggestions.append(saran)
@@ -314,7 +313,7 @@ def cek_kesehatan_framework(c: Content, snapshot: dict) -> tuple[list[dict], lis
                     "masalah": (
                         f"Image ini hanya menghasilkan comments+shares {rasio*100:.1f}% dari views "
                         f"({int(bermakna)} dari {int(views)} views), di bawah standar 10%. "
-                        "Menurut framework, image/foto perlu memicu diskusi (comments) atau "
+                        "Image/foto perlu memicu diskusi (comments) atau "
                         "relevansi (shares) agar dianggap bermakna oleh algoritma."
                     ),
                 }
@@ -322,7 +321,7 @@ def cek_kesehatan_framework(c: Content, snapshot: dict) -> tuple[list[dict], lis
             saran = (
                 "Dorong comments & shares di Image: tulis caption yang mengundang cerita/pengalaman "
                 "audiens, tambahkan CTA 'Ceritakan pengalamanmu di komentar' atau 'Bagikan ke "
-                "teman yang membutuhkan'. (Framework: CTA & Interaksi)"
+                "teman yang membutuhkan'."
             )
             if saran not in suggestions:
                 suggestions.append(saran)
@@ -530,18 +529,17 @@ async def analisa_report(
     if jml_200jail:
         rekomendasi_pola.append(
             f"{jml_200jail} konten terjebak 200-view jail — audit hook 3 detik pertama semua konten "
-            "baru sebelum posting (Framework Bab 1 & 4: Stopping Power)."
+            "baru sebelum posting."
         )
     if jml_tanpa_cta:
         rekomendasi_pola.append(
             f"{jml_tanpa_cta} konten tanpa CTA jelas — jadikan CTA spesifik sebagai checklist wajib "
-            "sebelum publish (Framework Bab 5)."
+            "sebelum publish."
         )
     if jml_nol_bermakna:
         rekomendasi_pola.append(
             f"{jml_nol_bermakna} konten nol engagement bermakna — terapkan filter 4 kriteria sebelum "
-            "produksi: Relevan, Non-Obvious, mudah Dicerna, jarak Implementasi singkat "
-            "(Framework Bab 6)."
+            "produksi: Relevan, Non-Obvious, mudah Dicerna, jarak Implementasi singkat."
         )
     if not bermasalah and ringkasan:
         rekomendasi_pola.append("Semua pola terpantau sehat — pertahankan konsistensi posting.")
