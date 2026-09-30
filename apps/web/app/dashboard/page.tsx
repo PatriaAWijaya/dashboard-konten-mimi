@@ -293,19 +293,29 @@ function DasborIsi() {
           Untuk login baru / 0 data: cukup tampilkan keterangan belum ada data. */}
       {brandsBerdata.length > 0 ? (
         <>
-          <div className="mb-4 mt-10">
-            <h2 className="text-lg font-bold text-slate-900">Data yang sudah diinput</h2>
-            <p className="text-sm text-slate-500">
-              Daftar akun dan periode data yang sudah pernah Anda masukkan.
-            </p>
+          <div className="mb-4 mt-10 flex flex-wrap items-end justify-between gap-2">
+            <div>
+              <h2 className="text-lg font-bold text-slate-900">Data yang sudah diinput</h2>
+              <p className="text-sm text-slate-500">
+                Daftar akun dan periode data yang sudah pernah Anda masukkan.
+              </p>
+            </div>
+            <Link
+              href="/pilih-brand"
+              className="text-sm font-medium text-orange-700 hover:text-orange-800 hover:underline"
+            >
+              Pilih brand lain →
+            </Link>
           </div>
           <div className="space-y-4">
             {brandsBerdata.map((b) => (
               <Card key={b.id}>
                 <div className="flex flex-wrap items-center justify-between gap-2">
-                  <h3 className="text-base font-bold text-slate-900">
-                    {b.display_name}
-                  </h3>
+                  <Link href={`/brand/${b.id}`}>
+                    <h3 className="text-base font-bold text-slate-900 hover:text-orange-700 hover:underline">
+                      {b.display_name}
+                    </h3>
+                  </Link>
                   <span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold text-slate-600">
                     {b.total_konten} konten
                   </span>

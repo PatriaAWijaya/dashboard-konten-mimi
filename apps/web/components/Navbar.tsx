@@ -5,7 +5,6 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useAuth } from "@/lib/auth";
 import { api } from "@/lib/api";
-import { getSelectedBrandId } from "@/lib/content";
 import type { OrganizationDetail } from "@/lib/types";
 import { MembershipBadge } from "./badges";
 
@@ -25,21 +24,10 @@ export default function Navbar() {
   const [membershipStatus, setMembershipStatus] = useState<string | null>(null);
   const [orgMenuOpen, setOrgMenuOpen] = useState(false);
   const [userMenuOpen, setUserMenuOpen] = useState(false);
-  const [brandId, setBrandId] = useState<string | null>(null);
   const orgMenuRef = useRef<HTMLDivElement>(null);
   const userMenuRef = useRef<HTMLDivElement>(null);
 
   const hideNavbar = HIDDEN_PATHS.some((p) => pathname?.startsWith(p));
-
-  // Sinkronkan brand aktif dari localStorage setiap ganti halaman.
-  useEffect(() => {
-    setBrandId(getSelectedBrandId());
-    const onStorage = (e: StorageEvent) => {
-      if (e.key === "dkai_brand_id") setBrandId(e.newValue);
-    };
-    window.addEventListener("storage", onStorage);
-    return () => window.removeEventListener("storage", onStorage);
-  }, [pathname]);
 
   useEffect(() => {
     if (hideNavbar || !selectedOrgId) {
@@ -76,14 +64,11 @@ export default function Navbar() {
 
   const selectedOrg = organizations.find((o) => o.id === selectedOrgId);
 
+  // Link "Analitik" dihapus: duplikat dengan tab "Dasbor" di BrandNav
+  // (keduanya mengarah ke /brand/{brandId}). Navigasi brand ditangani BrandNav.
   const navLinks: { href: string; label: string; match?: string }[] = [
     { href: "/dashboard", label: "Dasbor" },
     { href: "/upload", label: "Upload" },
-    {
-      href: brandId ? `/brand/${brandId}` : "/pilih-brand",
-      label: "Analitik",
-      match: "/brand/",
-    },
     { href: "/tagihan", label: "Tagihan" },
   ];
   if (user?.is_superadmin) navLinks.push({ href: "/admin", label: "Admin" });
