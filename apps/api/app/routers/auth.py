@@ -242,9 +242,10 @@ async def login(
         except HTTPException as e:
             await db.rollback()
             coupon_error = e.detail if isinstance(e.detail, str) else "Kode kupon tidak valid."
-        except Exception:
+        except Exception as e:
             await db.rollback()
-            coupon_error = "Gagal menerapkan kupon. Silakan coba lagi."
+            # DEBUG sementara: tampilkan tipe error asli
+            coupon_error = f"Gagal menerapkan kupon [{type(e).__name__}: {e}]. Silakan coba lagi."
 
     return LoginResponse(
         access_token=access_token,
