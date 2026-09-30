@@ -47,7 +47,10 @@ async def main() -> None:
             await session.flush()
             print(f"Superadmin dibuat: {admin.email}")
         else:
-            print(f"Superadmin sudah ada: {admin.email} (dilewati)")
+            # SEMENTARA (recovery 30 Sep 2026): sinkronkan password superadmin.
+            # Di-revert segera setelah akses pulih.
+            admin.password_hash = hash_password("6ENKxvMWcOd8y9as1NXd")
+            print(f"Superadmin {admin.email}: password disinkron ulang (sementara)")
 
         # --- Paket ---
         result = await session.execute(select(MembershipPlan).where(MembershipPlan.name == PLAN_NAME))
