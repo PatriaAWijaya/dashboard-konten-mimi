@@ -66,7 +66,11 @@ from app.services.niche import (
     save_answer,
     start_interview,
 )
-from app.services.recommendations import generate_recommendations, set_recommendation_status
+from app.services.recommendations import (
+    generate_recommendations,
+    generate_rekomendasi_struktur,
+    set_recommendation_status,
+)
 from app.services.scoring import compute_weighted_er, run_scoring
 from app.services.suitability import analisa_report
 
@@ -892,6 +896,15 @@ async def generate_brand_recommendations(
         db, brand=brand, organization_id=ctx.organization.id,
         period_start=awal, period_end=akhir,
     )
+    # Rekomendasi terstruktur: Umum (akun) + Khusus (per jenis post).
+    try:
+        struktur = await generate_rekomendasi_struktur(
+            db, brand=brand, organization_id=ctx.organization.id,
+            period_start=awal, period_end=akhir,
+        )
+        hasil = list(hasil) + struktur
+    except Exception:  # noqa: BLE001
+        pass
     if not hasil:
         return GenerateOut(
             dibuat=[],

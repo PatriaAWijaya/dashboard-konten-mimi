@@ -381,3 +381,229 @@ async def set_recommendation_status(
     rec.status = status
     await db.flush()
     return rec
+
+
+# ---------------------------------------------------------------------------
+# Rekomendasi terstruktur: Umum (akun) + Khusus (per jenis post)
+# ---------------------------------------------------------------------------
+
+# Metrik dominan per format (dari framework strategi Instagram organik).
+METRIK_DOMINAN = {
+    "carousel": {
+        "nama": "Carousel",
+        "metrik": "saves",
+        "label_metrik": "Saves",
+        "penjelasan": (
+            "Carousel adalah mesin saves. Format ini dirancang untuk edukasi mendalam "
+            "yang layak disimpan dan dibuka kembali — semakin banyak yang menyimpan, "
+            "semakin kuat sinyal bahwa kontenmu bernilai."
+        ),
+    },
+    "foto": {
+        "nama": "Image",
+        "metrik": "comments_shares",
+        "label_metrik": "Comments & Shares",
+        "penjelasan": (
+            "Image mengandalkan comments dan shares. Satu gambar yang kuat harus memicu "
+            "diskusi di kolom komentar atau cukup relevan untuk dibagikan ke orang lain."
+        ),
+    },
+    "image": {
+        "nama": "Image",
+        "metrik": "comments_shares",
+        "label_metrik": "Comments & Shares",
+        "penjelasan": (
+            "Image mengandalkan comments dan shares. Satu gambar yang kuat harus memicu "
+            "diskusi di kolom komentar atau cukup relevan untuk dibagikan ke orang lain."
+        ),
+    },
+    "reels": {
+        "nama": "Reels",
+        "metrik": "shares_comments",
+        "label_metrik": "Shares & Comments",
+        "penjelasan": (
+            "Reels adalah mesin jangkauan. Format ini dirancang untuk menjangkau audiens "
+            "baru — shares membawa penonton baru, comments menandakan kontenmu memicu "
+            "reaksi."
+        ),
+    },
+}
+
+
+async def generate_rekomendasi_struktur(
+    db: AsyncSession,
+    *,
+    brand,
+    organization_id: uuid.UUID,
+    period_start: date,
+    period_end: date,
+) -> list[Recommendation]:
+    """Hasilkan rekomendasi terstruktur: Umum (akun) + Khusus (per jenis post).
+
+    - Umum: kondisi akun secara keseluruhan + saran perbaikan dari framework.
+    - Khusus: per format (Carousel, Image, Reels) + metrik dominan masing-masing.
+    """
+    from app.services import analisa_lanjutan as al
+    from app.services.suitability import analisa_report
+
+    # Ambil data akun & pola bermasalah.
+    try:
+        lanjutan = await al.analisa_lanjutan(
+            db, brand=brand, organization_id=organization_id,
+            period_start=period_start, period_end=period_end,
+        )
+    except Exception:  # noqa: BLE001
+        lanjutan = {}
+    try:
+        suit = await analisa_report(
+            db, brand=brand, organization_id=organization_id,
+            period_start=period_start, period_end=period_end,
+        )
+    except Exception:  # noqa: BLE001
+        suit = {"bermasalah": [], "ringkasan": []}
+
+    skor_akun = (lanjutan.get("skor_akun") or {})
+    nilai_skor = float(skor_akun.get("skor") or 0)
+    kategori = str(skor_akun.get("kategori") or "")
+    kenapa_stuck = str(lanjutan.get("kenapa_stuck") or "")
+
+    bermasalah = suit.get("bermasalah") or []
+    ringkasan = suit.get("ringkasan") or []
+
+    total_konten = sum(int(r.get("jumlah") or 0) for r in ringkasan)
+    total_bermasalah = len(bermasalah)
+    persen_bermasalah = (total_bermasalah / total_konten * 100) if total_konten else 0
+
+    # Kelompokkan bermasalah per format.
+    per_format: dict[str, list] = {}
+    for b in bermasalah:
+        fmt = str(b.get("format") or "").lower()
+        per_format.setdefault(fmt, []).append(b)
+    total_per_format: dict[str, int] = {}
+    for r in ringkasan:
+        fmt = str(r.get("format") or "").lower()
+        total_per_format[fmt] = total_per_format.get(fmt, 0) + int(r.get("jumlah") or 0)
+
+    config = await get_or_create_active_config(db, brand.id, organization_id)
+    config_version = int(config.version or 1)
+    baru: list[Recommendation] = []
+
+    async def _simpan_struktur(
+        tipe: str, judul: str, narasi: str, evidence: dict,
+        ref_ids: list[str] | None = None,
+    ) -> None:
+        key = _dedup_key(tipe, None, None, period_start, period_end, config_version, judul[:50])
+        if await _dedup_ditolak(db, brand.id, key):
+            return
+        rec = Recommendation(
+            organization_id=organization_id,
+            brand_id=brand.id,
+            type=tipe,
+            title=judul[:255],
+            narrative=narasi,
+            evidence=evidence,
+            reference_content_ids=ref_ids or [],
+            status=RecommendationStatus.BARU,
+            period_start=period_start,
+            period_end=period_end,
+            config_version=config_version,
+            dedup_key=key,
+        )
+        db.add(rec)
+        baru.append(rec)
+
+    # === BAGIAN 1: REKOMENDASI UMUM (tentang akun) ===
+    if nilai_skor > 0:
+        if nilai_skor <= 6.0:
+            saran_umum = (
+                f"Skor akunmu {nilai_skor:.1f} ({kategori}) — artinya sebagian besar konten "
+                f"belum bekerja optimal. Dari {total_konten} konten, {total_bermasalah} "
+                f"({persen_bermasalah:.0f}%) terdeteksi bermasalah. "
+                "Fokus dulu pada tiga hal: (1) buat 3 detik pertama setiap konten semenarik "
+                "mungkin agar orang berhenti scroll, (2) pilih satu topik utama dan konsisten "
+                "di sana agar algoritma paham siapa audiensmu, (3) posting terjadwal — akun yang "
+                "aktif rutin lebih mudah terbaca polanya."
+            )
+        elif nilai_skor < 8.0:
+            saran_umum = (
+                f"Skor akunmu {nilai_skor:.1f} ({kategori}) — sudah ada fondasi yang bagus. "
+                f"Dari {total_konten} konten, {total_bermasalah} masih bermasalah. "
+                "Tugasmu sekarang: perbanyak pola yang sudah terbukti menang, kurangi yang "
+                "tidak bekerja, dan jaga konsistensi posting agar momentum tidak putus."
+            )
+        else:
+            saran_umum = (
+                f"Skor akunmu {nilai_skor:.1f} ({kategori}) — performa sangat baik. "
+                "Pertahankan polanya: lanjutkan format dan topik yang menang, uji satu-dua "
+                "variasi baru setiap pekan agar tidak stagnan, dan jaga kualitas hook di "
+                "3 detik pertama."
+            )
+        if kenapa_stuck:
+            saran_umum += f" Catatan: {kenapa_stuck}"
+        await _simpan_struktur(
+            RecommendationType.UMUM,
+            "Kondisi akun secara umum",
+            saran_umum,
+            {"skor": nilai_skor, "kategori": kategori,
+             "total_konten": total_konten, "bermasalah": total_bermasalah},
+        )
+
+    # === BAGIAN 2: REKOMENDASI KHUSUS (per jenis post) ===
+    for fmt_key in ("carousel", "foto", "reels"):
+        info = METRIK_DOMINAN.get(fmt_key)
+        if not info:
+            continue
+        # Cari data format (foto mencakup 'foto' & 'image').
+        kunci_cari = ("foto", "image") if fmt_key == "foto" else (fmt_key,)
+        items = []
+        total = 0
+        for k in kunci_cari:
+            items.extend(per_format.get(k, []))
+            total += total_per_format.get(k, 0)
+        if total == 0:
+            continue
+        jml_masalah = len(items)
+        # Hitung rata-rata metrik dominan dari contoh bermasalah (jika ada data).
+        narasi = (
+            f"{info['nama']}: {jml_masalah} bermasalah dari {total} post. "
+            f"Metrik dominan untuk {info['nama']} adalah {info['label_metrik']}. "
+            f"{info['penjelasan']} "
+        )
+        if jml_masalah > 0:
+            if fmt_key == "carousel":
+                narasi += (
+                    "Agar saves naik: akhiri carousel dengan ringkasan atau checklist yang "
+                    "layak di-screenshot, dan tambahkan ajakan spesifik seperti "
+                    "'Simpan postingan ini'. Konten yang tidak layak disimpan tidak akan "
+                    "disimpan — pastikan setiap slide memberi alasan untuk lanjut dan simpan."
+                )
+            elif fmt_key == "reels":
+                narasi += (
+                    "Agar shares dan comments naik: buka dengan pertanyaan atau pernyataan "
+                    "yang memancing opini, dan tutup dengan ajakan seperti 'Tag teman yang "
+                    "perlu tahu ini' atau 'Tulis pendapatmu di komentar'. Reels yang hanya "
+                    "ditonton tanpa reaksi tidak akan disebar lebih luas."
+                )
+            else:
+                narasi += (
+                    "Agar comments dan shares naik: tulis caption yang mengundang cerita atau "
+                    "pengalaman audiens, bukan sekadar deskripsi gambar. Ajakan seperti "
+                    "'Ceritakan pengalamanmu di komentar' jauh lebih efektif daripada "
+                    "caption satu baris."
+                )
+        else:
+            narasi += (
+                f"Semua {info['nama']} pada periode ini sehat — pertahankan polanya dan "
+                "jadikan sebagai acuan untuk format lain."
+            )
+        await _simpan_struktur(
+            RecommendationType.KHUSUS,
+            f"Rekomendasi khusus {info['nama']}",
+            narasi,
+            {"format": info["nama"], "metrik_dominan": info["label_metrik"],
+             "total": total, "bermasalah": jml_masalah},
+            [str(b.get("post_id")) for b in items[:3] if b.get("post_id")],
+        )
+
+    await db.flush()
+    return baru

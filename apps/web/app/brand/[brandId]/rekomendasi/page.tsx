@@ -19,6 +19,8 @@ import DemoBadge from "@/components/DemoBadge";
 import PeriodPicker, { type PilihanPeriode } from "@/components/PeriodPicker";
 
 const TIPE_META: Record<TipeRekomendasi, { label: string; tone: string; ikon: string }> = {
+  umum: { label: "Umum", tone: "bg-orange-50 border-orange-200", ikon: "🏠" },
+  khusus: { label: "Khusus", tone: "bg-violet-50 border-violet-200", ikon: "🎯" },
   perbanyak: { label: "Perbanyak", tone: "bg-emerald-50 border-emerald-200", ikon: "📈" },
   perbaiki: { label: "Perbaiki", tone: "bg-amber-50 border-amber-200", ikon: "🔧" },
   kurangi: { label: "Kurangi", tone: "bg-red-50 border-red-200", ikon: "📉" },
@@ -281,7 +283,15 @@ function RekomendasiIsi() {
     }
   }
 
-  const kelompok = useMemo(() => {
+  const rekomendasiUmum = useMemo(
+    () => items.filter((r) => r.type === "umum"),
+    [items]
+  );
+  const rekomendasiKhusus = useMemo(
+    () => items.filter((r) => r.type === "khusus"),
+    [items]
+  );
+  const kelompokLain = useMemo(() => {
     const urutan: TipeRekomendasi[] = ["perbanyak", "perbaiki", "kurangi", "coba_baru"];
     return urutan
       .map((t) => ({ tipe: t, items: items.filter((r) => r.type === t) }))
@@ -339,9 +349,61 @@ function RekomendasiIsi() {
         </div>
       )}
 
+      {!loading && !error && rekomendasiUmum.length > 0 && (
+        <section className="mb-8">
+          <h2 className="mb-1 flex items-center gap-2 text-lg font-semibold text-slate-900">
+            <span aria-hidden>🏠</span>
+            Rekomendasi Umum
+            <span className="rounded-full bg-slate-100 px-2.5 py-0.5 text-xs font-semibold text-slate-600">
+              {rekomendasiUmum.length}
+            </span>
+          </h2>
+          <p className="mb-3 text-sm text-slate-500">
+            Kondisi akun secara keseluruhan.
+          </p>
+          <div className="grid gap-4 md:grid-cols-2">
+            {rekomendasiUmum.map((r) => (
+              <KartuRekomendasi
+                key={r.id}
+                item={r}
+                brandId={brandId}
+                sibuk={sibukId === r.id}
+                onUbahStatus={ubahStatus}
+              />
+            ))}
+          </div>
+        </section>
+      )}
+
+      {!loading && !error && rekomendasiKhusus.length > 0 && (
+        <section className="mb-8">
+          <h2 className="mb-1 flex items-center gap-2 text-lg font-semibold text-slate-900">
+            <span aria-hidden>🎯</span>
+            Rekomendasi Khusus
+            <span className="rounded-full bg-slate-100 px-2.5 py-0.5 text-xs font-semibold text-slate-600">
+              {rekomendasiKhusus.length}
+            </span>
+          </h2>
+          <p className="mb-3 text-sm text-slate-500">
+            Per jenis post beserta metrik dominan masing-masing.
+          </p>
+          <div className="grid gap-4 md:grid-cols-2">
+            {rekomendasiKhusus.map((r) => (
+              <KartuRekomendasi
+                key={r.id}
+                item={r}
+                brandId={brandId}
+                sibuk={sibukId === r.id}
+                onUbahStatus={ubahStatus}
+              />
+            ))}
+          </div>
+        </section>
+      )}
+
       {!loading &&
         !error &&
-        kelompok.map((g) => (
+        kelompokLain.map((g) => (
           <section key={g.tipe} className="mb-8">
             <h2 className="mb-3 flex items-center gap-2 text-lg font-semibold text-slate-900">
               <span aria-hidden>{TIPE_META[g.tipe].ikon}</span>

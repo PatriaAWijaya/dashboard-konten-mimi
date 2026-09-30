@@ -55,8 +55,10 @@ class RecommendationType:
     PERBAIKI = "perbaiki"
     KURANGI = "kurangi"
     COBA_BARU = "coba_baru"
+    UMUM = "umum"
+    KHUSUS = "khusus"
 
-    ALL = (PERBANYAK, PERBAIKI, KURANGI, COBA_BARU)
+    ALL = (PERBANYAK, PERBAIKI, KURANGI, COBA_BARU, UMUM, KHUSUS)
 
 
 class RecommendationStatus:

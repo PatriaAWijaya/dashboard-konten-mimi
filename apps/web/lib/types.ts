@@ -254,7 +254,7 @@ export interface AnalisaKesesuaian {
   rekomendasi_pola: string[];
 }
 
-export type TipeRekomendasi = "perbanyak" | "perbaiki" | "kurangi" | "coba_baru";
+export type TipeRekomendasi = "perbanyak" | "perbaiki" | "kurangi" | "coba_baru" | "umum" | "khusus";
 export type StatusRekomendasi = "baru" | "diterima" | "ditolak";
 
 export interface ReferensiKonten {
