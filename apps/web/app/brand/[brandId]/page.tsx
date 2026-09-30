@@ -22,7 +22,7 @@ import { Alert, Button, Card, EmptyBox, PageHeader, Spinner } from "@/components
 import { StatusKontenBadge } from "@/components/badges";
 import BrandNav from "@/components/BrandNav";
 import DemoBadge from "@/components/DemoBadge";
-import OnboardingBanner from "@/components/OnboardingBanner";
+// import OnboardingBanner from "@/components/OnboardingBanner"; // disembunyikan sementara
 import PeriodPicker, { type PilihanPeriode } from "@/components/PeriodPicker";
 
 function fmtAngka(n: number | null | undefined, desimal = 1): string {
@@ -278,7 +278,8 @@ function DasborBrandIsi() {
         }
       />
       <BrandNav brandId={brandId} />
-      <OnboardingBanner brandId={brandId} />
+      {/* OnboardingBanner disembunyikan sementara — tampilkan lagi setelah alur onboarding siap. */}
+      {/* <OnboardingBanner brandId={brandId} /> */}
 
       <div className="mb-6 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <PeriodPicker value={periode} onChange={setPeriode} />
