@@ -66,7 +66,7 @@ function ForgotPasswordInner() {
               D
             </span>
             <span className="text-xl font-bold text-slate-900">
-              Dashboard Konten AI
+              MySocial Watch
             </span>
           </Link>
           <h1 className="mt-6 text-2xl font-bold text-slate-900">

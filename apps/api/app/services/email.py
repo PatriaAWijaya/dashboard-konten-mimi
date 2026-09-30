@@ -142,11 +142,11 @@ class SmtpEmailService(EmailService):
     async def send_verification_email(self, *, to_email: str, name: str, token: str) -> None:
         link = verification_link(token)
         body = (
-            f"Halo {name},\n\nTerima kasih telah mendaftar di Dashboard Konten AI.\n"
+            f"Halo {name},\n\nTerima kasih telah mendaftar di MySocial Watch.\n"
             f"Klik tautan berikut untuk memverifikasi email Anda (berlaku 24 jam):\n\n{link}\n\n"
             f"Jika tautan tidak bisa diklik, salin token berikut lalu tempel di halaman verifikasi:\n\n{token}\n"
         )
-        self._send(to_email, "Verifikasi Email — Dashboard Konten AI", body)
+        self._send(to_email, "Verifikasi Email — MySocial Watch", body)
 
     async def send_password_reset_email(self, *, to_email: str, name: str, token: str) -> None:
         link = password_reset_link(token)
@@ -156,7 +156,7 @@ class SmtpEmailService(EmailService):
             f"Jika tautan tidak bisa diklik, salin token berikut lalu tempel di halaman reset kata sandi:\n\n{token}\n\n"
             f"Abaikan email ini bila Anda tidak memintanya.\n"
         )
-        self._send(to_email, "Reset Kata Sandi — Dashboard Konten AI", body)
+        self._send(to_email, "Reset Kata Sandi — MySocial Watch", body)
 
 
 def get_email_service() -> EmailService:
@@ -187,7 +187,7 @@ class BrevoHttpEmailService(EmailService):
         if not sender_email:
             sender_email = settings.SMTP_FROM.strip()
         payload = {
-            "sender": {"name": sender_name or "Dashboard Konten AI", "email": sender_email},
+            "sender": {"name": sender_name or "MySocial Watch", "email": sender_email},
             "to": [{"email": to_email}],
             "subject": subject,
             "textContent": body,
@@ -203,7 +203,7 @@ class BrevoHttpEmailService(EmailService):
                 "content-type": "application/json",
                 "api-key": settings.BREVO_API_KEY,
                 # Hindari proteksi bot yang memblokir User-Agent default urllib.
-                "User-Agent": "DashboardKontenAI/1.0",
+                "User-Agent": "MySocialWatch/1.0",
             },
         )
         try:
@@ -220,13 +220,13 @@ class BrevoHttpEmailService(EmailService):
     async def send_verification_email(self, *, to_email: str, name: str, token: str) -> None:
         link = verification_link(token)
         body = (
-            f"Halo {name},\n\nTerima kasih telah mendaftar di Dashboard Konten AI.\n"
+            f"Halo {name},\n\nTerima kasih telah mendaftar di MySocial Watch.\n"
             f"Klik tautan berikut untuk memverifikasi email Anda (berlaku 24 jam):\n\n{link}\n\n"
             f"Jika tautan tidak bisa diklik, salin token berikut lalu tempel di halaman verifikasi:\n\n{token}\n"
         )
         html = (
             f"<p>Halo {name},</p>"
-            f"<p>Terima kasih telah mendaftar di Dashboard Konten AI.</p>"
+            f"<p>Terima kasih telah mendaftar di MySocial Watch.</p>"
             f"<p><a href=\"{link}\" style=\"display:inline-block;padding:12px 24px;"
             f"background:#0f766e;color:#ffffff;text-decoration:none;border-radius:8px;\">"
             f"Verifikasi Email Saya</a></p>"
@@ -234,7 +234,7 @@ class BrevoHttpEmailService(EmailService):
             f"<p>Jika tautan tidak bisa diklik, salin token berikut lalu tempel di halaman verifikasi:<br>"
             f"<code>{token}</code></p>"
         )
-        self._send(to_email, "Verifikasi Email — Dashboard Konten AI", body, html)
+        self._send(to_email, "Verifikasi Email — MySocial Watch", body, html)
 
     async def send_password_reset_email(self, *, to_email: str, name: str, token: str) -> None:
         link = password_reset_link(token)
@@ -254,4 +254,4 @@ class BrevoHttpEmailService(EmailService):
             f"<code>{token}</code></p>"
             f"<p>Abaikan email ini bila Anda tidak memintanya.</p>"
         )
-        self._send(to_email, "Reset Kata Sandi — Dashboard Konten AI", body, html)
+        self._send(to_email, "Reset Kata Sandi — MySocial Watch", body, html)

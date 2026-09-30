@@ -104,7 +104,7 @@ export default function Navbar() {
             D
           </span>
           <span className="hidden text-base font-bold tracking-tight text-slate-900 sm:block">
-            Dashboard Konten AI
+            MySocial Watch
           </span>
         </Link>
 

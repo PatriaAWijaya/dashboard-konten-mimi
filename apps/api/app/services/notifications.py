@@ -112,29 +112,29 @@ def _format_pesan(jenis: str, payload: dict) -> str:
     if jenis == "rekomendasi_baru":
         jumlah = payload.get("jumlah", 0)
         return (
-            f"Dashboard Konten AI: {jumlah} rekomendasi baru untuk {brand} "
+            f"MySocial Watch: {jumlah} rekomendasi baru untuk {brand} "
             f"periode {payload.get('period_start')}–{payload.get('period_end')}. "
             "Buka dashboard untuk detailnya."
         )
     if jenis == "ringkasan_mingguan":
         return (
-            f"Dashboard Konten AI: ringkasan mingguan {brand} "
+            f"MySocial Watch: ringkasan mingguan {brand} "
             f"({payload.get('period_start')}–{payload.get('period_end')}) sudah tersedia. "
             "Buka dashboard untuk membacanya."
         )
     if jenis == "aktivasi_membership":
         return (
-            f"Dashboard Konten AI: membership {payload.get('nama_organisasi') or 'organisasi Anda'} "
+            f"MySocial Watch: membership {payload.get('nama_organisasi') or 'organisasi Anda'} "
             f"telah AKTIF hingga {payload.get('tanggal_kedaluwarsa')}. "
             f"Masuk di {payload.get('login_url')} untuk mulai memakai dashboard."
         )
     if jenis == "pengingat_membership":
         return (
-            f"Dashboard Konten AI: membership {payload.get('nama_organisasi') or 'organisasi Anda'} "
+            f"MySocial Watch: membership {payload.get('nama_organisasi') or 'organisasi Anda'} "
             f"berakhir dalam {payload.get('sisa_hari')} hari "
             f"({payload.get('tanggal_kedaluwarsa')}). Segera perpanjang agar layanan tidak terhenti."
         )
-    return f"Dashboard Konten AI: notifikasi '{jenis}' untuk {brand}."
+    return f"MySocial Watch: notifikasi '{jenis}' untuk {brand}."
 
 
 async def get_notification_provider(db: AsyncSession) -> NotificationProvider:

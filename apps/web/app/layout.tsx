@@ -4,7 +4,7 @@ import Navbar from "@/components/Navbar";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "Dashboard Konten AI",
+  title: "MySocial Watch",
   description:
     "Analisis performa konten TikTok dan Instagram untuk brand dan agensi Indonesia.",
 };

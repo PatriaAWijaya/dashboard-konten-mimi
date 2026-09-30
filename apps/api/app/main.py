@@ -18,7 +18,7 @@ settings = get_settings()
 logger = logging.getLogger(__name__)
 
 app = FastAPI(
-    title="Dashboard Konten AI — API",
+    title="MySocial Watch — API",
     description=(
         "Backend: auth, multi-tenant, membership, pembayaran manual, admin "
         "(fase 0); konten + scoring + rekomendasi (fase 1); "

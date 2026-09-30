@@ -121,7 +121,7 @@ export default function LandingPage() {
               Dibuat untuk brand & agensi Indonesia
             </span>
             <h1 className="mt-6 text-4xl font-extrabold tracking-tight text-slate-900 sm:text-5xl lg:text-6xl">
-              Dashboard Konten AI
+              MySocial Watch
             </h1>
             <p className="mt-6 text-lg leading-relaxed text-slate-600 sm:text-xl">
               Analisis performa konten TikTok & Instagram Anda dengan bantuan AI.
@@ -153,7 +153,7 @@ export default function LandingPage() {
       <section className="mx-auto max-w-7xl px-4 py-16 sm:px-6">
         <div className="mx-auto max-w-2xl text-center">
           <h2 className="text-3xl font-bold tracking-tight text-slate-900">
-            Kenapa Dashboard Konten AI?
+            Kenapa MySocial Watch?
           </h2>
           <p className="mt-3 text-slate-600">
             Berhenti menebak-nebak. Biarkan data dan AI memandu strategi konten
@@ -232,14 +232,14 @@ export default function LandingPage() {
               <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-indigo-600 text-sm font-bold text-white">
                 D
               </span>
-              <span className="font-bold text-slate-900">Dashboard Konten AI</span>
+              <span className="font-bold text-slate-900">MySocial Watch</span>
             </div>
             <p className="text-sm text-slate-500">
               Analisis konten TikTok & Instagram untuk brand Indonesia.
             </p>
           </div>
           <p className="mt-6 text-center text-xs text-slate-400">
-            © 2026 Dashboard Konten AI. Seluruh hak cipta dilindungi.
+            © 2026 MySocial Watch. Seluruh hak cipta dilindungi.
           </p>
         </div>
       </footer>

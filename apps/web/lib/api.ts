@@ -1,4 +1,4 @@
-// Lapisan akses API Dashboard Konten AI.
+// Lapisan akses API MySocial Watch.
 // Kontrak: base = (NEXT_PUBLIC_API_URL || 'http://localhost:8000') + '/api/v1'
 // Error API berbentuk { "detail": "..." }.
 // Header X-Organization-Id dikirim untuk endpoint yang org-scoped.

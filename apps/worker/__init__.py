@@ -1,4 +1,4 @@
-"""Worker penjadwalan Dashboard Konten AI (Fase 2).
+"""Worker penjadwalan MySocial Watch (Fase 2).
 
 Isi paket:
 - config.py  : konfigurasi dari environment variables.

@@ -52,7 +52,7 @@ function VerifyEmailInner() {
               </h1>
               <p className="text-sm text-slate-600">
                 Akun Anda sudah aktif. Silakan masuk untuk mulai menggunakan
-                Dashboard Konten AI.
+                MySocial Watch.
               </p>
               <Link href="/login" className="block">
                 <Button className="w-full">Ke halaman masuk</Button>

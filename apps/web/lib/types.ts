@@ -1,4 +1,4 @@
-// Tipe data sesuai kontrak API Dashboard Konten AI.
+// Tipe data sesuai kontrak API MySocial Watch.
 
 export interface User {
   id: string;

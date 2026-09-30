@@ -1,4 +1,4 @@
-"""Entrypoint worker Dashboard Konten AI (Fase 2).
+"""Entrypoint worker MySocial Watch (Fase 2).
 
 Jalankan dari direktori apps/worker:
     python -m worker.main

@@ -45,7 +45,7 @@ class Settings(BaseSettings):
     # --- Rekening transfer manual ---
     BANK_NAME: str = "Bank Central Asia (BCA)"
     BANK_ACCOUNT_NUMBER: str = "1234567890"
-    BANK_ACCOUNT_NAME: str = "PT Dashboard Konten AI"
+    BANK_ACCOUNT_NAME: str = "PT MySocial Watch"
 
     # --- Storage file ---
     STORAGE_DIR: str = "./storage"
