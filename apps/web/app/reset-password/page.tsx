@@ -54,7 +54,7 @@ function ResetPasswordInner() {
               alt="MySocial Watch"
               className="h-10 w-10 rounded-xl"
             />
-            <span className="flex flex-col items-start leading-none">
+            <span className="flex flex-col items-end leading-none">
               <span className="text-xl font-bold text-slate-900">
                 MySocial Watch
               </span>
