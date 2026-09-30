@@ -262,7 +262,7 @@ export interface Rekomendasi {
   type: TipeRekomendasi;
   title: string;
   narrative: string;
-  evidence: string;
+  evidence: Record<string, unknown> | string;
   reference_content_ids: string[];
   status: StatusRekomendasi;
   period_start: string | null;

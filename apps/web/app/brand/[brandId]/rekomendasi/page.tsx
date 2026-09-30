@@ -24,6 +24,33 @@ const TIPE_META: Record<TipeRekomendasi, { label: string; tone: string; ikon: st
   coba_baru: { label: "Coba Baru", tone: "bg-sky-50 border-sky-200", ikon: "✨" },
 };
 
+/** Format evidence (dict dari backend) menjadi kalimat yang mudah dibaca. */
+function formatEvidence(ev: Record<string, unknown> | string): string {
+  if (typeof ev === "string") return ev;
+  if (!ev || typeof ev !== "object") return "-";
+  const bagian: string[] = [];
+  const n = ev["n"];
+  const menang = ev["menang"];
+  if (typeof n === "number") {
+    bagian.push(
+      typeof menang === "number"
+        ? `${menang} dari ${n} konten menang`
+        : `${n} konten`
+    );
+  }
+  const wr = ev["win_rate"];
+  if (typeof wr === "number") bagian.push(`win rate ${(wr * 100).toLocaleString("id-ID", { maximumFractionDigits: 1 })}%`);
+  const skor = ev["avg_score"];
+  if (typeof skor === "number") bagian.push(`rata-rata skor ${skor.toLocaleString("id-ID", { maximumFractionDigits: 1 })}`);
+  const wer = ev["avg_wer"];
+  if (typeof wer === "number") bagian.push(`WER ${wer.toLocaleString("id-ID", { maximumFractionDigits: 1 })}%`);
+  const fmt = ev["format"];
+  if (typeof fmt === "string" && fmt) bagian.push(`format ${fmt}`);
+  const tjn = ev["tujuan"];
+  if (typeof tjn === "string" && tjn) bagian.push(`tujuan ${tjn}`);
+  return bagian.length > 0 ? bagian.join(" · ") : "-";
+}
+
 function KartuRekomendasi({
   item,
   brandId,
@@ -73,13 +100,13 @@ function KartuRekomendasi({
         <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
           Bukti angka
         </p>
-        <p className="mt-1 text-sm text-slate-700">{item.evidence}</p>
+        <p className="mt-1 text-sm text-slate-700">{formatEvidence(item.evidence)}</p>
       </div>
 
-      {item.reference_content_ids.length > 0 && (
+      {(item.reference_content_ids?.length ?? 0) > 0 && (
         <p className="mt-3 text-sm text-slate-600">
           <span className="font-medium text-slate-800">Contoh konten acuan:</span>{" "}
-          {item.reference_content_ids.map((id) => (
+          {(item.reference_content_ids ?? []).map((id) => (
             <code key={id} className="mr-1.5 rounded bg-slate-100 px-1.5 py-0.5 font-mono text-xs text-slate-700">
               {id}
             </code>
