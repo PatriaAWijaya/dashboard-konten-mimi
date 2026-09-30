@@ -37,20 +37,32 @@ function formatEvidence(ev: Record<string, unknown> | string): string {
   if (typeof n === "number") {
     bagian.push(
       typeof menang === "number"
-        ? `${menang} dari ${n} konten menang`
+        ? `${menang} dari ${n} konten berkinerja baik`
         : `${n} konten`
     );
   }
-  const wr = ev["win_rate"];
-  if (typeof wr === "number") bagian.push(`win rate ${(wr * 100).toLocaleString("id-ID", { maximumFractionDigits: 1 })}%`);
   const skor = ev["avg_score"];
-  if (typeof skor === "number") bagian.push(`rata-rata skor ${skor.toLocaleString("id-ID", { maximumFractionDigits: 1 })}`);
-  const wer = ev["avg_wer"];
-  if (typeof wer === "number") bagian.push(`WER ${wer.toLocaleString("id-ID", { maximumFractionDigits: 1 })}%`);
+  if (typeof skor === "number") bagian.push(`nilai rata-rata ${skor.toLocaleString("id-ID", { maximumFractionDigits: 1 })}`);
   const fmt = ev["format"];
-  if (typeof fmt === "string" && fmt) bagian.push(`format ${fmt}`);
+  if (typeof fmt === "string" && fmt) {
+    const namaFmt = fmt.toLowerCase() === "foto" ? "Image" : fmt.charAt(0).toUpperCase() + fmt.slice(1);
+    bagian.push(`jenis ${namaFmt}`);
+  }
   const tjn = ev["tujuan"];
-  if (typeof tjn === "string" && tjn) bagian.push(`tujuan ${tjn}`);
+  if (typeof tjn === "string" && tjn) {
+    const labelTujuan: Record<string, string> = {
+      edukasi: "edukasi",
+      hiburan: "hiburan",
+      interaksi: "interaksi",
+      jualan: "jualan",
+      branding: "branding",
+      account_growth: "menambah followers",
+    };
+    bagian.push(`untuk ${labelTujuan[tjn] || tjn}`);
+  }
+  // Strategi khusus (502, 90 komentar): tampilkan komposisinya.
+  const komposisi = ev["komposisi"];
+  if (typeof komposisi === "string" && komposisi) bagian.push(komposisi);
   return bagian.length > 0 ? bagian.join(" · ") : "-";
 }
 

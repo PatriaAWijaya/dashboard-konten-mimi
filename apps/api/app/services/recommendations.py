@@ -289,6 +289,30 @@ async def generate_recommendations(
         )
     ).scalars().all()
     if cache:
+        # Migrasi narasi: bila masih gaya lama (teknis), tulis ulang dengan
+        # bahasa sehari-hari agar seragam dengan Rekomendasi Umum/Khusus.
+        perlu_simpan = False
+        for rec in cache:
+            if rec.type in (
+                RecommendationType.PERBANYAK,
+                RecommendationType.PERBAIKI,
+                RecommendationType.KURANGI,
+                RecommendationType.COBA_BARU,
+            ):
+                narasi_lama = str(rec.narrative or "")
+                if narasi_lama.startswith("Rekomendasi:"):
+                    ctx = rec.evidence if isinstance(rec.evidence, dict) else {}
+                    rec.narrative = _narasi_sederhana(rec.type, ctx)
+                    # Perbarui judul juga ke label yang mudah dibaca.
+                    rec.title = _judul(
+                        rec.type,
+                        ctx.get("format"),
+                        ctx.get("tujuan"),
+                        ctx.get("niche"),
+                    )[:255]
+                    perlu_simpan = True
+        if perlu_simpan:
+            await db.flush()
         return list(cache)
 
     # Agregasi per (format, tujuan) + per konten (untuk suitability).
