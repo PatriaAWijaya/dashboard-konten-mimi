@@ -289,8 +289,9 @@ function DasborIsi() {
         </Card>
       </div>
 
-      {/* Data yang sudah diinput — hanya tampil bila member sudah pernah upload */}
-      {brandsBerdata.length > 0 && (
+      {/* Data yang sudah diinput — hanya tampil bila member sudah pernah upload.
+          Untuk login baru / 0 data: cukup tampilkan keterangan belum ada data. */}
+      {brandsBerdata.length > 0 ? (
         <>
           <div className="mb-4 mt-10">
             <h2 className="text-lg font-bold text-slate-900">Data yang sudah diinput</h2>
@@ -325,6 +326,10 @@ function DasborIsi() {
             ))}
           </div>
         </>
+      ) : (
+        <p className="mt-8 text-center text-sm text-slate-400">
+          Belum ada data yang diinput.
+        </p>
       )}
     </div>
   );
