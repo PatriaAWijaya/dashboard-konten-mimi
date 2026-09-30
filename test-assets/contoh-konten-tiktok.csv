@@ -1,8 +1,0 @@
-platform,post_id,post_url,tanggal_posting,format,tujuan,caption,views,reach,likes,comments,shares,saves,avg_watch_seconds,profile_clicks,link_clicks,replies,sticker_taps
-tiktok,webvid1,https://www.tiktok.com/@uji/video/1,2026-09-11,reels,edukasi,"Konten uji 1",2000,1500,200,15,8,10,16.5,5,4,2,1
-tiktok,webvid2,https://www.tiktok.com/@uji/video/2,2026-09-12,carousel,hiburan,"Konten uji 2",4000,3000,400,30,16,20,16.5,10,8,4,1
-tiktok,webvid3,https://www.tiktok.com/@uji/video/3,2026-09-13,reels,interaksi,"Konten uji 3",6000,4500,600,45,24,30,16.5,15,12,6,1
-tiktok,webvid4,https://www.tiktok.com/@uji/video/4,2026-09-14,foto,jualan,"Konten uji 4",8000,6000,800,60,32,40,16.5,20,16,8,1
-tiktok,webvid5,https://www.tiktok.com/@uji/video/5,2026-09-15,story,branding,"Konten uji 5",10000,7500,1000,75,40,50,16.5,25,20,10,1
-tiktok,webvid6,https://www.tiktok.com/@uji/video/6,2026-09-16,reels,edukasi,"Konten uji 6",12000,9000,1200,90,48,60,16.5,30,24,12,1
-tiktok,webvid7,https://www.tiktok.com/@uji/video/7,2026-09-17,carousel,hiburan,"Konten uji 7",14000,10500,1400,105,56,70,16.5,35,28,14,1
