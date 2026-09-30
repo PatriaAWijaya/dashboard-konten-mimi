@@ -2,6 +2,7 @@
 
 import uuid
 from datetime import date, datetime
+from typing import Any
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
@@ -179,62 +180,36 @@ class GenerateOut(BaseModel):
 class InterviewStartOut(BaseModel):
     id: uuid.UUID
     status: str
-    current_step: int = Field(description="Indeks langkah berikutnya (0-7).")
-    pertanyaan_berikut: dict | None = Field(description="Pertanyaan berikutnya bila masih berjalan.")
+    current_step: int = Field(description="Indeks kartu berikutnya (0-10).")
+    pertanyaan_berikut: dict | None = Field(description="Kartu berikutnya bila masih berjalan.")
 
 
 class InterviewDetailOut(BaseModel):
     id: uuid.UUID
     status: str
     current_step: int
-    answers: dict = Field(description="Jawaban per key pertanyaan.")
-    skipped: list[str] = Field(description="Key pertanyaan yang dilewati.")
-    questions: list[dict] = Field(description="8 pertanyaan wawancara + panduan.")
+    answers: dict = Field(description="Jawaban terstruktur per key kartu.")
+    skipped: list[str] = Field(description="Key kartu yang dilewati.")
+    questions: list[dict] = Field(description="11 kartu kuesioner niche finder.")
 
 
 class JawabIn(BaseModel):
-    step: int = Field(ge=0, le=7, description="Indeks langkah (0-7).")
-    jawaban: str | None = Field(default=None, description="Isi jawaban.")
-    dilewati: bool = Field(default=False, description="True bila pertanyaan dilewati.")
+    step: int = Field(ge=0, le=10, description="Indeks kartu (0-10).")
+    jawaban: Any = Field(
+        default=None,
+        description="Jawaban terstruktur (dict/list) sesuai tipe kartu.",
+    )
+    dilewati: bool = Field(default=False, description="True bila kartu dilewati.")
 
 
 class JawabOut(BaseModel):
     status: str = Field(description="'ok' atau 'butuh_elaborasi'.")
-    next_step: int = Field(description="Langkah berikutnya.")
-    pertanyaan_berikut: dict | None = Field(default=None, description="Pertanyaan berikutnya/elaborasi.")
+    next_step: int = Field(description="Kartu berikutnya.")
+    pertanyaan_berikut: dict | None = Field(default=None, description="Kartu berikutnya/elaborasi.")
 
 
-class DnaOut(BaseModel):
-    model_config = ConfigDict(from_attributes=True)
-
-    id: uuid.UUID
-    version: int
-    misi: str
-    nilai_inti: list[str]
-    kepribadian: str
-    positioning_statement: str
-    diferensiasi: str
-    confirmed: bool
-    created_at: datetime
-
-
-class NicheSaranOut(BaseModel):
-    saran: list["NicheOut"] = Field(description="Daftar saran niche.")
-    dibuat_baru: bool = Field(description="True bila saran baru saja dibuat.")
-
-
-class NicheOut(BaseModel):
-    model_config = ConfigDict(from_attributes=True)
-
-    id: uuid.UUID
-    name: str
-    match_percent: int = Field(description="Kecocokan 0-100 berdasar kata kunci jawaban.")
-    alasan: str
-    angles: list[str] = Field(description="10 angle konten.")
-    monetisasi: str
-    persaingan: str = Field(description="rendah, sedang, atau tinggi.")
-    label_sumber: str = Field(description="DATA, ESTIMASI, atau KLAIM.")
-    is_selected: bool
+class LaporanNicheOut(BaseModel):
+    laporan: dict = Field(description="Laporan strategi niche 13 bagian + skor.")
 
 
 class PilihNicheIn(BaseModel):

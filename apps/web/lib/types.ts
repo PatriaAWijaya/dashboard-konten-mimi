@@ -274,19 +274,57 @@ export interface GenerateRekomendasiResult {
   pesan?: string;
 }
 
+export type TipeKartu =
+  | "pilihan_tunggal"
+  | "pilihan_ganda"
+  | "teks"
+  | "teks_ganda"
+  | "kreator"
+  | "kata";
+
+export interface OpsiKartu {
+  value: string;
+  judul: string;
+  deskripsi: string;
+}
+
+export interface FieldTeksKartu {
+  key: string;
+  label: string;
+  wajib: boolean;
+  placeholder: string;
+  contoh: string;
+}
+
 export interface InterviewQuestion {
   key: string;
+  nomor: number;
+  tipe: TipeKartu;
   pertanyaan: string;
+  subteks?: string;
+  wajib: boolean;
   alasan: string;
-  cara_menjawab: string;
-  contoh: string;
+  cara_menjawab?: string;
+  contoh?: string;
+  placeholder?: string;
+  opsi?: OpsiKartu[];
+  min_pilih?: number;
+  fields?: FieldTeksKartu[];
+  label_bukti?: string;
+  placeholder_bukti?: string;
+  min_slot?: number;
+  maks_slot?: number;
+  min_kata?: number;
+  maks_kata?: number;
+  placeholder_username?: string;
+  placeholder_alasan?: string;
 }
 
 export interface Interview {
   id: string;
   brand_id: string;
   current_step: number;
-  answers: Record<string, string>;
+  answers: Record<string, unknown>;
   skipped: string[];
   status: string;
   questions: InterviewQuestion[];
@@ -295,6 +333,34 @@ export interface Interview {
 export interface JawabResult {
   status: "ok" | "butuh_elaborasi";
   next_step: number;
+}
+
+export interface DimensiSkor {
+  key: string;
+  label: string;
+  skor: number;
+  maksimal: number;
+  alasan: string;
+}
+
+export interface SkorNiche {
+  dimensi: DimensiSkor[];
+  total: number;
+  maksimal: number;
+  grade: string;
+  ringkasan: string;
+}
+
+export interface LaporanNiche {
+  tujuan: string;
+  tujuan_label: string;
+  dibuat_pada: string;
+  brand: { id: string; nama: string };
+  kartu_terjawab: number;
+  kartu_total: number;
+  kartu_dilewati: string[];
+  bagian: Record<string, Record<string, unknown>>;
+  skor: SkorNiche;
 }
 
 export interface BrandDNA {

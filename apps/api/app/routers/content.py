@@ -27,12 +27,10 @@ from app.core.deps import get_current_user, get_db, get_org_context, parse_org_h
 from app.core.permissions import ROLE_EDITOR, ROLE_VIEWER
 from app.models.brand import Brand
 from app.models.content import (
-    BrandDNACard,
     Content,
     ContentMetricsDaily,
     ContentScore,
     NicheInterview,
-    NicheSuggestion,
     Recommendation,
 )
 from app.models.user import User
@@ -47,19 +45,16 @@ from app.schemas.content import (
     DashboardKontenItem,
     DashboardOut,
     DashboardTren,
-    DnaOut,
     GenerateOut,
     InterviewDetailOut,
     InterviewStartOut,
     JawabIn,
     JawabOut,
-    NicheOut,
-    NicheSaranOut,
+    LaporanNicheOut,
     PerbandinganBulan,
     PerbandinganDelta,
     PerbandinganOut,
     PeriodeIn,
-    PilihNicheIn,
     RecommendationOut,
     ScoreOut,
 )
@@ -67,12 +62,10 @@ from app.services.analisa_lanjutan import analisa_lanjutan
 from app.services.csv_import import AUTO_PLATFORM, EXPECTED_COLUMNS, import_csv
 from app.services.niche import (
     QUESTIONS,
-    confirm_dna,
+    generate_laporan,
+    reset_interview,
     save_answer,
-    select_niches,
     start_interview,
-    suggest_niches,
-    synthesize_dna,
 )
 from app.services.recommendations import generate_recommendations, set_recommendation_status
 from app.services.scoring import compute_weighted_er, run_scoring
@@ -904,7 +897,7 @@ async def tolak_rekomendasi(
 
 
 # ---------------------------------------------------------------------------
-# Niche finder
+# Niche finder (kuesioner 11 kartu -> laporan strategi 13 bagian)
 # ---------------------------------------------------------------------------
 
 @router.post(
@@ -918,7 +911,7 @@ async def mulai_wawancara(
     user: Annotated[User, Depends(get_current_user)],
     db: Annotated[AsyncSession, Depends(get_db)],
 ):
-    """Mulai (atau lanjutkan) wawancara niche 8 pertanyaan."""
+    """Mulai (atau lanjutkan) kuesioner niche 11 kartu."""
     ctx = await get_org_context(db, user, org_id, min_role=ROLE_EDITOR)
     brand = await _get_brand(db, brand_id, ctx.organization.id)
     interview = await start_interview(
@@ -940,7 +933,7 @@ async def detail_wawancara(
     user: Annotated[User, Depends(get_current_user)],
     db: Annotated[AsyncSession, Depends(get_db)],
 ):
-    """Detail wawancara + 8 pertanyaan dan panduan menjawab."""
+    """Detail wawancara + 11 kartu kuesioner."""
     ctx = await get_org_context(db, user, org_id, min_role=ROLE_VIEWER)
     interview = await _get_interview(db, iid, ctx.organization.id)
     answers = {k: v for k, v in (interview.answers or {}).items() if k != "_followup"}
@@ -962,13 +955,13 @@ async def jawab_wawancara(
     user: Annotated[User, Depends(get_current_user)],
     db: Annotated[AsyncSession, Depends(get_db)],
 ):
-    """Simpan jawaban satu langkah (bisa dilewati; jawaban pendek diminta elaborasi)."""
+    """Simpan jawaban satu kartu (terstruktur sesuai tipe kartu; kartu opsional bisa dilewati)."""
     ctx = await get_org_context(db, user, org_id, min_role=ROLE_EDITOR)
     interview = await _get_interview(db, iid, ctx.organization.id)
     try:
         hasil = await save_answer(
             db, interview=interview, step=data.step,
-            answer=data.jawaban, skipped=data.dilewati,
+            jawaban=data.jawaban, skipped=data.dilewati,
         )
     except ValueError as exc:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(exc))
@@ -976,99 +969,41 @@ async def jawab_wawancara(
     return JawabOut(status=hasil["status"], next_step=hasil["next_step"], pertanyaan_berikut=berikut)
 
 
-@router.post("/content/niche/interviews/{iid}/sintesis", response_model=DnaOut)
-async def sintesis_wawancara(
+
+@router.post("/content/niche/interviews/{iid}/mulai-ulang", response_model=InterviewStartOut)
+async def mulai_ulang_wawancara(
     iid: Annotated[uuid.UUID, Path()],
     org_id: Annotated[uuid.UUID, Depends(parse_org_header)],
     user: Annotated[User, Depends(get_current_user)],
     db: Annotated[AsyncSession, Depends(get_db)],
 ):
-    """Susun draf kartu DNA dari jawaban wawancara (perlu konfirmasi)."""
+    """Mulai ulang kuesioner dari kartu pertama (jawaban lama dibuang)."""
+    ctx = await get_org_context(db, user, org_id, min_role=ROLE_EDITOR)
+    interview = await _get_interview(db, iid, ctx.organization.id)
+    await reset_interview(db, interview=interview)
+    return InterviewStartOut(
+        id=interview.id,
+        status=interview.status,
+        current_step=interview.current_step,
+        pertanyaan_berikut=QUESTIONS[0],
+    )
+
+
+@router.post("/content/niche/interviews/{iid}/laporan", response_model=LaporanNicheOut)
+async def laporan_wawancara(
+    iid: Annotated[uuid.UUID, Path()],
+    org_id: Annotated[uuid.UUID, Depends(parse_org_header)],
+    user: Annotated[User, Depends(get_current_user)],
+    db: Annotated[AsyncSession, Depends(get_db)],
+):
+    """Hasilkan laporan strategi niche 13 bagian + skor kekuatan niche."""
     ctx = await get_org_context(db, user, org_id, min_role=ROLE_EDITOR)
     interview = await _get_interview(db, iid, ctx.organization.id)
     brand = await _get_brand(db, interview.brand_id, ctx.organization.id)
     try:
-        dna = await synthesize_dna(
+        laporan = await generate_laporan(
             db, interview=interview, brand=brand, organization_id=ctx.organization.id
         )
     except ValueError as exc:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(exc))
-    return DnaOut.model_validate(dna)
-
-
-@router.put("/content/niche/dna/{dna_id}/konfirmasi", response_model=DnaOut)
-async def konfirmasi_dna(
-    dna_id: Annotated[uuid.UUID, Path()],
-    org_id: Annotated[uuid.UUID, Depends(parse_org_header)],
-    user: Annotated[User, Depends(get_current_user)],
-    db: Annotated[AsyncSession, Depends(get_db)],
-):
-    """Konfirmasi kartu DNA brand."""
-    ctx = await get_org_context(db, user, org_id, min_role=ROLE_EDITOR)
-    dna = await db.get(BrandDNACard, dna_id)
-    if dna is None or dna.organization_id != ctx.organization.id:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail="Kartu DNA tidak ditemukan."
-        )
-    await confirm_dna(db, dna)
-    return DnaOut.model_validate(dna)
-
-
-@router.get("/content/brands/{brand_id}/niche/saran", response_model=NicheSaranOut)
-async def saran_niche(
-    brand_id: Annotated[uuid.UUID, Path()],
-    org_id: Annotated[uuid.UUID, Depends(parse_org_header)],
-    user: Annotated[User, Depends(get_current_user)],
-    db: Annotated[AsyncSession, Depends(get_db)],
-):
-    """Daftar saran niche; dibuat otomatis bila belum ada dan DNA sudah dikonfirmasi."""
-    ctx = await get_org_context(db, user, org_id, min_role=ROLE_VIEWER)
-    brand = await _get_brand(db, brand_id, ctx.organization.id)
-    rows = (
-        await db.execute(
-            select(NicheSuggestion)
-            .where(NicheSuggestion.brand_id == brand.id)
-            .order_by(NicheSuggestion.match_percent.desc())
-        )
-    ).scalars().all()
-    dibuat_baru = False
-    if not rows:
-        dna = (
-            await db.execute(
-                select(BrandDNACard)
-                .where(BrandDNACard.brand_id == brand.id, BrandDNACard.confirmed.is_(True))
-                .order_by(BrandDNACard.version.desc())
-                .limit(1)
-            )
-        ).scalar_one_or_none()
-        if dna is not None:
-            try:
-                rows = await suggest_niches(
-                    db, brand=brand, organization_id=ctx.organization.id, dna=dna
-                )
-                dibuat_baru = True
-            except ValueError as exc:
-                raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(exc))
-    return NicheSaranOut(
-        saran=[NicheOut.model_validate(r) for r in rows], dibuat_baru=dibuat_baru
-    )
-
-
-@router.post("/content/brands/{brand_id}/niche/pilih", response_model=list[NicheOut])
-async def pilih_niche(
-    brand_id: Annotated[uuid.UUID, Path()],
-    data: PilihNicheIn,
-    org_id: Annotated[uuid.UUID, Depends(parse_org_header)],
-    user: Annotated[User, Depends(get_current_user)],
-    db: Annotated[AsyncSession, Depends(get_db)],
-):
-    """Pilih 1-2 niche untuk difokuskan."""
-    ctx = await get_org_context(db, user, org_id, min_role=ROLE_EDITOR)
-    brand = await _get_brand(db, brand_id, ctx.organization.id)
-    try:
-        hasil = await select_niches(
-            db, brand=brand, organization_id=ctx.organization.id, ids=list(data.ids)
-        )
-    except ValueError as exc:
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(exc))
-    return [NicheOut.model_validate(r) for r in hasil]
+    return LaporanNicheOut(laporan=laporan)

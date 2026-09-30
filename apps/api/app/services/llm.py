@@ -161,21 +161,47 @@ class MockLLMProvider(LLMProvider):
     # -- niche ------------------------------------------------------------
 
     def _narrate_niche(self, ctx: dict) -> str:
+        # Konteks baru: hasil kuesioner Niche Finder 11 kartu (tujuan/jawaban).
+        # Fallback ke konteks lama {"niches": [...]} bila masih dipakai pemanggil lama.
+        if ctx.get("niches"):
+            brand = ctx.get("brand_name") or "brand Anda"
+            niches: list = ctx.get("niches") or []
+            baris = [
+                f'Daftar niche yang paling selaras dengan DNA brand "{brand}":',
+                "",
+            ]
+            for i, nic in enumerate(niches, start=1):
+                nama = nic.get("name", "-")
+                match = _pct(nic.get("match_percent", 0.0))
+                alasan = nic.get("alasan", "")
+                baris.append(f"{i}. {nama} — kecocokan {match}. {alasan}".strip())
+            baris += [
+                "",
+                "Pilih 1-2 niche untuk difokuskan 90 hari ke depan, lalu ukur "
+                "win rate kontennya sebelum menambah niche baru.",
+            ]
+            return "\n".join(baris)
+
         brand = ctx.get("brand_name") or "brand Anda"
-        niches: list = ctx.get("niches") or []
+        tujuan = ctx.get("tujuan") or "-"
+        terjawab = int(ctx.get("terjawab") or 0)
+        total = int(ctx.get("total") or 11)
+        dilewati = ctx.get("dilewati") or []
+        jawaban = ctx.get("jawaban") or {}
+        topik = ((jawaban.get("topik") or {}).get("utama")) if isinstance(jawaban.get("topik"), dict) else None
         baris = [
-            f'Daftar niche yang paling selaras dengan DNA brand "{brand}":',
+            f'Laporan niche "{brand}" selesai disusun.',
             "",
+            f"Tujuan kuesioner: {tujuan}.",
+            f"Kartu terjawab: {terjawab} dari {total}"
+            + (f" ({len(dilewati)} dilewati)." if dilewati else "."),
         ]
-        for i, nic in enumerate(niches, start=1):
-            nama = nic.get("name", "-")
-            match = _pct(nic.get("match_percent", 0.0))
-            alasan = nic.get("alasan", "")
-            baris.append(f"{i}. {nama} — kecocokan {match}. {alasan}".strip())
+        if topik:
+            baris.append(f"Topik utama: {topik}.")
         baris += [
             "",
-            "Pilih 1-2 niche untuk difokuskan 90 hari ke depan, lalu ukur "
-            "win rate kontennya sebelum menambah niche baru.",
+            "Fokus 30 hari ke depan pada satu topik utama, ukur pola konten yang "
+            "menang, lalu tajamkan niche berdasarkan data — bukan asumsi.",
         ]
         return "\n".join(baris)
 

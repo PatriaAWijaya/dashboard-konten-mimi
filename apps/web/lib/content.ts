@@ -16,6 +16,8 @@ import type {
   BrandDashboard,
   CsvColumnInfo,
   Interview,
+  InterviewQuestion,
+  LaporanNiche,
   NicheSuggestion,
   PerbandinganBulan,
   PerbandinganData,
@@ -231,71 +233,239 @@ export const demoRekomendasi: Rekomendasi[] = [
   },
 ];
 
+export const demoNicheQuestions: InterviewQuestion[] = [
+  {
+    key: "tujuan", nomor: 1, tipe: "pilihan_tunggal",
+    pertanyaan: "Pilih 1 tujuan kamu",
+    subteks: "Tujuan menentukan arah seluruh rekomendasi di laporan.",
+    wajib: true, alasan: "Akun baru butuh fondasi niche; akun lama butuh analisa data performa.",
+    opsi: [
+      { value: "bikin_baru", judul: "Bikin akun baru", deskripsi: "Temukan niche dari topik, pengalaman, dan orang yang paling ingin kamu bantu." },
+      { value: "pivot", judul: "Pivot atau re-branding", deskripsi: "Analisa akunmu saat ini, lalu temukan arah niche baru yang paling sesuai." },
+      { value: "tajamkan", judul: "Tajamkan niche sekarang", deskripsi: "Cari sub-niche, audiens, dan masalah paling kuat dari pola konten yang sudah terbukti." },
+    ],
+  },
+  {
+    key: "topik", nomor: 2, tipe: "teks_ganda",
+    pertanyaan: "Topik apa yang ingin kamu bahas di kontenmu?",
+    wajib: true, alasan: "Satu topik utama yang tajam mengalahkan tiga topik yang tanggung.",
+    contoh: "Topik utama: strategi branding yayasan agar dilirik donatur.",
+    fields: [
+      { key: "utama", label: "1 · Topik utama", wajib: true, placeholder: "mis. tips konten TikTok untuk UMKM pemula", contoh: "" },
+      { key: "side_2", label: "2 · Side topic", wajib: false, placeholder: "Topik pendukung (opsional)", contoh: "" },
+      { key: "side_3", label: "3 · Side topic", wajib: false, placeholder: "Topik pendukung lain (opsional)", contoh: "" },
+    ],
+  },
+  {
+    key: "pengalaman", nomor: 3, tipe: "pilihan_ganda",
+    pertanyaan: "Di topik yang kamu sebutkan, kamu punya pengalaman apa?",
+    subteks: "Pilih minimal 1. Setiap pilihan wajib disertai bukti singkat.",
+    wajib: true, min_pilih: 1,
+    alasan: "Kredibilitas niche dibangun dari bukti nyata, bukan sekadar klaim.",
+    label_bukti: "Ceritakan bukti singkat",
+    placeholder_bukti: "Pengalaman, contoh, hasil, atau kenapa ini nyambung dengan topikmu…",
+    opsi: [
+      { value: "pengalaman", judul: "Pengalaman", deskripsi: "Hal berat yang pernah kamu lewati, atau orang sering minta bantuanmu soal ini." },
+      { value: "pencapaian", judul: "Pencapaian", deskripsi: "Hasil nyata yang pernah kamu raih di topik ini." },
+      { value: "passion", judul: "Passion / hobi", deskripsi: "Hal yang terakhir kamu cari di TikTok/YouTube murni karena penasaran." },
+      { value: "masalah", judul: "Masalah / keresahan", deskripsi: "Hal yang bikin kamu gemas kalau orang menjelaskannya dengan salah." },
+    ],
+  },
+  {
+    key: "target_audiens", nomor: 4, tipe: "teks",
+    pertanyaan: "Orang seperti apa yang ingin kamu targetkan?",
+    wajib: true, alasan: "Konten yang bicara ke semua orang tidak didengar siapa pun.",
+    cara_menjawab: "Sebutkan ciri spesifik: profesi, usia, kondisi, atau komunitasnya.",
+    placeholder: "Contoh: fresh graduate yang baru masuk dunia kerja",
+  },
+  {
+    key: "dikenal_untuk", nomor: 5, tipe: "teks",
+    pertanyaan: "Biasanya orang cari kamu untuk hal apa?",
+    subteks: "Atau: teman-teman ingat kamu jago di bidang apa?",
+    wajib: true, alasan: "Reputasi yang sudah ada adalah modal niche yang paling murah.",
+    placeholder: "Contoh: dimintai tolong bikin desain presentasi yang rapi",
+  },
+  {
+    key: "harapan_perubahan", nomor: 6, tipe: "teks",
+    pertanyaan: "Kalau orang follow kamu, perubahan apa yang kamu harapkan terjadi?",
+    subteks: "Opsional, tapi makin jelas harapanmu, makin tajam rekomendasinya.",
+    wajib: false, alasan: "Niche yang kuat menjanjikan transformasi yang jelas bagi audiens.",
+    placeholder: "Contoh: jadi lebih pede tampil di depan kamera",
+  },
+  {
+    key: "kreator_inspirasi", nomor: 7, tipe: "kreator",
+    pertanyaan: "Sebutkan kreator atau akun yang jadi inspirasi kamu",
+    subteks: "Minimal 1, maksimal 3. Tulis username (tanpa @) dan kenapa kamu suka.",
+    wajib: true, min_slot: 1, maks_slot: 3,
+    alasan: "Gaya kreator favoritmu adalah petunjuk selera audiens yang ingin kamu tarik.",
+    placeholder_username: "username (tanpa @), mis. karyakreatifid",
+    placeholder_alasan: "Kenapa kamu suka gaya kontennya…",
+  },
+  {
+    key: "kata_persona", nomor: 8, tipe: "kata",
+    pertanyaan: "Kamu ingin dikenal sebagai orang yang seperti apa?",
+    subteks: "Tulis 1–3 kata sifat, satu kata per kotak. Minimal 1 kata.",
+    wajib: true, min_kata: 1, maks_kata: 3,
+    alasan: "Persona yang konsisten bikin audiens mudah mengingat dan merekomendasikanmu.",
+    contoh: "praktis, hangat, punya bukti",
+  },
+  {
+    key: "platform", nomor: 9, tipe: "pilihan_ganda",
+    pertanyaan: "Kamu bakal ngonten di platform apa?",
+    subteks: "Boleh pilih dua-duanya.",
+    wajib: true, min_pilih: 1,
+    alasan: "Format dan gaya konten mengikuti kebiasaan tiap platform.",
+    opsi: [
+      { value: "instagram", judul: "Instagram", deskripsi: "Feed, Reels, Stories, bio." },
+      { value: "tiktok", judul: "TikTok", deskripsi: "Short video, hooks, trends." },
+    ],
+  },
+  {
+    key: "pantangan", nomor: 10, tipe: "teks",
+    pertanyaan: "Apa hal yang kamu tidak mau ada dalam kontenmu?",
+    wajib: false, alasan: "Batasan yang jelas menjaga konsistensi persona dan kepercayaan audiens.",
+    placeholder: "Misal: kata gue/lo, hard selling, flexing, kata kasar, muncul muka",
+  },
+  {
+    key: "audiens_inggris", nomor: 11, tipe: "pilihan_tunggal",
+    pertanyaan: "Mau sekalian jangkau audiens berbahasa Inggris (market global)?",
+    subteks: "Opsional. Kalau iya, kami tambahkan referensi kreator global + ide konten bilingual sebagai pelengkap.",
+    wajib: false,
+    alasan: "Yang works untuk audiens berbahasa Inggris belum tentu seefektif itu untuk audiens Indonesia.",
+    opsi: [
+      { value: "ya", judul: "Iya, sekalian", deskripsi: "Tambah referensi kreator global + ide konten bilingual." },
+      { value: "tidak", judul: "Nggak, fokus Indonesia dulu", deskripsi: "Fokus penuh ke audiens Indonesia." },
+    ],
+  },
+];
+
 export const demoInterview: Interview = {
   id: "interview-demo-1",
   brand_id: "brand-demo-1",
-  current_step: 1,
+  current_step: 0,
   answers: {},
   skipped: [],
   status: "berjalan",
-  questions: [
-    {
-      key: "misi",
-      pertanyaan: "Apa misi brand Anda dalam satu kalimat? Masalah apa yang ingin Anda selesaikan untuk audiens?",
-      alasan: "Misi menjadi kompas seluruh keputusan konten. Tanpa misi yang jelas, konten mudah ikut-ikutan tren dan kehilangan arah.",
-      cara_menjawab: "Tulis satu kalimat: 'Kami membantu [siapa] untuk [hasil] tanpa [hambatan]'.",
-      contoh: "Kami membantu pemilik UMKM kuliner menaikkan omzet lewat branding yang rapi tanpa biaya agensi mahal.",
+  questions: demoNicheQuestions,
+};
+
+export const demoNicheLaporan: LaporanNiche = {
+  tujuan: "bikin_baru",
+  tujuan_label: "Bikin akun baru",
+  dibuat_pada: "2026-09-30",
+  brand: { id: "brand-demo-1", nama: "@kopisenja" },
+  kartu_terjawab: 11,
+  kartu_total: 11,
+  kartu_dilewati: [],
+  skor: {
+    dimensi: [
+      { key: "spesifik", label: "Spesifik", skor: 3, maksimal: 3, alasan: "Target audiens spesifik: detail + penanda jelas." },
+      { key: "kredibilitas", label: "Kredibilitas", skor: 2, maksimal: 3, alasan: "Ada bukti pengalaman, tapi bisa diperkuat dengan angka." },
+      { key: "cocok_pasar", label: "Cocok pasar", skor: 3, maksimal: 3, alasan: "Topik selaras kuat dengan reputasi yang dikenal orang." },
+      { key: "pembeda", label: "Pembeda", skor: 2, maksimal: 3, alasan: "Ada persona, tapi pembeda dari kreator lain belum tajam." },
+      { key: "tahan_lama", label: "Tahan lama", skor: 3, maksimal: 3, alasan: "Motivasi jelas + topik yang dinikmati." },
+    ],
+    total: 13, maksimal: 15, grade: "A",
+    ringkasan: "Niche sangat kuat — siap dieksekusi agresif.",
+  },
+  bagian: {
+    ringkasan: {
+      judul: "Ringkasan",
+      niche_utama: "tips konten TikTok untuk UMKM pemula untuk pemilik UMKM kuliner di Surabaya",
+      grade: "A", total_skor: 13,
+      kalimat: "Contoh laporan mode demo — isi lengkap tersedia setelah kuesioner diisi via backend.",
+      disclaimer: "Laporan ini disusun dari jawaban kuesionermu. Ini panduan strategi, bukan jaminan hasil.",
     },
-    {
-      key: "audiens",
-      pertanyaan: "Siapa audiens utama Anda? Sebutkan usia, pekerjaan, dan kebiasaan digital mereka.",
-      alasan: "Niche yang tepat lahir dari pemahaman audiens yang spesifik. Semakin detail, semakin mudah menemukan angle konten yang nendang.",
-      cara_menjawab: "Deskripsikan 1 persona utama sedetail mungkin, bukan 'semua orang'.",
-      contoh: "Ibu rumah tangga 28–40 tahun di kota besar, aktif di Instagram jam 20.00–22.00, suka menyimpan tips praktis.",
+    temuan_akun: {
+      judul: "Temuan akun", mode: "fondasi", sumber: "ESTIMASI",
+      narasi: "Kamu memilih bikin akun baru — bagian ini adalah fondasi awal. Setelah 30 hari konsisten posting, kembali dengan tujuan 'Tajamkan niche' agar rekomendasi memakai data nyatamu.",
+      yang_dilacak: ["Format konten vs engagement rate", "Topik mana yang paling sering menang", "Jam posting vs performa"],
     },
-    {
-      key: "nilai",
-      pertanyaan: "Nilai apa yang tidak bisa ditawar oleh brand Anda? (maksimal 3)",
-      alasan: "Nilai inti membedakan brand Anda dari kompetitor yang menjual produk serupa. Ini bahan bakar positioning.",
-      cara_menjawab: "Pilih 3 kata sifat yang benar-benar Anda jalani, bukan sekadar slogan.",
-      contoh: "Jujur soal bahan, konsisten rasa, ramah ke pelanggan baru.",
+    pengemasan_konten: {
+      judul: "Pengemasan konten",
+      hook: ["Buka dengan masalah audiens, bukan perkenalan diri.", "3 detik pertama menentukan — tulis hook dulu sebelum isi."],
+      cta: ["Akhiri dengan 1 ajakan jelas: simpan, komen, atau follow."],
+      optimasi: ["Konsisten format 30 hari sebelum menilai.", "Pelajari pola hook kreator inspirasimu."],
+      inspirasi_gaya: "@karyakreatifid (hook jelas, gaya santai)",
+      pantangan: "hard selling, flexing",
     },
-    {
-      key: "kepribadian",
-      pertanyaan: "Jika brand Anda adalah seseorang, seperti apa kepribadiannya?",
-      alasan: "Kepribadian menentukan tone of voice konten: kaku atau santai, serius atau jenaka.",
-      cara_menjawab: "Bayangkan brand sebagai teman. Bagaimana ia bicara dan bercanda?",
-      contoh: "Seperti kakak yang hangat dan apa adanya — banyak bercanda tapi serius soal kualitas.",
+    target_market: {
+      judul: "Target market",
+      kalimat_niche: "tips konten TikTok untuk UMKM pemula untuk pemilik UMKM kuliner di Surabaya",
+      siapa: "pemilik UMKM kuliner di Surabaya",
+      masalah_mereka: "Mereka butuh bantuan soal: konten TikTok yang konsisten.",
+      tujuan_mereka: "UMKM jadi lebih pede tampil di depan kamera",
     },
-    {
-      key: "keunggulan",
-      pertanyaan: "Apa yang Anda lakukan lebih baik dari kompetitor? Apa buktinya?",
-      alasan: "Diferensiasi harus berbasis bukti, bukan klaim. Ini yang membuat niche Anda defensibel.",
-      cara_menjawab: "Sebutkan 1–2 keunggulan + bukti konkret (angka, testimoni, proses).",
-      contoh: "Sangrai kopi sendiri setiap pagi — 92% pelanggan menyebut aroma sebagai alasan kembali.",
+    positioning: {
+      judul: "Positioning",
+      opsi: [
+        { nama: "Si Praktis", deskripsi: "Dikenal sebagai sosok praktis dalam membahas tips konten.", pembeda: "Pembeda kamu: pengalaman jualan lewat live.", risiko: "Terlalu generik bila tidak didukung bukti konkret." },
+        { nama: "Si Hangat", deskripsi: "Dikenal sebagai sosok hangat dalam membahas tips konten.", pembeda: "Pembeda kamu: pengalaman jualan lewat live.", risiko: "Bisa terasa menggurui bila nada tidak dijaga." },
+        { nama: "Si Berbukti", deskripsi: "Dikenal sebagai sosok berbukti dalam membahas tips konten.", pembeda: "Pembeda kamu: pengalaman jualan lewat live.", risiko: "Butuh konsistensi lama sebelum audiens percaya." },
+      ],
     },
-    {
-      key: "topik",
-      pertanyaan: "Topik apa yang paling Anda kuasai dan senang dibahas berjam-jam?",
-      alasan: "Niche yang sustainable butuh topik yang tidak membuat Anda bosan dalam 6 bulan.",
-      cara_menjawab: "Tulis 3 topik yang Anda bahas tanpa perlu persiapan panjang.",
-      contoh: "Teknik seduh manual, cerita petani kopi, eksperimen resep minuman.",
+    strategi_transisi: {
+      judul: "Strategi transisi", nama: "Fondasi dari nol",
+      kenapa_cocok: "Akun baru menang lewat kejelasan, bukan kuantitas.",
+      cara_jalan: ["Tetapkan 1 topik utama selama 30 hari.", "Bangun 9-12 konten fondasi.", "Optimasi bio sebelum posting pertama."],
+      yang_perlu_diwaspadai: ["Jangan ganti niche sebelum 30 hari konsisten."],
     },
-    {
-      key: "monetisasi",
-      pertanyaan: "Bagaimana brand Anda menghasilkan uang saat ini, dan bagaimana dalam 1 tahun ke depan?",
-      alasan: "Saran niche harus realistis dimonetisasi. Jawaban ini menyaring niche yang 'ramai tapi tidak menghasilkan'.",
-      cara_menjawab: "Jujur soal kondisi sekarang dan target 12 bulan ke depan.",
-      contoh: "Sekarang: penjualan kedai. Target: kelas seduh online + langganan biji kopi.",
+    pilar_konten: {
+      judul: "Pilar konten", fase: "Fase A · Validasi Awal",
+      mix: [
+        { nama: "Topik utama", porsi: 50, keterangan: "Fondasi niche." },
+        { nama: "Topik luas", porsi: 20, keterangan: "Jangkau audiens baru." },
+        { nama: "Personal life", porsi: 30, keterangan: "Bangun kedekatan." },
+      ],
     },
-    {
-      key: "batasan",
-      pertanyaan: "Topik atau gaya konten apa yang TIDAK akan Anda buat, apa pun trennya?",
-      alasan: "Batasan menjaga brand tetap otentik dan menghindari niche yang bertentangan dengan nilai Anda.",
-      cara_menjawab: "Sebutkan 2–3 hal yang pantang bagi brand Anda.",
-      contoh: "Tidak akan ikut tren joget, tidak membahas politik, tidak diskon besar-besaran.",
+    ide_siap_posting: {
+      judul: "Ide siap posting",
+      ide: [
+        { judul: "3 kesalahan UMKM soal konten TikTok", hook: "Stop lakukan ini…", format: "Reels/TikTok 30 detik", cta: "Simpan buat besok.", tips: "Satu kesalahan satu contoh nyata." },
+        { judul: "Cara mulai konten dari nol", hook: "Panduan buat pemula — tanpa ribet.", format: "Reels/TikTok 30 detik", cta: "Follow biar nggak ketinggalan part 2.", tips: "Pecah jadi 3 part." },
+      ],
     },
-  ],
+    opsi_bio: {
+      judul: "Opsi bio",
+      catatan: "Struktur bio yang baik: A = value proposition, B = kredibilitas, C = call to action.",
+      opsi: [
+        { nama: "Bio A · To the point", baris: ["Bantu UMKM kuliner", "Lewat tips konten TikTok", "👇 Mulai dari sini"], nada: "Langsung dan jelas." },
+      ],
+    },
+    kekuatan_niche: {
+      judul: "Kekuatan niche",
+      dimensi: [
+        { key: "spesifik", label: "Spesifik", skor: 3, maksimal: 3, alasan: "Target audiens spesifik." },
+        { key: "kredibilitas", label: "Kredibilitas", skor: 2, maksimal: 3, alasan: "Bukti bisa diperkuat." },
+        { key: "cocok_pasar", label: "Cocok pasar", skor: 3, maksimal: 3, alasan: "Topik selaras reputasi." },
+        { key: "pembeda", label: "Pembeda", skor: 2, maksimal: 3, alasan: "Pembeda belum tajam." },
+        { key: "tahan_lama", label: "Tahan lama", skor: 3, maksimal: 3, alasan: "Motivasi + passion kuat." },
+      ],
+      total: 13, maksimal: 15, grade: "A", ringkasan: "Niche sangat kuat — siap dieksekusi agresif.",
+    },
+    swot: {
+      judul: "SWOT",
+      kekuatan: ["Punya pengalaman di topik ini"],
+      kelemahan: ["Belum ada kelemahan menonjol dari jawaban."],
+      peluang: ["Audiens Indonesia yang haus konten praktis."],
+      ancaman: ["Kreator se-topik dengan tim lebih besar.", "Perubahan algoritma platform."],
+    },
+    minggu_pertama: {
+      judul: "Minggu pertama",
+      aksi: [
+        { judul: "Pasang bio baru", detail: "Pilih salah satu opsi bio dan pasang hari ini.", level: "Gampang" },
+        { judul: "Posting 3 konten pilar", detail: "Ambil 3 ide dari daftar. Satu format, satu gaya.", level: "Sedang" },
+        { judul: "Riset 5 kreator se-niche", detail: "Catat 3 hook terbaik tiap kreator inspirasimu.", level: "Gampang" },
+      ],
+    },
+    kesimpulan: {
+      judul: "Kesimpulan",
+      niche: "tips konten TikTok untuk UMKM pemula untuk pemilik UMKM kuliner di Surabaya",
+      grade: "A (13/15)",
+      arah_selanjutnya: "Fokus 30 hari pertama: validasi 1 topik utama dengan posting konsisten.",
+      langkah_pertama: "Pasang bio baru hari ini, lalu posting konten pertama dari daftar ide siap posting.",
+    },
+  },
 };
 
 export const demoDNA: BrandDNA = {
