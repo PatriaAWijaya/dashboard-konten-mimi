@@ -40,12 +40,12 @@ type MetrikBanding =
 const METRIK_BANDING: { value: MetrikBanding; label: string; warna: string }[] = [
   { value: "views", label: "Views", warna: "#4f46e5" },
   { value: "engagement", label: "Engagement", warna: "#059669" },
-  { value: "jumlah_konten", label: "Jumlah konten", warna: "#64748b" },
+  { value: "jumlah_konten", label: "Posts", warna: "#64748b" },
   { value: "reach", label: "Reach", warna: "#0284c7" },
   { value: "likes", label: "Likes", warna: "#e11d48" },
-  { value: "comments", label: "Komentar", warna: "#d97706" },
-  { value: "saves", label: "Simpanan", warna: "#7c3aed" },
-  { value: "shares", label: "Share", warna: "#0d9488" },
+  { value: "comments", label: "Comments", warna: "#d97706" },
+  { value: "saves", label: "Saves", warna: "#7c3aed" },
+  { value: "shares", label: "Shares", warna: "#0d9488" },
   { value: "follows", label: "Follows", warna: "#db2777" },
 ];
 const RENTANG_BANDING = [

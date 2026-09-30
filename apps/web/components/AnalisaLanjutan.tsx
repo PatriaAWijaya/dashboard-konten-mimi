@@ -9,9 +9,9 @@ import { Alert, Card, Select, Spinner } from "@/components/ui";
 
 const WARNA_ENGAGEMENT: { kunci: string; label: string; warna: string }[] = [
   { kunci: "likes", label: "Likes", warna: "#e11d48" },
-  { kunci: "comments", label: "Komentar", warna: "#d97706" },
-  { kunci: "saves", label: "Simpanan", warna: "#7c3aed" },
-  { kunci: "shares", label: "Share", warna: "#0d9488" },
+  { kunci: "comments", label: "Comments", warna: "#d97706" },
+  { kunci: "saves", label: "Saves", warna: "#7c3aed" },
+  { kunci: "shares", label: "Shares", warna: "#0d9488" },
   { kunci: "follows", label: "Follows", warna: "#db2777" },
 ];
 
@@ -272,9 +272,9 @@ export default function AnalisaLanjutan({
                 <th className="py-2 pr-3 text-right">Konten</th>
                 <th className="py-2 pr-3 text-right">Views</th>
                 <th className="py-2 pr-3 text-right">Likes</th>
-                <th className="py-2 pr-3 text-right">Komentar</th>
-                <th className="py-2 pr-3 text-right">Simpanan</th>
-                <th className="py-2 pr-3 text-right">Share</th>
+                <th className="py-2 pr-3 text-right">Comments</th>
+                <th className="py-2 pr-3 text-right">Saves</th>
+                <th className="py-2 pr-3 text-right">Shares</th>
                 <th className="py-2 pr-3 text-right">Follows</th>
                 <th className="py-2 pr-3 text-right">Total eng.</th>
                 <th className="py-2 text-right">Rata-rata WER</th>
