@@ -257,6 +257,11 @@ export interface AnalisaKesesuaian {
 export type TipeRekomendasi = "perbanyak" | "perbaiki" | "kurangi" | "coba_baru";
 export type StatusRekomendasi = "baru" | "diterima" | "ditolak";
 
+export interface ReferensiKonten {
+  post_id: string;
+  post_url: string | null;
+}
+
 export interface Rekomendasi {
   id: string;
   type: TipeRekomendasi;
@@ -264,6 +269,7 @@ export interface Rekomendasi {
   narrative: string;
   evidence: Record<string, unknown> | string;
   reference_content_ids: string[];
+  reference_contents?: ReferensiKonten[];
   status: StatusRekomendasi;
   period_start: string | null;
   period_end: string | null;

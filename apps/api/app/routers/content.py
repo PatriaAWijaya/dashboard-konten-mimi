@@ -813,6 +813,41 @@ async def brand_perbandingan(
 # Rekomendasi
 # ---------------------------------------------------------------------------
 
+async def _enrich_recommendations(
+    db: AsyncSession, brand_id: uuid.UUID, recs: list[Recommendation]
+) -> list[RecommendationOut]:
+    """Lengkapi RecommendationOut dengan post_url konten acuan untuk link."""
+    # Kumpulkan semua post_id unik dari seluruh rekomendasi.
+    semua_ids: set[str] = set()
+    for r in recs:
+        for pid in r.reference_content_ids or []:
+            if pid:
+                semua_ids.add(str(pid))
+    # Petakan post_id -> post_url.
+    url_map: dict[str, str | None] = {}
+    if semua_ids:
+        rows = (
+            await db.execute(
+                select(Content.post_id, Content.post_url).where(
+                    Content.brand_id == brand_id,
+                    Content.post_id.in_(list(semua_ids)),
+                )
+            )
+        ).all()
+        for post_id, post_url in rows:
+            url_map[str(post_id)] = post_url
+    hasil: list[RecommendationOut] = []
+    for r in recs:
+        out = RecommendationOut.model_validate(r)
+        out.reference_contents = [
+            {"post_id": str(pid), "post_url": url_map.get(str(pid))}
+            for pid in (r.reference_content_ids or [])
+            if pid
+        ]
+        hasil.append(out)
+    return hasil
+
+
 @router.get(
     "/content/brands/{brand_id}/recommendations",
     response_model=list[RecommendationOut],
@@ -835,7 +870,7 @@ async def list_recommendations(
         awal, akhir = _resolve_period(periode)
         q = q.where(Recommendation.period_start == awal, Recommendation.period_end == akhir)
     rows = (await db.execute(q.order_by(Recommendation.created_at.desc()).limit(50))).scalars().all()
-    return [RecommendationOut.model_validate(r) for r in rows]
+    return await _enrich_recommendations(db, brand.id, list(rows))
 
 
 @router.post(
@@ -863,7 +898,7 @@ async def generate_brand_recommendations(
             pesan="Data belum cukup (butuh ≥10 konten per periode).",
         )
     return GenerateOut(
-        dibuat=[RecommendationOut.model_validate(r) for r in hasil], pesan=None
+        dibuat=await _enrich_recommendations(db, brand.id, list(hasil)), pesan=None
     )
 
 

@@ -165,6 +165,10 @@ class RecommendationOut(BaseModel):
     narrative: str = Field(description="Narasi rekomendasi (dari LLM, berbasis angka bukti).")
     evidence: dict = Field(description="Angka bukti: n, win_rate, avg_score, avg_wer, contoh, format, tujuan.")
     reference_content_ids: list = Field(description="Contoh post_id pendukung.")
+    reference_contents: list[dict] = Field(
+        default_factory=list,
+        description="Detail konten acuan: post_id dan post_url untuk link.",
+    )
     status: str = Field(description="Status: baru, diterima, ditolak.")
     period_start: date | None
     period_end: date | None

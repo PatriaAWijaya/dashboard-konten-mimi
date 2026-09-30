@@ -1,5 +1,6 @@
 "use client";
 
+import type { ReactNode } from "react";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
@@ -51,6 +52,42 @@ function formatEvidence(ev: Record<string, unknown> | string): string {
   return bagian.length > 0 ? bagian.join(" · ") : "-";
 }
 
+/** Ubah ID konten di teks narasi menjadi link ke konten asli (buka tab baru). */
+function linkifyKonten(
+  teks: string,
+  urlMap: Map<string, string | null>
+): ReactNode[] {
+  // Cocokkan ID numerik panjang (post_id Instagram) atau pola c-001.
+  const pola = /\b(\d{8,}|c-\d{3})\b/g;
+  const hasil: React.ReactNode[] = [];
+  let terakhir = 0;
+  let m: RegExpExecArray | null;
+  let kunci = 0;
+  while ((m = pola.exec(teks)) !== null) {
+    if (m.index > terakhir) hasil.push(teks.slice(terakhir, m.index));
+    const pid = m[1];
+    const url = urlMap.get(pid);
+    if (url) {
+      hasil.push(
+        <a
+          key={kunci++}
+          href={url}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="font-medium text-orange-600 underline hover:text-orange-700"
+        >
+          {pid}
+        </a>
+      );
+    } else {
+      hasil.push(pid);
+    }
+    terakhir = m.index + m[0].length;
+  }
+  if (terakhir < teks.length) hasil.push(teks.slice(terakhir));
+  return hasil;
+}
+
 function KartuRekomendasi({
   item,
   brandId,
@@ -74,6 +111,15 @@ function KartuRekomendasi({
     ""
   )}&tujuan=${encodeURIComponent("")}`;
 
+  const urlMap = useMemo(
+    () =>
+      new Map(
+        (item.reference_contents ?? []).map((r) => [r.post_id, r.post_url] as const)
+      ),
+    [item.reference_contents]
+  );
+  const acuan = item.reference_contents ?? [];
+
   return (
     <Card
       className={`border ${meta.tone} ${ditolak ? "opacity-60" : ""}`}
@@ -94,7 +140,7 @@ function KartuRekomendasi({
         )}
       </div>
       <h3 className="text-base font-semibold text-slate-900">{item.title}</h3>
-      <p className="mt-2 text-sm leading-relaxed text-slate-700">{item.narrative}</p>
+      <p className="mt-2 text-sm leading-relaxed text-slate-700">{linkifyKonten(item.narrative, urlMap)}</p>
 
       <div className="mt-3 rounded-xl bg-white/70 p-3">
         <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
@@ -103,14 +149,26 @@ function KartuRekomendasi({
         <p className="mt-1 text-sm text-slate-700">{formatEvidence(item.evidence)}</p>
       </div>
 
-      {(item.reference_content_ids?.length ?? 0) > 0 && (
+      {acuan.length > 0 && (
         <p className="mt-3 text-sm text-slate-600">
           <span className="font-medium text-slate-800">Contoh konten acuan:</span>{" "}
-          {(item.reference_content_ids ?? []).map((id) => (
-            <code key={id} className="mr-1.5 rounded bg-slate-100 px-1.5 py-0.5 font-mono text-xs text-slate-700">
-              {id}
-            </code>
-          ))}
+          {acuan.map((r) =>
+            r.post_url ? (
+              <a
+                key={r.post_id}
+                href={r.post_url}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="mr-1.5 rounded bg-slate-100 px-1.5 py-0.5 font-mono text-xs text-orange-700 underline hover:bg-orange-100"
+              >
+                {r.post_id} ↗
+              </a>
+            ) : (
+              <code key={r.post_id} className="mr-1.5 rounded bg-slate-100 px-1.5 py-0.5 font-mono text-xs text-slate-700">
+                {r.post_id}
+              </code>
+            )
+          )}
         </p>
       )}
 
