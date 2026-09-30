@@ -90,7 +90,7 @@ function RingkasanHarga() {
           className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm"
         >
           <h3 className="text-lg font-bold text-slate-900">{plan.name}</h3>
-          <p className="mt-2 text-3xl font-extrabold text-indigo-600">
+          <p className="mt-2 text-3xl font-extrabold text-orange-600">
             {formatRupiah(plan.price)}
           </p>
           <p className="mt-1 text-sm text-slate-500">
@@ -114,10 +114,10 @@ export default function LandingPage() {
   return (
     <div className="bg-white">
       {/* Hero */}
-      <section className="relative overflow-hidden bg-gradient-to-b from-indigo-50 via-white to-white">
+      <section className="relative overflow-hidden bg-gradient-to-b from-orange-50 via-white to-white">
         <div className="mx-auto max-w-7xl px-4 pb-16 pt-16 sm:px-6 sm:pt-24">
           <div className="mx-auto max-w-3xl text-center">
-            <span className="inline-flex items-center rounded-full bg-indigo-100 px-3 py-1 text-xs font-semibold text-indigo-700 ring-1 ring-inset ring-indigo-200">
+            <span className="inline-flex items-center rounded-full bg-orange-100 px-3 py-1 text-xs font-semibold text-orange-700 ring-1 ring-inset ring-orange-200">
               Dibuat untuk brand & agensi Indonesia
             </span>
             <h1 className="mt-6 text-4xl font-extrabold tracking-tight text-slate-900 sm:text-5xl lg:text-6xl">
@@ -131,7 +131,7 @@ export default function LandingPage() {
             <div className="mt-8 flex flex-col items-center justify-center gap-3 sm:flex-row">
               <Link
                 href="/register"
-                className="w-full rounded-xl bg-indigo-600 px-8 py-3.5 text-base font-semibold text-white shadow-sm hover:bg-indigo-700 sm:w-auto"
+                className="w-full rounded-xl bg-orange-600 px-8 py-3.5 text-base font-semibold text-white shadow-sm hover:bg-orange-700 sm:w-auto"
               >
                 Daftar Sekarang
               </Link>
@@ -166,7 +166,7 @@ export default function LandingPage() {
               key={f.judul}
               className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm transition hover:shadow-md"
             >
-              <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-xl bg-indigo-100 text-indigo-600">
+              <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-xl bg-orange-100 text-orange-600">
                 {f.ikon}
               </div>
               <h3 className="text-base font-bold text-slate-900">{f.judul}</h3>
@@ -196,7 +196,7 @@ export default function LandingPage() {
           <div className="mt-8 text-center">
             <Link
               href="/register"
-              className="inline-flex items-center gap-2 font-semibold text-indigo-600 hover:text-indigo-700"
+              className="inline-flex items-center gap-2 font-semibold text-orange-600 hover:text-orange-700"
             >
               Daftar untuk melihat semua paket
               <span aria-hidden>→</span>
@@ -207,17 +207,17 @@ export default function LandingPage() {
 
       {/* CTA */}
       <section className="mx-auto max-w-7xl px-4 py-16 sm:px-6">
-        <div className="rounded-3xl bg-indigo-600 px-6 py-12 text-center sm:px-12">
+        <div className="rounded-3xl bg-orange-600 px-6 py-12 text-center sm:px-12">
           <h2 className="text-2xl font-bold text-white sm:text-3xl">
             Siap membuat konten yang benar-benar bekerja?
           </h2>
-          <p className="mx-auto mt-3 max-w-xl text-indigo-100">
+          <p className="mx-auto mt-3 max-w-xl text-orange-100">
             Buat akun gratis hari ini, daftarkan organisasi Anda, dan mulai
             perjalanan konten berbasis data.
           </p>
           <Link
             href="/register"
-            className="mt-8 inline-block rounded-xl bg-white px-8 py-3.5 text-base font-semibold text-indigo-700 shadow hover:bg-indigo-50"
+            className="mt-8 inline-block rounded-xl bg-white px-8 py-3.5 text-base font-semibold text-orange-700 shadow hover:bg-orange-50"
           >
             Daftar Gratis
           </Link>
@@ -229,7 +229,7 @@ export default function LandingPage() {
         <div className="mx-auto max-w-7xl px-4 py-10 sm:px-6">
           <div className="flex flex-col items-center justify-between gap-4 sm:flex-row">
             <div className="flex items-center gap-2">
-              <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-indigo-600 text-sm font-bold text-white">
+              <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-orange-600 text-sm font-bold text-white">
                 D
               </span>
               <span className="font-bold text-slate-900">MySocial Watch</span>

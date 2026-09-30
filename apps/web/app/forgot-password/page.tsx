@@ -62,7 +62,7 @@ function ForgotPasswordInner() {
       <div className="w-full max-w-md">
         <div className="mb-8 text-center">
           <Link href="/" className="inline-flex items-center gap-2">
-            <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-indigo-600 text-lg font-bold text-white">
+            <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-orange-600 text-lg font-bold text-white">
               D
             </span>
             <span className="text-xl font-bold text-slate-900">
@@ -120,7 +120,7 @@ function ForgotPasswordInner() {
                 {devToken && (
                   <Link
                     href={`/reset-password?token=${encodeURIComponent(devToken)}`}
-                    className="mt-3 block break-all rounded-lg bg-white p-3 text-xs font-medium text-indigo-600 underline hover:text-indigo-800"
+                    className="mt-3 block break-all rounded-lg bg-white p-3 text-xs font-medium text-orange-600 underline hover:text-orange-800"
                   >
                     Klik di sini untuk reset kata sandi
                   </Link>

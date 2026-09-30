@@ -131,11 +131,11 @@ function DetailTagihan() {
       />
 
       {/* TOTAL TRANSFER — besar & jelas */}
-      <Card className="mb-6 border-2 border-indigo-200 bg-indigo-50/50 text-center">
+      <Card className="mb-6 border-2 border-orange-200 bg-orange-50/50 text-center">
         <p className="text-sm font-medium uppercase tracking-wide text-slate-500">
           Total transfer
         </p>
-        <p className="mt-2 text-4xl font-extrabold tracking-tight text-indigo-700 sm:text-5xl">
+        <p className="mt-2 text-4xl font-extrabold tracking-tight text-orange-700 sm:text-5xl">
           {formatRupiah(invoice.amount_total)}
         </p>
         <div className="mx-auto mt-4 max-w-md space-y-1 text-sm text-slate-600">
@@ -266,7 +266,7 @@ function DetailTagihan() {
                 type="file"
                 accept=".jpg,.jpeg,.png,.pdf"
                 onChange={pilihFile}
-                className="block w-full text-sm text-slate-600 file:mr-4 file:rounded-xl file:border-0 file:bg-indigo-50 file:px-4 file:py-2.5 file:text-sm file:font-semibold file:text-indigo-700 hover:file:bg-indigo-100"
+                className="block w-full text-sm text-slate-600 file:mr-4 file:rounded-xl file:border-0 file:bg-orange-50 file:px-4 file:py-2.5 file:text-sm file:font-semibold file:text-orange-700 hover:file:bg-orange-100"
               />
             </label>
             {file && (

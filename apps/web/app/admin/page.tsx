@@ -146,7 +146,7 @@ function TabAntrean() {
                 onClick={() =>
                   unduhBukti(item.payment.id, item.payment.file_name, setError)
                 }
-                className="font-semibold text-indigo-600 underline hover:text-indigo-800"
+                className="font-semibold text-orange-600 underline hover:text-orange-800"
               >
                 Unduh bukti pembayaran
               </button>
@@ -438,7 +438,7 @@ function AdminIsi() {
             onClick={() => setTab(t.id)}
             className={`whitespace-nowrap px-4 py-2.5 text-sm font-semibold transition ${
               tab === t.id
-                ? "border-b-2 border-indigo-600 text-indigo-700"
+                ? "border-b-2 border-orange-600 text-orange-700"
                 : "text-slate-500 hover:text-slate-800"
             }`}
           >

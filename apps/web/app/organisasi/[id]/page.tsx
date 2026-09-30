@@ -376,7 +376,7 @@ function KelolaOrganisasi() {
                       <td className="py-2.5 pr-4 font-medium text-slate-900">
                         {m.name}
                         {diriSendiri && (
-                          <span className="ml-2 rounded-full bg-indigo-100 px-2 py-0.5 text-[11px] font-semibold text-indigo-700">
+                          <span className="ml-2 rounded-full bg-orange-100 px-2 py-0.5 text-[11px] font-semibold text-orange-700">
                             Anda
                           </span>
                         )}

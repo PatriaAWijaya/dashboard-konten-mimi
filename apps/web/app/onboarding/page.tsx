@@ -114,7 +114,7 @@ function IndikatorLangkah({ aktif }: { aktif: number }) {
                   selesai
                     ? "bg-emerald-500 text-white"
                     : sedang
-                      ? "bg-indigo-600 text-white"
+                      ? "bg-orange-600 text-white"
                       : "bg-slate-200 text-slate-500"
                 }`}
               >
@@ -465,7 +465,7 @@ function LangkahKemenangan({
               >
                 🎵 Ambang WER TikTok
               </label>
-              <span className="rounded-lg bg-indigo-50 px-3 py-1 text-sm font-bold text-indigo-700">
+              <span className="rounded-lg bg-orange-50 px-3 py-1 text-sm font-bold text-orange-700">
                 {tiktokWer.toLocaleString("id-ID")}%
               </span>
             </div>
@@ -477,7 +477,7 @@ function LangkahKemenangan({
               step={0.5}
               value={tiktokWer}
               onChange={(e) => setTiktokWer(Number(e.target.value))}
-              className="w-full accent-indigo-600"
+              className="w-full accent-orange-600"
             />
           </div>
           <div>
@@ -488,7 +488,7 @@ function LangkahKemenangan({
               >
                 📸 Ambang WER Instagram
               </label>
-              <span className="rounded-lg bg-indigo-50 px-3 py-1 text-sm font-bold text-indigo-700">
+              <span className="rounded-lg bg-orange-50 px-3 py-1 text-sm font-bold text-orange-700">
                 {igWer.toLocaleString("id-ID")}%
               </span>
             </div>
@@ -500,7 +500,7 @@ function LangkahKemenangan({
               step={0.5}
               value={igWer}
               onChange={(e) => setIgWer(Number(e.target.value))}
-              className="w-full accent-indigo-600"
+              className="w-full accent-orange-600"
             />
           </div>
 
@@ -529,12 +529,12 @@ function LangkahKemenangan({
           )}
 
           {preview && (
-            <div className="rounded-xl border border-indigo-200 bg-indigo-50 px-4 py-3">
-              <p className="text-sm font-semibold text-indigo-900">
+            <div className="rounded-xl border border-orange-200 bg-orange-50 px-4 py-3">
+              <p className="text-sm font-semibold text-orange-900">
                 Dengan setting ini, {preview.menang} dari {preview.total} konten
                 terakhirmu berstatus MENANG.
               </p>
-              <ul className="mt-2 space-y-1 text-sm text-indigo-800">
+              <ul className="mt-2 space-y-1 text-sm text-orange-800">
                 <li>
                   🎵 TikTok: {preview.per_platform.tiktok.menang} dari{" "}
                   {preview.per_platform.tiktok.total} konten berstatus MENANG
@@ -661,7 +661,7 @@ function LangkahSync({
                 aria-valuemax={100}
               >
                 <div
-                  className="h-full rounded-full bg-indigo-600 transition-all"
+                  className="h-full rounded-full bg-orange-600 transition-all"
                   style={{ width: `${persen}%` }}
                 />
               </div>

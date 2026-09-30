@@ -47,7 +47,7 @@ export default function BrandNav({ brandId }: { brandId: string }) {
             href={t.href}
             className={`whitespace-nowrap rounded-xl px-4 py-2 text-sm font-medium transition ${
               aktif(t)
-                ? "bg-indigo-600 text-white"
+                ? "bg-orange-600 text-white"
                 : "text-slate-600 hover:bg-slate-100 hover:text-slate-900"
             }`}
           >

@@ -123,7 +123,7 @@ export default function RegisterPage() {
       <div className="w-full max-w-md">
         <div className="mb-8 text-center">
           <Link href="/" className="inline-flex items-center gap-2">
-            <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-indigo-600 text-lg font-bold text-white">
+            <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-orange-600 text-lg font-bold text-white">
               D
             </span>
             <span className="text-xl font-bold text-slate-900">
@@ -146,7 +146,7 @@ export default function RegisterPage() {
                 <span
                   className={`flex h-7 w-7 items-center justify-center rounded-full text-xs font-bold ${
                     aktif
-                      ? "bg-indigo-600 text-white"
+                      ? "bg-orange-600 text-white"
                       : selesai
                         ? "bg-emerald-500 text-white"
                         : "bg-slate-200 text-slate-500"
@@ -290,7 +290,7 @@ export default function RegisterPage() {
                 {devToken && (
                   <Link
                     href={`/verify-email?token=${encodeURIComponent(devToken)}`}
-                    className="mt-3 block break-all rounded-lg bg-white p-3 text-xs font-medium text-indigo-600 underline hover:text-indigo-800"
+                    className="mt-3 block break-all rounded-lg bg-white p-3 text-xs font-medium text-orange-600 underline hover:text-orange-800"
                   >
                     Klik di sini untuk verifikasi email
                   </Link>
@@ -313,7 +313,7 @@ export default function RegisterPage() {
             Sudah punya akun?{" "}
             <Link
               href="/login"
-              className="font-semibold text-indigo-600 hover:text-indigo-700"
+              className="font-semibold text-orange-600 hover:text-orange-700"
             >
               Masuk
             </Link>

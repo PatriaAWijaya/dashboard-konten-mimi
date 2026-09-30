@@ -72,7 +72,7 @@ export default function BrandSelector({
         value={selected}
         disabled={loading}
         onChange={(e) => handleChange(e.target.value)}
-        className="w-full rounded-xl border border-slate-300 bg-white px-3.5 py-2.5 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-indigo-500 sm:w-64"
+        className="w-full rounded-xl border border-slate-300 bg-white px-3.5 py-2.5 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-orange-500 sm:w-64"
       >
         <option value="">
           {loading ? "Memuat brand…" : brands.length === 0 ? user?.name || "Belum ada brand" : "— Pilih brand —"}

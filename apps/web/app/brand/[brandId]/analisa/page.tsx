@@ -382,7 +382,7 @@ function AnalisaIsi() {
                   </span>
                   <span className="text-slate-600">
                     Rata-rata skor{" "}
-                    <strong className="text-indigo-600">
+                    <strong className="text-orange-600">
                       {r.rata_skor !== null
                         ? (r.rata_skor * 100).toLocaleString("id-ID", {
                             minimumFractionDigits: 1,

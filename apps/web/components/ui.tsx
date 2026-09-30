@@ -35,11 +35,11 @@ export function Button({
 }) {
   const styles = {
     primary:
-      "bg-indigo-600 text-white hover:bg-indigo-700 focus:ring-indigo-500",
+      "bg-orange-600 text-white hover:bg-orange-700 focus:ring-orange-500",
     secondary:
-      "bg-white text-slate-700 border border-slate-300 hover:bg-slate-50 focus:ring-indigo-500",
+      "bg-white text-slate-700 border border-slate-300 hover:bg-slate-50 focus:ring-orange-500",
     danger: "bg-red-600 text-white hover:bg-red-700 focus:ring-red-500",
-    ghost: "text-indigo-600 hover:bg-indigo-50 focus:ring-indigo-500",
+    ghost: "text-orange-600 hover:bg-orange-50 focus:ring-orange-500",
   }[variant];
   return (
     <button
@@ -68,7 +68,7 @@ export function Input({
       </span>
       <input
         {...props}
-        className={`w-full rounded-xl border bg-white px-3.5 py-2.5 text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 ${
+        className={`w-full rounded-xl border bg-white px-3.5 py-2.5 text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-orange-500 ${
           error ? "border-red-400" : "border-slate-300"
         }`}
       />
@@ -88,7 +88,7 @@ export function TextArea({
       </span>
       <textarea
         {...props}
-        className="w-full rounded-xl border border-slate-300 bg-white px-3.5 py-2.5 text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+        className="w-full rounded-xl border border-slate-300 bg-white px-3.5 py-2.5 text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-orange-500"
       />
     </label>
   );
@@ -109,7 +109,7 @@ export function Select({
       </span>
       <select
         {...props}
-        className="w-full rounded-xl border border-slate-300 bg-white px-3.5 py-2.5 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+        className="w-full rounded-xl border border-slate-300 bg-white px-3.5 py-2.5 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-orange-500"
       >
         {children}
       </select>
@@ -140,7 +140,7 @@ export function Alert({
 export function Spinner({ label = "Memuat…" }: { label?: string }) {
   return (
     <div className="flex items-center gap-3 py-10 text-slate-500">
-      <span className="inline-block h-6 w-6 animate-spin rounded-full border-2 border-slate-300 border-t-indigo-600" />
+      <span className="inline-block h-6 w-6 animate-spin rounded-full border-2 border-slate-300 border-t-orange-600" />
       <span className="text-sm">{label}</span>
     </div>
   );
@@ -179,7 +179,7 @@ export function EmptyBox({
 }) {
   return (
     <div className="flex flex-col items-center rounded-2xl border border-dashed border-slate-300 bg-white px-6 py-10 text-center">
-      <div className="mb-4 flex h-14 w-14 items-center justify-center rounded-2xl bg-indigo-50 text-indigo-600">
+      <div className="mb-4 flex h-14 w-14 items-center justify-center rounded-2xl bg-orange-50 text-orange-600">
         {icon}
       </div>
       <h3 className="text-base font-semibold text-slate-900">{title}</h3>

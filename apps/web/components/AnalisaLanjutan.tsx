@@ -204,9 +204,9 @@ export default function AnalisaLanjutan({
                 </p>
               </div>
             ))}
-            <div className="rounded-xl bg-indigo-50 p-3">
-              <p className="text-xs font-medium text-indigo-700">Total engagement</p>
-              <p className="mt-1 text-xl font-bold tabular-nums text-indigo-900">
+            <div className="rounded-xl bg-orange-50 p-3">
+              <p className="text-xs font-medium text-orange-700">Total engagement</p>
+              <p className="mt-1 text-xl font-bold tabular-nums text-orange-900">
                 {fmt(komposisi.total_engagement)}
               </p>
             </div>
@@ -400,7 +400,7 @@ export default function AnalisaLanjutan({
                           <button
                             type="button"
                             onClick={() => toggleCaption(d.content_id)}
-                            className="mt-1 text-xs font-medium text-indigo-600 hover:underline"
+                            className="mt-1 text-xs font-medium text-orange-600 hover:underline"
                           >
                             {terbuka ? "Tutup" : "Lihat lengkap"}
                           </button>
@@ -421,7 +421,7 @@ export default function AnalisaLanjutan({
                           {d.cta_label.map((c) => (
                             <span
                               key={c}
-                              className="inline-block rounded-full bg-indigo-100 px-2 py-0.5 text-[11px] font-medium text-indigo-700"
+                              className="inline-block rounded-full bg-orange-100 px-2 py-0.5 text-[11px] font-medium text-orange-700"
                             >
                               {c}
                             </span>
@@ -474,7 +474,7 @@ export default function AnalisaLanjutan({
             {data.saran.map((s, i) => (
               <div key={i} className="rounded-xl bg-slate-50 p-3">
                 <p className="text-sm font-semibold text-slate-900">
-                  <span className="mr-1.5 inline-flex h-5 w-5 items-center justify-center rounded-full bg-indigo-600 text-[11px] font-bold text-white">
+                  <span className="mr-1.5 inline-flex h-5 w-5 items-center justify-center rounded-full bg-orange-600 text-[11px] font-bold text-white">
                     {i + 1}
                   </span>
                   {s.judul}

@@ -37,7 +37,7 @@ function Toggle({
         disabled={sibuk}
         onClick={() => onUbah(!aktif)}
         className={`relative h-7 w-12 shrink-0 rounded-full transition ${
-          aktif ? "bg-indigo-600" : "bg-slate-200"
+          aktif ? "bg-orange-600" : "bg-slate-200"
         } disabled:opacity-50`}
       >
         <span

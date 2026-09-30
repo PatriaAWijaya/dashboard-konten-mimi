@@ -174,7 +174,7 @@ function UploadIsi() {
                 tambahFiles(e.target.files);
                 e.target.value = "";
               }}
-              className="w-full rounded-xl border border-dashed border-slate-300 bg-slate-50 px-3.5 py-3 text-sm text-slate-700 file:mr-3 file:rounded-lg file:border-0 file:bg-indigo-600 file:px-4 file:py-2 file:text-sm file:font-semibold file:text-white hover:file:bg-indigo-700"
+              className="w-full rounded-xl border border-dashed border-slate-300 bg-slate-50 px-3.5 py-3 text-sm text-slate-700 file:mr-3 file:rounded-lg file:border-0 file:bg-orange-600 file:px-4 file:py-2 file:text-sm file:font-semibold file:text-white hover:file:bg-orange-700"
             />
           </label>
           {files.length > 0 && (
@@ -185,7 +185,7 @@ function UploadIsi() {
                   className="flex items-center justify-between gap-2 rounded-lg bg-slate-50 px-3 py-2 text-sm"
                 >
                   <span className="truncate text-slate-700">
-                    <span className="mr-2 inline-flex h-5 w-5 items-center justify-center rounded bg-indigo-100 text-[11px] font-bold text-indigo-700">
+                    <span className="mr-2 inline-flex h-5 w-5 items-center justify-center rounded bg-orange-100 text-[11px] font-bold text-orange-700">
                       {i + 1}
                     </span>
                     {f.name}
@@ -250,11 +250,11 @@ function UploadIsi() {
               </p>
               <p className="text-xs text-sky-700">Konten diupdate</p>
             </div>
-            <div className="rounded-xl bg-indigo-50 p-4">
-              <p className="text-2xl font-bold text-indigo-700">
+            <div className="rounded-xl bg-orange-50 p-4">
+              <p className="text-2xl font-bold text-orange-700">
                 {hasil.total_metrics_rows}
               </p>
-              <p className="text-xs text-indigo-700">Baris metrik</p>
+              <p className="text-xs text-orange-700">Baris metrik</p>
             </div>
           </div>
 
@@ -328,7 +328,7 @@ function UploadIsi() {
             <div className="mt-4">
               <Link
                 href={`/brand/${brandId}`}
-                className="text-sm font-medium text-indigo-600 hover:text-indigo-800"
+                className="text-sm font-medium text-orange-600 hover:text-orange-800"
               >
                 Lihat dasbor analitik →
               </Link>

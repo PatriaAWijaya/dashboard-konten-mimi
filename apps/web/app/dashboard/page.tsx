@@ -47,7 +47,7 @@ function WizardOrganisasi({ onSelesai }: { onSelesai: () => void }) {
     <div className="mx-auto max-w-xl py-12">
       <Card>
         <div className="text-center">
-          <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-2xl bg-indigo-100 text-3xl">
+          <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-2xl bg-orange-100 text-3xl">
             🏢
           </div>
           <h1 className="text-2xl font-bold text-slate-900">
@@ -247,7 +247,7 @@ function DasborIsi() {
             className="pointer-events-none absolute inset-0"
             style={{
               background:
-                "radial-gradient(420px 220px at 15% 0%, rgba(99,102,241,0.14), transparent 60%), radial-gradient(360px 220px at 90% 100%, rgba(236,72,153,0.12), transparent 60%)",
+                "radial-gradient(420px 220px at 15% 0%, rgba(255,129,38,0.16), transparent 60%), radial-gradient(360px 220px at 90% 100%, rgba(255,213,31,0.18), transparent 60%)",
             }}
           />
           <div className="relative flex flex-1 flex-col">
@@ -263,7 +263,7 @@ function DasborIsi() {
               <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-slate-900 text-base text-white shadow-sm">
                 🎵
               </span>
-              <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-tr from-amber-400 via-pink-500 to-purple-600 text-base text-white shadow-sm">
+              <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-tr from-orange-500 via-amber-400 to-yellow-400 text-base text-white shadow-sm">
                 📸
               </span>
               <span className="text-xs font-medium text-slate-400">
@@ -314,7 +314,7 @@ function DasborIsi() {
                     <Link
                       key={`${p.tahun}-${p.bulan}`}
                       href={`/brand/${b.id}/analisa?bulan=${p.tahun}-${String(p.bulan).padStart(2, "0")}`}
-                      className="inline-flex items-center gap-1.5 rounded-full border border-slate-200 bg-slate-50 px-3 py-1.5 text-xs font-medium text-slate-700 transition hover:border-indigo-300 hover:bg-indigo-50 hover:text-indigo-700"
+                      className="inline-flex items-center gap-1.5 rounded-full border border-slate-200 bg-slate-50 px-3 py-1.5 text-xs font-medium text-slate-700 transition hover:border-orange-300 hover:bg-orange-50 hover:text-orange-700"
                     >
                       📅 {p.label}
                       <span className="text-slate-400">· {p.jumlah_konten}</span>

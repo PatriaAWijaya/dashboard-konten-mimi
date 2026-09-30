@@ -100,9 +100,11 @@ export default function Navbar() {
     <header className="sticky top-0 z-40 border-b border-slate-200 bg-white/95 backdrop-blur">
       <div className="mx-auto flex h-16 max-w-7xl items-center gap-3 px-4 sm:px-6">
         <Link href={user ? "/dashboard" : "/"} className="flex items-center gap-2">
-          <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-indigo-600 text-lg font-bold text-white">
-            D
-          </span>
+          <img
+            src="/logo.png"
+            alt="MySocial Watch"
+            className="h-9 w-9 rounded-xl"
+          />
           <span className="hidden text-base font-bold tracking-tight text-slate-900 sm:block">
             MySocial Watch
           </span>
@@ -117,7 +119,7 @@ export default function Navbar() {
                   href={l.href}
                   className={`rounded-lg px-3 py-2 text-sm font-medium transition ${
                     linkAktif(l)
-                      ? "bg-indigo-50 text-indigo-700"
+                      ? "bg-orange-50 text-orange-700"
                       : "text-slate-600 hover:bg-slate-100 hover:text-slate-900"
                   }`}
                 >
@@ -129,7 +131,7 @@ export default function Navbar() {
                   href={`/organisasi/${selectedOrgId}`}
                   className={`rounded-lg px-3 py-2 text-sm font-medium transition ${
                     pathname?.startsWith("/organisasi")
-                      ? "bg-indigo-50 text-indigo-700"
+                      ? "bg-orange-50 text-orange-700"
                       : "text-slate-600 hover:bg-slate-100 hover:text-slate-900"
                   }`}
                 >
@@ -194,13 +196,13 @@ export default function Navbar() {
                         }}
                         className={`flex w-full items-center justify-between px-4 py-2.5 text-left text-sm hover:bg-slate-50 ${
                           o.id === selectedOrgId
-                            ? "font-semibold text-indigo-700"
+                            ? "font-semibold text-orange-700"
                             : "text-slate-700"
                         }`}
                       >
                         <span className="truncate">{o.name}</span>
                         {o.id === selectedOrgId && (
-                          <span className="ml-2 text-indigo-600">✓</span>
+                          <span className="ml-2 text-orange-600">✓</span>
                         )}
                       </button>
                     ))}
@@ -217,7 +219,7 @@ export default function Navbar() {
                 <button
                   type="button"
                   onClick={() => setUserMenuOpen((v) => !v)}
-                  className="flex h-10 w-10 items-center justify-center rounded-full bg-indigo-100 text-sm font-bold text-indigo-700 hover:bg-indigo-200"
+                  className="flex h-10 w-10 items-center justify-center rounded-full bg-orange-100 text-sm font-bold text-orange-700 hover:bg-orange-200"
                   title={user.name}
                 >
                   {user.name.charAt(0).toUpperCase()}
@@ -299,7 +301,7 @@ export default function Navbar() {
             </Link>
             <Link
               href="/register"
-              className="rounded-xl bg-indigo-600 px-4 py-2 text-sm font-semibold text-white hover:bg-indigo-700"
+              className="rounded-xl bg-orange-600 px-4 py-2 text-sm font-semibold text-white hover:bg-orange-700"
             >
               Daftar
             </Link>

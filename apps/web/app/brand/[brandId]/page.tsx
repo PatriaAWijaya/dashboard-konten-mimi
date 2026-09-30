@@ -58,7 +58,7 @@ function KartuRingkasan({
           <p className="text-xs text-slate-500">Konten</p>
         </div>
         <div>
-          <p className="text-2xl font-bold text-indigo-600">{fmtPersen(data.rata_skor)}</p>
+          <p className="text-2xl font-bold text-orange-600">{fmtPersen(data.rata_skor)}</p>
           <p className="text-xs text-slate-500">Rata-rata skor</p>
         </div>
         <div>
@@ -399,7 +399,7 @@ function DasborBrandIsi() {
                       </td>
                       <td className="py-2.5">
                         {k.labels.includes("winner") ? (
-                          <span className="inline-flex items-center gap-1 rounded-full bg-indigo-100 px-2.5 py-0.5 text-xs font-semibold text-indigo-700">
+                          <span className="inline-flex items-center gap-1 rounded-full bg-orange-100 px-2.5 py-0.5 text-xs font-semibold text-orange-700">
                             🏆 winner
                           </span>
                         ) : (

@@ -47,12 +47,12 @@ export default function OnboardingBanner({ brandId }: { brandId: string }) {
   if (!tampil) return null;
 
   return (
-    <div className="mb-6 flex flex-col gap-3 rounded-2xl border border-indigo-200 bg-gradient-to-r from-indigo-50 to-sky-50 px-5 py-4 sm:flex-row sm:items-center sm:justify-between">
+    <div className="mb-6 flex flex-col gap-3 rounded-2xl border border-orange-200 bg-gradient-to-r from-orange-50 to-sky-50 px-5 py-4 sm:flex-row sm:items-center sm:justify-between">
       <div>
-        <p className="text-sm font-semibold text-indigo-900">
+        <p className="text-sm font-semibold text-orange-900">
           Lengkapi onboarding 4 langkah 🚀
         </p>
-        <p className="mt-0.5 text-sm text-indigo-700">
+        <p className="mt-0.5 text-sm text-orange-700">
           Profil brand → hubungkan akun → definisi konten menang → sync
           pertama. Hanya butuh beberapa menit.
         </p>

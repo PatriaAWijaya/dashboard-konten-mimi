@@ -157,7 +157,7 @@ function PanduanPatria() {
             <li>Aktifkan produk <strong>Login Kit</strong>.</li>
             <li>
               Daftarkan Redirect URI:{" "}
-              <code className="rounded bg-white px-1.5 py-0.5 font-mono text-xs text-indigo-700">
+              <code className="rounded bg-white px-1.5 py-0.5 font-mono text-xs text-orange-700">
                 {REDIRECT_URI}
               </code>
             </li>
@@ -176,7 +176,7 @@ function PanduanPatria() {
             </li>
             <li>
               Daftarkan Redirect URI yang sama:{" "}
-              <code className="rounded bg-white px-1.5 py-0.5 font-mono text-xs text-indigo-700">
+              <code className="rounded bg-white px-1.5 py-0.5 font-mono text-xs text-orange-700">
                 {REDIRECT_URI}
               </code>
             </li>

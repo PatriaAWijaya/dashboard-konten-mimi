@@ -343,14 +343,14 @@ function WawancaraView(props: {
         </div>
         <div className="h-2.5 overflow-hidden rounded-full bg-slate-200">
           <div
-            className="h-full rounded-full bg-indigo-600 transition-all"
+            className="h-full rounded-full bg-orange-600 transition-all"
             style={{ width: `${persen}%` }}
           />
         </div>
       </div>
 
       <Card>
-        <p className="text-xs font-semibold uppercase tracking-wide text-indigo-600">
+        <p className="text-xs font-semibold uppercase tracking-wide text-orange-600">
           Pertanyaan {langkah}
         </p>
         <h2 className="mt-1 text-lg font-semibold leading-relaxed text-slate-900">
@@ -458,7 +458,7 @@ function ReviewView(props: {
                   <button
                     type="button"
                     onClick={() => onKembali(idx + 1)}
-                    className="shrink-0 text-xs font-medium text-indigo-600 hover:text-indigo-800"
+                    className="shrink-0 text-xs font-medium text-orange-600 hover:text-orange-800"
                   >
                     Jawab ulang
                   </button>
@@ -469,7 +469,7 @@ function ReviewView(props: {
                 value={nilai}
                 placeholder={dilewati ? "Belum dijawab — tulis di sini atau biarkan sebagai celah." : ""}
                 onChange={(e) => ubahJawaban(q.key, e.target.value)}
-                className="w-full rounded-xl border border-slate-300 bg-white px-3.5 py-2.5 text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                className="w-full rounded-xl border border-slate-300 bg-white px-3.5 py-2.5 text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-orange-500"
               />
             </Card>
           );
@@ -497,12 +497,12 @@ function DnaView(props: {
   return (
     <div>
       <h2 className="mb-4 text-lg font-semibold text-slate-900">Brand DNA Anda</h2>
-      <Card className="border-indigo-200 bg-gradient-to-br from-indigo-50 to-white">
+      <Card className="border-orange-200 bg-gradient-to-br from-orange-50 to-white">
         <div className="mb-4 flex items-center justify-between">
           <span className="text-2xl" aria-hidden>
             🧬
           </span>
-          <span className="rounded-full bg-indigo-100 px-3 py-1 text-xs font-semibold text-indigo-700">
+          <span className="rounded-full bg-orange-100 px-3 py-1 text-xs font-semibold text-orange-700">
             Versi {dna.version}
             {dna.confirmed ? " · Terkonfirmasi" : ""}
           </span>
@@ -578,7 +578,7 @@ function SaranView(props: {
           <p className="text-sm text-slate-500">
             Pilih maksimal 2 niche yang paling ingin Anda dalami.
             {dipilih.length > 0 && (
-              <span className="font-medium text-indigo-600"> ({dipilih.length}/2 dipilih)</span>
+              <span className="font-medium text-orange-600"> ({dipilih.length}/2 dipilih)</span>
             )}
           </p>
         </div>
@@ -593,14 +593,14 @@ function SaranView(props: {
           const dicentang = dipilih.includes(n.id);
           const disabledCentang = !dicentang && dipilih.length >= 2;
           return (
-            <Card key={n.id} className={dicentang ? "border-indigo-300 ring-1 ring-indigo-200" : ""}>
+            <Card key={n.id} className={dicentang ? "border-orange-300 ring-1 ring-orange-200" : ""}>
               <div className="flex items-start gap-3">
                 <input
                   type="checkbox"
                   checked={dicentang}
                   disabled={disabledCentang}
                   onChange={() => togglePilih(n.id)}
-                  className="mt-1 h-5 w-5 shrink-0 rounded accent-indigo-600 disabled:opacity-40"
+                  className="mt-1 h-5 w-5 shrink-0 rounded accent-orange-600 disabled:opacity-40"
                   aria-label={`Pilih niche ${n.name}`}
                 />
                 <div className="min-w-0 flex-1">
@@ -613,7 +613,7 @@ function SaranView(props: {
                       {n.label_sumber}
                     </span>
                     {n.is_selected && (
-                      <span className="rounded-full bg-indigo-100 px-2.5 py-0.5 text-xs font-semibold text-indigo-700">
+                      <span className="rounded-full bg-orange-100 px-2.5 py-0.5 text-xs font-semibold text-orange-700">
                         Tersimpan
                       </span>
                     )}
@@ -621,11 +621,11 @@ function SaranView(props: {
                   <div className="mt-2 flex items-center gap-2">
                     <div className="h-2 w-32 overflow-hidden rounded-full bg-slate-200">
                       <div
-                        className="h-full rounded-full bg-indigo-600"
+                        className="h-full rounded-full bg-orange-600"
                         style={{ width: `${n.match_percent}%` }}
                       />
                     </div>
-                    <span className="text-sm font-bold text-indigo-700">
+                    <span className="text-sm font-bold text-orange-700">
                       {n.match_percent}% cocok
                     </span>
                   </div>
@@ -634,7 +634,7 @@ function SaranView(props: {
                   <button
                     type="button"
                     onClick={() => setBukaAngle({ ...bukaAngle, [n.id]: !terbuka })}
-                    className="mt-3 text-sm font-medium text-indigo-600 hover:text-indigo-800"
+                    className="mt-3 text-sm font-medium text-orange-600 hover:text-orange-800"
                   >
                     {terbuka ? "▾ Sembunyikan" : "▸ Lihat"} 10 angle konten
                   </button>

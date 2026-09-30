@@ -108,7 +108,7 @@ function TagihanIsi() {
         {plans.map((plan) => (
           <Card key={plan.id} className="flex flex-col">
             <h3 className="text-lg font-bold text-slate-900">{plan.name}</h3>
-            <p className="mt-2 text-3xl font-extrabold text-indigo-600">
+            <p className="mt-2 text-3xl font-extrabold text-orange-600">
               {formatRupiah(plan.price)}
             </p>
             <p className="mt-1 text-sm text-slate-500">
@@ -181,7 +181,7 @@ function TagihanIsi() {
                   <td className="px-5 py-3 text-right">
                     <Link
                       href={`/tagihan/${inv.id}`}
-                      className="font-semibold text-indigo-600 hover:text-indigo-700"
+                      className="font-semibold text-orange-600 hover:text-orange-700"
                     >
                       Detail
                     </Link>

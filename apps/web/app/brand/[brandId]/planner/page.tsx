@@ -213,7 +213,7 @@ function KartuTargetEstimasi({
           </div>
           <div className="flex items-center justify-between gap-3">
             <dt className="text-slate-500">Target ER</dt>
-            <dd className="font-semibold tabular-nums text-indigo-700">
+            <dd className="font-semibold tabular-nums text-orange-700">
               {fmtPersenRasio(data.target_er)}
             </dd>
           </div>
@@ -541,7 +541,7 @@ function Alokator({
                   <span className="text-sm font-semibold text-slate-900">
                     {formatTanggal(s.tanggal)}
                   </span>
-                  <span className="rounded-full bg-indigo-100 px-2.5 py-0.5 text-xs font-semibold capitalize text-indigo-700">
+                  <span className="rounded-full bg-orange-100 px-2.5 py-0.5 text-xs font-semibold capitalize text-orange-700">
                     {s.platform}
                   </span>
                   {s.format && (
@@ -797,13 +797,13 @@ function PlannerIsi() {
                   onClick={() => setTanggalPilih(tgl)}
                   className={`flex min-h-[3.5rem] flex-col items-center rounded-xl border p-1 transition ${
                     dipilih
-                      ? "border-indigo-500 bg-indigo-50"
-                      : "border-slate-100 bg-white hover:border-indigo-200 hover:bg-slate-50"
+                      ? "border-orange-500 bg-orange-50"
+                      : "border-slate-100 bg-white hover:border-orange-200 hover:bg-slate-50"
                   } ${dalamBulan ? "" : "opacity-40"}`}
                 >
                   <span
                     className={`text-xs font-semibold ${
-                      tgl === hariIni ? "text-indigo-700" : "text-slate-700"
+                      tgl === hariIni ? "text-orange-700" : "text-slate-700"
                     }`}
                   >
                     {Number(tgl.slice(8, 10))}
@@ -965,7 +965,7 @@ function PlannerIsi() {
                       onChange={(e) =>
                         ubahStatus(r.id, e.target.value as StatusRencana)
                       }
-                      className={`rounded-full px-3 py-1.5 text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-indigo-500 ${STATUS_META[r.status]?.tone ?? STATUS_META.ide.tone}`}
+                      className={`rounded-full px-3 py-1.5 text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-orange-500 ${STATUS_META[r.status]?.tone ?? STATUS_META.ide.tone}`}
                       aria-label="Ubah status"
                     >
                       {SEMUA_STATUS.map((s) => (

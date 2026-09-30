@@ -73,12 +73,12 @@ function PilihBrandIsi() {
       <div className="mt-4 grid gap-3 sm:grid-cols-2">
         {brands.map((b) => (
           <button key={b.id} type="button" onClick={() => pilih(b)} className="text-left">
-            <Card className="transition hover:border-indigo-300 hover:shadow">
+            <Card className="transition hover:border-orange-300 hover:shadow">
               <p className="font-semibold text-slate-900">{b.name}</p>
               {b.industry && (
                 <p className="mt-1 text-sm text-slate-500">{b.industry}</p>
               )}
-              <p className="mt-3 text-sm font-medium text-indigo-600">
+              <p className="mt-3 text-sm font-medium text-orange-600">
                 Pilih brand →
               </p>
             </Card>
