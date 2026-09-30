@@ -513,7 +513,7 @@ async def analisa_lanjutan(
     # ---- 7. Saran berbasis pola winning + framework (3S Power, growth loop) ----
     layak = [it for it in items if it["views"] >= 500]
     layak.sort(key=lambda x: x["wer"], reverse=True)
-    topn = max(3, int(len(layak) * 0.1))
+    topn = max(5, int(len(layak) * 0.1))
     top = layak[:topn]
     saran: list[dict] = []
     dasar = f"Berdasarkan {len(top)} konten terbaik (10% WER teratas, min. 500 views)."
