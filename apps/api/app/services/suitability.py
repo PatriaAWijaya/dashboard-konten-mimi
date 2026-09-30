@@ -210,17 +210,15 @@ def cek_kesehatan_framework(c: Content, snapshot: dict) -> tuple[list[dict], lis
     Konten dianggap "tidak sehat" (di bawah standar framework) bila:
     1. Gagal uji 200 penonton (views < 200) — terjebak "200-view jail"
        (Framework Bab 1: Initial Sample Test Group).
-    2. Nol engagement bermakna (saves+shares+comments == 0) padahal ada views —
-       algoritma memprioritaskan sinyal bermakna, bukan likes (vanity metrics)
-       (Framework Bab 1: Watchtime Velocity & Signals).
-    3. Tanpa CTA jelas di caption
-       (Framework Bab 5: Strategi Interaksi & Konversi; Sticking Power).
+    2. Engagement format-spesifik di bawah 10% dari views:
+       - Carousel: saves < 10% dari views (Carousel = mesin saves untuk edukasi)
+       - Reels: (shares + comments) < 10% dari views (Reels = jangkauan & interaksi)
+       - Image/Foto: (comments + shares) < 10% dari views
+       (Framework Bab 1: Watchtime Velocity & Signals 2026 — saves, shares,
+       comments adalah sinyal bermakna, bukan likes/vanity metrics).
 
     Returns: (diagnoses, suggestions) — list diagnosis & saran berbasis framework.
     """
-    # Lazy import untuk menghindari circular import (CTA_PATTERNS ada di analisa_lanjutan).
-    from app.services.analisa_lanjutan import CTA_TANPA, deteksi_cta
-
     diagnoses: list[dict] = []
     suggestions: list[str] = []
 
@@ -228,6 +226,7 @@ def cek_kesehatan_framework(c: Content, snapshot: dict) -> tuple[list[dict], lis
     comments = float(snapshot.get("comments") or 0)
     shares = float(snapshot.get("shares") or 0)
     saves = float(snapshot.get("saves") or 0)
+    fmt = (c.format or "").lower()
 
     # 1. Uji 200 penonton.
     if views < 200:
@@ -251,53 +250,82 @@ def cek_kesehatan_framework(c: Content, snapshot: dict) -> tuple[list[dict], lis
         )
         if saran_hook not in suggestions:
             suggestions.append(saran_hook)
+        # Sudah pasti bermasalah — tidak perlu cek rasio engagement.
+        return diagnoses, suggestions
 
-    # 2. Engagement bermakna.
-    bermakna = saves + shares + comments
-    if views >= 200 and bermakna == 0:
-        diagnoses.append(
-            {
-                "metrik": "engagement_bermakna",
-                "nilai": 0,
-                "harapan": "> 0",
-                "masalah": (
-                    f"Nol saves, shares, dan comments dari {int(views)} views. Menurut framework "
-                    "(Bab 1: Watchtime Velocity & Signals 2026), algoritma memprioritaskan saves "
-                    "(nilai informasi), shares (relevansi), dan comments (diskusi) — bukan likes "
-                    "yang termasuk vanity metrics."
-                ),
-            }
-        )
-        saran_3s = (
-            "Terapkan 3S Power: Stopping (hook 3 detik), Striking (storytelling yang membuat "
-            "audiens merasa 'ini gue banget'), Sticking (tutup dengan konklusi + CTA). Pastikan "
-            "setiap konten meminta 1 aksi bermakna: simpan, bagikan, atau komentar. "
-            "(Framework Bab 3 & Bab 6)"
-        )
-        if saran_3s not in suggestions:
-            suggestions.append(saran_3s)
-
-    # 3. CTA jelas.
-    if deteksi_cta(c.caption) == [CTA_TANPA]:
-        diagnoses.append(
-            {
-                "metrik": "cta",
-                "nilai": "Tanpa CTA jelas",
-                "harapan": "CTA jelas",
-                "masalah": (
-                    "Tidak terdeteksi CTA yang jelas di caption. Menurut framework (Bab 5: Strategi "
-                    "Interaksi & Konversi; Sticking Power), setiap konten harus ditutup dengan ajakan "
-                    "bertindak yang spesifik agar audiens tergerak."
-                ),
-            }
-        )
-        saran_cta = (
-            "Tambahkan CTA spesifik di akhir caption: 'Simpan postingan ini', 'Tag teman yang butuh "
-            "info ini', atau 'Ketik kata kunci di kolom komentar'. 90–99% audiens adalah lurkers "
-            "yang butuh dipicu. (Framework Bab 5)"
-        )
-        if saran_cta not in suggestions:
-            suggestions.append(saran_cta)
+    # 2. Engagement format-spesifik minimal 10% dari views.
+    if fmt == "carousel":
+        rasio = saves / views if views > 0 else 0
+        if rasio < 0.10:
+            diagnoses.append(
+                {
+                    "metrik": "saves",
+                    "nilai": f"{int(saves)} ({rasio*100:.1f}% dari views)",
+                    "harapan": "≥10% dari views",
+                    "masalah": (
+                        f"Carousel ini hanya menghasilkan saves {rasio*100:.1f}% dari views "
+                        f"({int(saves)} saves dari {int(views)} views), di bawah standar 10%. "
+                        "Menurut framework, Carousel adalah mesin saves untuk edukasi mendalam — "
+                        "bila saves rendah, konten tidak dianggap bernilai untuk disimpan."
+                    ),
+                }
+            )
+            saran = (
+                "Perkuat nilai simpan Carousel: akhiri dengan ringkasan/checklist yang layak "
+                "di-screenshot, tambahkan CTA spesifik 'Simpan postingan ini'. "
+                "(Framework: Sticking Power & CTA)"
+            )
+            if saran not in suggestions:
+                suggestions.append(saran)
+    elif fmt == "reels":
+        bermakna = shares + comments
+        rasio = bermakna / views if views > 0 else 0
+        if rasio < 0.10:
+            diagnoses.append(
+                {
+                    "metrik": "shares+comments",
+                    "nilai": f"{int(bermakna)} ({rasio*100:.1f}% dari views)",
+                    "harapan": "≥10% dari views",
+                    "masalah": (
+                        f"Reels ini hanya menghasilkan shares+comments {rasio*100:.1f}% dari views "
+                        f"({int(bermakna)} dari {int(views)} views), di bawah standar 10%. "
+                        "Menurut framework, Reels adalah mesin jangkauan audiens baru — bila "
+                        "shares & comments rendah, algoritma tidak mendapat sinyal relevansi "
+                        "untuk distribusi lebih luas."
+                    ),
+                }
+            )
+            saran = (
+                "Dorong shares & comments di Reels: ajukan pertanyaan yang memancing opini di "
+                "caption, tambahkan CTA 'Tag teman yang perlu tahu ini' atau 'Ketik pendapatmu "
+                "di komentar'. (Framework: 3S Power — Striking & Sticking)"
+            )
+            if saran not in suggestions:
+                suggestions.append(saran)
+    elif fmt in ("foto", "image", "gambar"):
+        bermakna = comments + shares
+        rasio = bermakna / views if views > 0 else 0
+        if rasio < 0.10:
+            diagnoses.append(
+                {
+                    "metrik": "comments+shares",
+                    "nilai": f"{int(bermakna)} ({rasio*100:.1f}% dari views)",
+                    "harapan": "≥10% dari views",
+                    "masalah": (
+                        f"Image ini hanya menghasilkan comments+shares {rasio*100:.1f}% dari views "
+                        f"({int(bermakna)} dari {int(views)} views), di bawah standar 10%. "
+                        "Menurut framework, image/foto perlu memicu diskusi (comments) atau "
+                        "relevansi (shares) agar dianggap bermakna oleh algoritma."
+                    ),
+                }
+            )
+            saran = (
+                "Dorong comments & shares di Image: tulis caption yang mengundang cerita/pengalaman "
+                "audiens, tambahkan CTA 'Ceritakan pengalamanmu di komentar' atau 'Bagikan ke "
+                "teman yang membutuhkan'. (Framework: CTA & Interaksi)"
+            )
+            if saran not in suggestions:
+                suggestions.append(saran)
 
     return diagnoses, suggestions
 
