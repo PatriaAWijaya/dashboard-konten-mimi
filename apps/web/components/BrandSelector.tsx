@@ -16,7 +16,7 @@ export default function BrandSelector({
   onChange?: (brandId: string | null) => void;
   className?: string;
 }) {
-  const { selectedOrgId } = useAuth();
+  const { selectedOrgId, user } = useAuth();
   const [brands, setBrands] = useState<Brand[]>([]);
   const [selected, setSelected] = useState<string>("");
   const [loading, setLoading] = useState(true);
@@ -75,7 +75,7 @@ export default function BrandSelector({
         className="w-full rounded-xl border border-slate-300 bg-white px-3.5 py-2.5 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-indigo-500 sm:w-64"
       >
         <option value="">
-          {loading ? "Memuat brand…" : brands.length === 0 ? "Belum ada brand" : "— Pilih brand —"}
+          {loading ? "Memuat brand…" : brands.length === 0 ? user?.name || "Belum ada brand" : "— Pilih brand —"}
         </option>
         {brands.map((b) => (
           <option key={b.id} value={b.id}>
