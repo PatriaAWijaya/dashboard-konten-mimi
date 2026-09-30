@@ -62,9 +62,11 @@ function ForgotPasswordInner() {
       <div className="w-full max-w-md">
         <div className="mb-8 text-center">
           <Link href="/" className="inline-flex items-center gap-2">
-            <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-orange-600 text-lg font-bold text-white">
-              D
-            </span>
+            <img
+              src="/logo.png"
+              alt="MySocial Watch"
+              className="h-10 w-10 rounded-xl"
+            />
             <span className="text-xl font-bold text-slate-900">
               MySocial Watch
             </span>
