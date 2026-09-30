@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
 import { RequireAuth } from "@/lib/auth";
 import { api, ApiError } from "@/lib/api";
-import { apiOrDemo, demoNicheQuestions, demoNicheLaporan } from "@/lib/content";
+import { apiOrDemo, demoNicheQuestions, buatLaporanDemo } from "@/lib/content";
 import type {
   Interview,
   InterviewQuestion,
@@ -355,7 +355,7 @@ function NicheIsi() {
     try {
       const { data, demo: isDemo } = await apiOrDemo<LaporanNiche>(
         () => api.post<LaporanNiche>(`/content/niche/interviews/${interview.id}/laporan`, {}),
-        () => demoNicheLaporan
+        () => buatLaporanDemo((interview.answers ?? {}) as Record<string, unknown>)
       );
       setLaporan(data);
       setDemo((d) => d || isDemo);
@@ -796,8 +796,9 @@ function LaporanView(props: { laporan: LaporanNiche; onMulaiUlang: () => void; m
 
   return (
     <div className="space-y-5">
-      {/* Kepala laporan + skor */}
+      {/* Kepala laporan + skor (Bagian 1: Ringkasan) */}
       <Card className="border-orange-200 bg-gradient-to-br from-orange-50 via-amber-50 to-white">
+        <h3 className="mb-3 text-base font-bold text-slate-900">Ringkasan</h3>
         <div className="flex flex-wrap items-start justify-between gap-3">
           <div>
             <p className="text-xs font-semibold uppercase tracking-wide text-orange-600">

@@ -468,8 +468,91 @@ export const demoNicheLaporan: LaporanNiche = {
   },
 };
 
-export const demoDNA: BrandDNA = {
-  id: "dna-demo-1",
+/** Label tujuan kuesioner untuk mode demo. */
+const DEMO_TUJUAN_LABEL: Record<string, string> = {
+  bikin_baru: "Bikin akun baru",
+  pivot: "Pivot atau re-branding",
+  tajamkan: "Tajamkan niche sekarang",
+};
+
+const kapital = (s: string) => (s ? s.charAt(0).toUpperCase() + s.slice(1) : s);
+
+/**
+ * Bangun laporan contoh dari jawaban kuesioner mode demo.
+ * Dipakai hanya bila backend belum tersedia — isi penting (niche utama,
+ * target market, inspirasi gaya, pantangan, persona, bio) mengikuti jawaban
+ * user, bukan data contoh statis.
+ */
+export function buatLaporanDemo(answers: Record<string, unknown>): LaporanNiche {
+  const lap: LaporanNiche = JSON.parse(JSON.stringify(demoNicheLaporan));
+  const a = (k: string) => answers[k] as Record<string, unknown> | undefined;
+  const teks = (k: string): string => {
+    const v = a(k);
+    return typeof v?.teks === "string" ? (v.teks as string).trim() : "";
+  };
+
+  const tujuan = typeof a("tujuan")?.pilihan === "string" ? (a("tujuan")!.pilihan as string) : "bikin_baru";
+  const topik = (a("topik") as { utama?: string; side_2?: string; side_3?: string } | undefined) ?? {};
+  const topikUtama = (topik.utama ?? "").trim();
+  const audiens = teks("target_audiens");
+  const dikenal = teks("dikenal_untuk");
+  const harapan = teks("harapan_perubahan");
+  const pantangan = teks("pantangan");
+  const kreator = (answers["kreator_inspirasi"] as { username?: string; alasan?: string }[] | undefined ?? [])
+    .filter((k) => k?.username?.trim())
+    .map((k) => `@${k.username!.trim()}${k.alasan?.trim() ? ` (${k.alasan.trim()})` : ""}`);
+  const persona = ((answers["kata_persona"] as string[] | undefined) ?? [])
+    .map((k) => (k ?? "").trim()).filter(Boolean);
+
+  const nicheUtama = topikUtama && audiens ? `${topikUtama} untuk ${audiens}` : topikUtama || "niche dari jawaban kuesionermu";
+
+  lap.tujuan = tujuan;
+  lap.tujuan_label = DEMO_TUJUAN_LABEL[tujuan] ?? lap.tujuan_label;
+
+  const ringkasan = lap.bagian["ringkasan"] as Record<string, unknown>;
+  ringkasan["niche_utama"] = nicheUtama;
+  ringkasan["kalimat"] = `Contoh laporan (mode demo) untuk niche "${nicheUtama}". Isi mengikuti jawaban kuesionermu — hubungkan backend untuk analisa skor penuh dari data performa.`;
+
+  const target = lap.bagian["target_market"] as Record<string, unknown>;
+  target["kalimat_niche"] = nicheUtama;
+  if (audiens) target["siapa"] = audiens;
+  if (dikenal) target["masalah_mereka"] = `Mereka mengenalimu sebagai orang yang ${dikenal}.`;
+
+  const kemas = lap.bagian["pengemasan_konten"] as Record<string, unknown>;
+  if (kreator.length > 0) kemas["inspirasi_gaya"] = kreator.join("; ");
+  if (pantangan) kemas["pantangan"] = pantangan;
+
+  if (persona.length > 0) {
+    const positioning = lap.bagian["positioning"] as Record<string, unknown>;
+    positioning["opsi"] = persona.map((p) => ({
+      nama: `Si ${kapital(p)}`,
+      deskripsi: `Dikenal sebagai sosok ${p} dalam membahas ${topikUtama || "topikmu"}.`,
+      pembeda: dikenal ? `Reputasimu: ${dikenal}.` : "Bangun pembeda dari bukti pengalamanmu.",
+      risiko: "Butuh konsistensi sebelum audiens percaya.",
+    }));
+  }
+
+  const bio = lap.bagian["opsi_bio"] as Record<string, unknown>;
+  const opsiBio = bio["opsi"] as { nama: string; baris: string[]; nada: string }[];
+  if (opsiBio?.[0]) {
+    opsiBio[0] = {
+      nama: "Bio A · To the point",
+      baris: [
+        audiens ? `Bantu ${audiens}` : "Bantu audiensmu",
+        topikUtama ? `Lewat ${topikUtama}` : "Lewat konten yang relevan",
+        harapan ? `👇 ${harapan}` : "👇 Mulai dari sini",
+      ],
+      nada: "Langsung dan jelas.",
+    };
+  }
+
+  const simpulan = lap.bagian["kesimpulan"] as Record<string, unknown>;
+  simpulan["niche"] = nicheUtama;
+
+  return lap;
+}
+
+export const demoDNA: BrandDNA = {  id: "dna-demo-1",
   misi: "Membantu pecinta kopi rumahan menyeduh kopi seenak kafe tanpa alat mahal.",
   nilai_inti: ["Kejujuran bahan", "Edukasi praktis", "Keakraban komunitas"],
   kepribadian: "Hangat dan apa adanya seperti kakak yang hobi ngopi — santai tapi serius soal rasa.",
