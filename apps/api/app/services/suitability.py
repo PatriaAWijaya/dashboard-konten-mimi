@@ -6,11 +6,11 @@ import uuid
 from datetime import date
 from statistics import mean
 
-from sqlalchemy import select
+from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models.brand import Brand
-from app.models.content import Content, ContentScore
+from app.models.content import Content, ContentMetricsDaily, ContentScore
 from app.services.scoring import BASE_RATES, compute_weighted_er
 
 # Baseline absolut untuk metrik yang bukan rate.
@@ -353,6 +353,40 @@ async def analisa_report(
     )
     content_ids = [c.id for c in contents]
     scores_by_content: dict[uuid.UUID, list[ContentScore]] = {}
+    # Agregat metrik harian per konten sebagai fallback bila tidak ada ContentScore.
+    metrics_by_content: dict[uuid.UUID, dict] = {}
+    if content_ids:
+        agg_rows = list(
+            (
+                await db.execute(
+                    select(
+                        ContentMetricsDaily.content_id,
+                        func.sum(ContentMetricsDaily.views).label("views"),
+                        func.sum(ContentMetricsDaily.reach).label("reach"),
+                        func.sum(ContentMetricsDaily.likes).label("likes"),
+                        func.sum(ContentMetricsDaily.comments).label("comments"),
+                        func.sum(ContentMetricsDaily.shares).label("shares"),
+                        func.sum(ContentMetricsDaily.saves).label("saves"),
+                        func.sum(ContentMetricsDaily.follows).label("follows"),
+                    ).where(
+                        ContentMetricsDaily.organization_id == organization_id,
+                        ContentMetricsDaily.content_id.in_(content_ids),
+                        ContentMetricsDaily.date >= period_start,
+                        ContentMetricsDaily.date <= period_end,
+                    ).group_by(ContentMetricsDaily.content_id)
+                )
+            ).all()
+        )
+        for r in agg_rows:
+            metrics_by_content[r.content_id] = {
+                "views": int(r.views or 0),
+                "reach": int(r.reach or 0),
+                "likes": int(r.likes or 0),
+                "comments": int(r.comments or 0),
+                "shares": int(r.shares or 0),
+                "saves": int(r.saves or 0),
+                "follows": int(r.follows or 0),
+            }
     if content_ids:
         scores = list(
             (
@@ -419,22 +453,33 @@ async def analisa_report(
     bermasalah: list[dict] = []
     for c in contents:
         sc = scores_by_content.get(c.id, [])
-        if not sc:
-            continue
-        latest = max(sc, key=lambda s: (s.period_end, s.period_start))
-        snapshot = dict(latest.metrics_snapshot or {})
-        agg = _rates_from_snapshot(snapshot)
-        agg["format"] = c.format
-        agg["tujuan"] = c.tujuan
-        hasil = evaluate_suitability(agg)
+        if sc:
+            latest = max(sc, key=lambda s: (s.period_end, s.period_start))
+            snapshot = dict(latest.metrics_snapshot or {})
+            agg = _rates_from_snapshot(snapshot)
+            agg["format"] = c.format
+            agg["tujuan"] = c.tujuan
+            hasil = evaluate_suitability(agg)
+            gagal_suitability = per_content_dominan[c.id] == "kurang" or hasil["verdict"] != "sesuai"
+            verdict_awal = hasil["verdict"]
+            diagnosis_awal = list(hasil["diagnoses"])
+            saran_awal = list(hasil["suggestions"])
+        else:
+            # Fallback: tanpa ContentScore, cek kesehatan framework dari metrik harian.
+            snapshot = metrics_by_content.get(c.id, {})
+            if not snapshot or not snapshot.get("views"):
+                continue
+            gagal_suitability = False
+            verdict_awal = "sesuai"
+            diagnosis_awal = []
+            saran_awal = []
         diag_fw, saran_fw = cek_kesehatan_framework(c, snapshot)
-        gagal_suitability = per_content_dominan[c.id] == "kurang" or hasil["verdict"] != "sesuai"
         if gagal_suitability or diag_fw:
-            verdict = hasil["verdict"]
+            verdict = verdict_awal
             if diag_fw and verdict == "sesuai":
                 verdict = "tidak_sehat"
-            semua_diagnosis = list(hasil["diagnoses"]) + diag_fw
-            semua_saran = list(hasil["suggestions"])
+            semua_diagnosis = diagnosis_awal + diag_fw
+            semua_saran = list(saran_awal)
             for s in saran_fw:
                 if s not in semua_saran:
                     semua_saran.append(s)
