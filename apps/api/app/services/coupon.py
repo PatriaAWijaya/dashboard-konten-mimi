@@ -27,6 +27,15 @@ def _now() -> datetime:
     return datetime.now(timezone.utc)
 
 
+def _as_aware(dt: datetime | None) -> datetime | None:
+    """Pastikan datetime timezone-aware (data lama bisa naive)."""
+    if dt is None:
+        return None
+    if dt.tzinfo is None:
+        return dt.replace(tzinfo=timezone.utc)
+    return dt
+
+
 async def get_coupon(db: AsyncSession, code: str) -> Coupon | None:
     code = (code or "").strip()
     if not code:
@@ -110,13 +119,14 @@ async def redeem_coupon(
         plan_row = plan.scalar_one_or_none()
         if plan_row is not None:
             membership.plan_id = plan_row.id
-        base = membership.ends_at if (
+        ends_at = _as_aware(membership.ends_at)
+        base = ends_at if (
             membership.status in (MembershipStatus.ACTIVE, MembershipStatus.GRACE)
-            and membership.ends_at is not None
-            and membership.ends_at > now
+            and ends_at is not None
+            and ends_at > now
         ) else now
         membership.status = MembershipStatus.ACTIVE
-        membership.starts_at = membership.starts_at or now
+        membership.starts_at = _as_aware(membership.starts_at) or now
         membership.ends_at = base + timedelta(days=coupon.duration_days)
         membership.grace_ends_at = None
 

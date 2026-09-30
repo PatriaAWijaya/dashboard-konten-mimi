@@ -220,6 +220,8 @@ async def login(
     refresh_token, _, expires_at = create_refresh_token(user.id)
     db.add(RefreshToken(user_id=user.id, token_hash=hash_token(refresh_token), expires_at=expires_at))
     await db.flush()
+    # Commit refresh token DULU agar login tetap valid walau kupon gagal.
+    await db.commit()
 
     # Kupon opsional saat login: validasi & terapkan diskon ke organisasi member.
     # Kode salah TIDAK menggagalkan login — error dikembalikan agar UI bisa
@@ -236,6 +238,9 @@ async def login(
         except HTTPException as e:
             await db.rollback()
             coupon_error = e.detail if isinstance(e.detail, str) else "Kode kupon tidak valid."
+        except Exception:
+            await db.rollback()
+            coupon_error = "Gagal menerapkan kupon. Silakan coba lagi."
 
     return LoginResponse(
         access_token=create_access_token(user.id, user.is_superadmin),

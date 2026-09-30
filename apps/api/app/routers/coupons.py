@@ -9,7 +9,7 @@ from fastapi import APIRouter, Depends, Path, Query
 from pydantic import BaseModel, Field
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.core.deps import get_current_user, get_db
+from app.core.deps import get_current_user, get_db, get_org_context
 from app.models.user import User
 from app.services.coupon import (
     redeem_coupon,
@@ -59,6 +59,8 @@ async def redeem(
     """Tukarkan kupon untuk organisasi (atau semua organisasi milik user)."""
     code = data.code.strip()
     if data.organization_id:
+        # Otorisasi: user harus anggota organisasi tersebut.
+        await get_org_context(db, user, data.organization_id)
         coupon = await validate_coupon(db, code)
         redemption = await redeem_coupon(
             db, coupon=coupon, organization_id=data.organization_id, user_id=user.id
