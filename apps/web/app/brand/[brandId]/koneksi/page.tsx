@@ -28,7 +28,7 @@ function KoneksiIsi() {
           className="pointer-events-none absolute inset-0"
           style={{
             background:
-              "radial-gradient(600px 300px at 20% 0%, rgba(99,102,241,0.12), transparent 60%), radial-gradient(500px 260px at 85% 100%, rgba(236,72,153,0.10), transparent 60%)",
+              "radial-gradient(600px 300px at 20% 0%, rgba(255,129,38,0.14), transparent 60%), radial-gradient(500px 260px at 85% 100%, rgba(255,213,31,0.16), transparent 60%)",
           }}
         />
         <div className="relative px-6 py-16 text-center sm:px-12 sm:py-20">
@@ -69,7 +69,7 @@ function KoneksiIsi() {
             </div>
             <div className="h-px w-10 bg-slate-200" aria-hidden />
             <div className="flex flex-col items-center gap-2">
-              <span className="flex h-12 w-12 items-center justify-center rounded-2xl bg-gradient-to-tr from-amber-400 via-pink-500 to-purple-600 text-xl text-white">
+              <span className="flex h-12 w-12 items-center justify-center rounded-2xl bg-gradient-to-tr from-orange-500 via-amber-400 to-yellow-400 text-xl text-white">
                 📸
               </span>
               <span className="text-xs font-medium">Instagram</span>
