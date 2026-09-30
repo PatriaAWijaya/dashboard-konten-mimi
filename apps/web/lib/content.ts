@@ -72,7 +72,7 @@ export const demoCsvColumns: CsvColumnInfo[] = [
   { nama: "post_url", deskripsi: "URL postingan", wajib: false },
   { nama: "tanggal_posting", deskripsi: "Tanggal posting, format YYYY-MM-DD", wajib: true },
   { nama: "format", deskripsi: "Format: carousel | reels | story | foto | live", wajib: true },
-  { nama: "tujuan", deskripsi: "Tujuan: edukasi | hiburan | interaksi | jualan | branding", wajib: true },
+  { nama: "tujuan", deskripsi: "Tujuan: edukasi | hiburan | interaksi | jualan | branding | account_growth", wajib: true },
   { nama: "caption", deskripsi: "Teks caption postingan", wajib: false },
   { nama: "views", deskripsi: "Jumlah tayangan/views", wajib: true },
   { nama: "reach", deskripsi: "Jangkauan unik", wajib: false },

@@ -304,6 +304,22 @@ async def run_scoring(
     }
 
     results: list[ContentScore] = []
+    # Muat skor yang sudah ada sekaligus (satu query, bukan N query).
+    skor_ada = (
+        (
+            await db.execute(
+                select(ContentScore).where(
+                    ContentScore.scoring_config_id == config.id,
+                    ContentScore.content_id.in_(list(agg_by_content.keys())),
+                    ContentScore.period_start == period_start,
+                    ContentScore.period_end == period_end,
+                )
+            )
+        )
+        .scalars()
+        .all()
+    )
+    peta_skor: dict[uuid.UUID, ContentScore] = {s.content_id: s for s in skor_ada}
     for content_id, agg in agg_by_content.items():
         outcome = score_content(
             agg,
@@ -311,14 +327,7 @@ async def run_scoring(
             config.thresholds,
             median_wer=median_by_platform.get(agg["platform"]),
         )
-        existing = await db.scalar(
-            select(ContentScore).where(
-                ContentScore.content_id == content_id,
-                ContentScore.scoring_config_id == config.id,
-                ContentScore.period_start == period_start,
-                ContentScore.period_end == period_end,
-            )
-        )
+        existing = peta_skor.get(content_id)
         if existing is None:
             existing = ContentScore(
                 organization_id=organization_id,
@@ -328,6 +337,7 @@ async def run_scoring(
                 period_end=period_end,
             )
             db.add(existing)
+            peta_skor[content_id] = existing
         existing.score = outcome["score"]
         existing.status = outcome["status"]
         existing.labels = outcome["labels"]

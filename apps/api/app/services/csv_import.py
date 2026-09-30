@@ -25,7 +25,7 @@ from app.services.normalize import (
     INT_COLUMNS,
     NormalizationError,
     normalize_content_row,
-    upsert_content_row,
+    upsert_content_rows,
 )
 
 EXPECTED_COLUMNS = [
@@ -164,7 +164,7 @@ async def import_csv(
     platform: str,
     file_bytes: bytes,
     filename: str,
-    tujuan_default: str = ContentTujuan.BRANDING,
+    tujuan_default: str = ContentTujuan.ACCOUNT_GROWTH,
 ) -> dict:
     """Impor satu file CSV metrik konten untuk sebuah brand.
 
@@ -211,6 +211,9 @@ async def import_csv(
     metrics_rows = 0
     baris_gagal: list[dict] = []
     peringatan_platform_diberi = False
+    # Kumpulkan baris valid dulu, lalu upsert sekaligus (batch) agar impor
+    # ratusan baris tidak butuh ratusan roundtrip DB.
+    batch_items: list[tuple[str, dict]] = []
 
     try:
         for line_no, raw_row in enumerate(reader, start=2):
@@ -275,17 +278,16 @@ async def import_csv(
                 baris_gagal.append({"baris": line_no, "alasan": str(exc)})
                 continue
 
-            _, baru = await upsert_content_row(
-                db,
-                brand_id=brand.id,
-                organization_id=organization_id,
-                normalized=normalized,
-            )
-            if baru:
-                contents_baru += 1
-            else:
-                contents_diupdate += 1
-            metrics_rows += 1
+            batch_items.append((row_platform, normalized))
+
+        # Upsert batch: jauh lebih cepat untuk file berisi ratusan baris.
+        contents_baru, contents_diupdate = await upsert_content_rows(
+            db,
+            brand_id=brand.id,
+            organization_id=organization_id,
+            items=batch_items,
+        )
+        metrics_rows = len(batch_items)
 
         await db.commit()
     except Exception:

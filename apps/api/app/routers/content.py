@@ -144,7 +144,7 @@ _COLUMN_DOCS: dict[str, tuple[str, bool]] = {
     "post_url": ("URL publik postingan.", False),
     "tanggal_posting": ("Tanggal publikasi (YYYY-MM-DD).", True),
     "format": ("Format konten: carousel, reels, story, foto, live.", True),
-    "tujuan": ("Tujuan konten: edukasi, hiburan, interaksi, jualan, branding.", True),
+    "tujuan": ("Tujuan konten: edukasi, hiburan, interaksi, jualan, branding, account_growth.", True),
     "caption": ("Teks caption postingan.", False),
     "views": ("Jumlah views/tayangan.", True),
     "reach": ("Jumlah reach.", False),
@@ -192,7 +192,7 @@ async def upload_csv(
     tujuan_default: Annotated[
         str,
         Form(description="Tujuan default bila CSV tidak punya kolom tujuan (mis. export Meta)."),
-    ] = "branding",
+    ] = "account_growth",
 ):
     """Upload file CSV metrik konten untuk satu brand."""
     ctx = await get_org_context(db, user, org_id, min_role=ROLE_EDITOR)
@@ -250,7 +250,7 @@ async def upload_csv_batch(
     tujuan_default: Annotated[
         str,
         Form(description="Tujuan default bila CSV tidak punya kolom tujuan (mis. export Meta)."),
-    ] = "branding",
+    ] = "account_growth",
 ):
     """Upload beberapa file CSV sekaligus untuk satu brand.
 

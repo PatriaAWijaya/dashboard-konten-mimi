@@ -28,25 +28,21 @@ import BrandSelector from "@/components/BrandSelector";
 import DemoBadge from "@/components/DemoBadge";
 
 type PlatformPilih = "tiktok" | "instagram" | "auto";
-const TUJUAN = [
-  { value: "edukasi", label: "Edukasi" },
-  { value: "hiburan", label: "Hiburan" },
-  { value: "interaksi", label: "Interaksi" },
-  { value: "jualan", label: "Jualan" },
-  { value: "branding", label: "Branding" },
-] as const;
+// Tujuan semua konten sosmed: account growth & engagement rate —
+// tidak perlu dipilih manual, dikirim tetap ke backend.
+const TUJUAN_DEFAULT = "account_growth";
 
 function UploadIsi() {
   const router = useRouter();
   const [brandId, setBrandId] = useState<string | null>(null);
   const [platform, setPlatform] = useState<PlatformPilih>("auto");
-  const [tujuanDefault, setTujuanDefault] = useState<string>("branding");
   const [files, setFiles] = useState<File[]>([]);
   const [uploading, setUploading] = useState(false);
   const [hasil, setHasil] = useState<BatchUploadResult | null>(null);
   const [demoHasil, setDemoHasil] = useState(false);
   const [error, setError] = useState("");
   const [scoring, setScoring] = useState(false);
+  const [skorKonten, setSkorKonten] = useState(0);
   const [fileTerbuka, setFileTerbuka] = useState<string | null>(null);
 
   useEffect(() => {
@@ -82,7 +78,7 @@ function UploadIsi() {
       const form = new FormData();
       form.append("brand_id", brandId);
       form.append("platform", platform);
-      form.append("tujuan_default", tujuanDefault);
+      form.append("tujuan_default", TUJUAN_DEFAULT);
       for (const f of files) form.append("files", f);
       const { data, demo } = await apiOrDemo<BatchUploadResult>(
         () => api.postForm<BatchUploadResult>("/content/upload-batch", form),
@@ -94,6 +90,7 @@ function UploadIsi() {
       if (!demo && totalMasuk > 0) {
         // Upload memicu scoring otomatis, lalu pindah ke tab Analitik.
         setScoring(true);
+        setSkorKonten(totalMasuk);
         try {
           await api.post<ScoreResult>(`/content/brands/${brandId}/score`, {
             preset: "12bln",
@@ -153,7 +150,7 @@ function UploadIsi() {
           </div>
         )}
         <form onSubmit={handleUpload} className="space-y-4">
-          <div className="grid gap-4 sm:grid-cols-3">
+          <div className="grid gap-4 sm:grid-cols-2">
             <BrandSelector value={brandId} onChange={setBrandId} />
             <Select
               label="Platform"
@@ -164,23 +161,7 @@ function UploadIsi() {
               <option value="tiktok">TikTok</option>
               <option value="instagram">Instagram</option>
             </Select>
-            <Select
-              label="Tujuan default"
-              value={tujuanDefault}
-              onChange={(e) => setTujuanDefault(e.target.value)}
-            >
-              {TUJUAN.map((t) => (
-                <option key={t.value} value={t.value}>
-                  {t.label}
-                </option>
-              ))}
-            </Select>
           </div>
-          <p className="-mt-2 text-xs text-slate-500">
-            Tujuan default dipakai bila file tidak punya kolom tujuan
-            (mis. export Meta). File berformat kolom aplikasi yang punya
-            kolom tujuan tetap memakai nilainya per baris.
-          </p>
           <label className="block">
             <span className="mb-1.5 block text-sm font-medium text-slate-700">
               File CSV (bisa pilih lebih dari satu, maks 10)
@@ -225,14 +206,23 @@ function UploadIsi() {
           )}
           <Button type="submit" disabled={uploading || scoring || files.length === 0}>
             {uploading
-              ? "Mengunggah…"
+              ? `Mengunggah ${files.length} file…`
               : scoring
                 ? "Menjalankan scoring otomatis…"
                 : `Upload${files.length > 0 ? ` ${files.length} file` : ""}`}
           </Button>
+          {uploading && (
+            <div className="flex items-center gap-2 text-sm text-slate-600">
+              <Spinner
+                label={`Mengunggah ${files.length} file ke server — mohon tunggu, jangan tutup halaman ini…`}
+              />
+            </div>
+          )}
           {scoring && (
             <div className="flex items-center gap-2 text-sm text-slate-600">
-              <Spinner label="Menjalankan scoring otomatis, sebentar lagi pindah ke Analitik…" />
+              <Spinner
+                label={`Menjalankan scoring otomatis untuk ${skorKonten} konten — sebentar lagi pindah ke Analitik…`}
+              />
             </div>
           )}
         </form>

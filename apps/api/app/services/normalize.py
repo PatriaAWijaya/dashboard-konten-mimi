@@ -9,7 +9,7 @@ from __future__ import annotations
 import uuid
 from datetime import datetime, timezone
 
-from sqlalchemy import select
+from sqlalchemy import select, tuple_
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models.content import (
@@ -208,3 +208,125 @@ async def upsert_content_row(
             setattr(metric, c, angka[c])
         metric.avg_watch_seconds = normalized["avg_watch_seconds"]
     return content, baru
+
+
+async def upsert_content_rows(
+    db: AsyncSession,
+    *,
+    brand_id: uuid.UUID,
+    organization_id: uuid.UUID,
+    items: list[tuple[str, dict]],
+) -> tuple[int, int]:
+    """Versi batch dari upsert_content_row untuk impor CSV.
+
+    items: list (row_platform, normalized) hasil normalize_content_row.
+    Hanya butuh segelintir roundtrip DB (bukan 2×N): satu SELECT untuk
+    semua Content yang sudah ada, satu flush untuk semua Content baru,
+    satu SELECT untuk semua ContentMetricsDaily terkait.
+
+    Semantik identik dengan versi per-baris: posted_at tidak di-overwrite,
+    baris duplikat (platform, post_id) dalam file yang sama dihitung
+    sebagai update, idempoten per brand+platform+post_id.
+
+    Return (contents_baru, contents_diupdate).
+    """
+    if not items:
+        return 0, 0
+
+    # 1. Muat semua Content yang sudah ada dalam satu query.
+    kunci = list({(norm["platform"], norm["post_id"]) for _, norm in items})
+    ada = (
+        (
+            await db.execute(
+                select(Content).where(
+                    Content.brand_id == brand_id,
+                    Content.organization_id == organization_id,
+                    tuple_(Content.platform, Content.post_id).in_(kunci),
+                )
+            )
+        )
+        .scalars()
+        .all()
+    )
+    peta: dict[tuple[str, str], Content] = {(c.platform, c.post_id): c for c in ada}
+
+    kunci_baru: set[tuple[str, str]] = set()
+    baru_list: list[Content] = []
+    for _, norm in items:
+        k = (norm["platform"], norm["post_id"])
+        if k not in peta:
+            c = Content(
+                organization_id=organization_id,
+                brand_id=brand_id,
+                platform=norm["platform"],
+                post_id=norm["post_id"],
+                post_url=norm["post_url"],
+                posted_at=norm["posted_at"],
+                format=norm["format"],
+                tujuan=norm["tujuan"],
+                caption=norm["caption"],
+            )
+            peta[k] = c
+            kunci_baru.add(k)
+            baru_list.append(c)
+    if baru_list:
+        db.add_all(baru_list)
+        await db.flush()
+
+    # 2. Hitung baru/diupdate per baris (urutan asli, semantik = versi per-baris).
+    contents_baru = 0
+    contents_diupdate = 0
+    terlihat: set[tuple[str, str]] = set()
+    for _, norm in items:
+        k = (norm["platform"], norm["post_id"])
+        c = peta[k]
+        if k in kunci_baru and k not in terlihat:
+            contents_baru += 1
+        else:
+            contents_diupdate += 1
+            # posted_at TIDAK di-overwrite: tanggal publikasi adalah fakta immutable.
+            c.post_url = norm["post_url"]
+            c.format = norm["format"]
+            c.tujuan = norm["tujuan"]
+            c.caption = norm["caption"]
+        terlihat.add(k)
+
+    # 3. Muat semua metrik terkait dalam satu query, lalu upsert di memori.
+    ids = list({c.id for c in peta.values()})
+    tanggals = list({norm["tanggal"] for _, norm in items})
+    met_ada = (
+        (
+            await db.execute(
+                select(ContentMetricsDaily).where(
+                    ContentMetricsDaily.content_id.in_(ids),
+                    ContentMetricsDaily.date.in_(tanggals),
+                )
+            )
+        )
+        .scalars()
+        .all()
+    )
+    peta_met: dict[tuple[uuid.UUID, object], ContentMetricsDaily] = {
+        (m.content_id, m.date): m for m in met_ada
+    }
+    for _, norm in items:
+        c = peta[(norm["platform"], norm["post_id"])]
+        tanggal = norm["tanggal"]
+        angka = {col: norm[col] for col in INT_COLUMNS}
+        m = peta_met.get((c.id, tanggal))
+        if m is None:
+            m = ContentMetricsDaily(
+                organization_id=organization_id,
+                content_id=c.id,
+                date=tanggal,
+                avg_watch_seconds=norm["avg_watch_seconds"],
+                **angka,
+            )
+            db.add(m)
+            peta_met[(c.id, tanggal)] = m
+        else:
+            for col in INT_COLUMNS:
+                setattr(m, col, angka[col])
+            m.avg_watch_seconds = norm["avg_watch_seconds"]
+
+    return contents_baru, contents_diupdate

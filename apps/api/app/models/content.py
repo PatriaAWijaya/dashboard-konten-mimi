@@ -36,8 +36,9 @@ class ContentTujuan:
     INTERAKSI = "interaksi"
     JUALAN = "jualan"
     BRANDING = "branding"
+    ACCOUNT_GROWTH = "account_growth"
 
-    ALL = (EDUKASI, HIBURAN, INTERAKSI, JUALAN, BRANDING)
+    ALL = (EDUKASI, HIBURAN, INTERAKSI, JUALAN, BRANDING, ACCOUNT_GROWTH)
 
 
 class ScoreStatus:

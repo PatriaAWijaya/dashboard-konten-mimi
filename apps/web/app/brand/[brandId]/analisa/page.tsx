@@ -38,6 +38,12 @@ const RENTANG_BANDING = [
   { value: "12", label: "12 bulan terakhir" },
 ] as const;
 
+/** Label tampil untuk nilai tujuan (semua konten sosmed = account growth & engagement rate). */
+function labelTujuan(t: string): string {
+  if (t === "account_growth") return "Account growth & engagement rate";
+  return t.replace(/_/g, " ");
+}
+
 function fmtAngka(n: number | null | undefined): string {
   if (n === null || n === undefined) return "-";
   return n.toLocaleString("id-ID");
@@ -325,8 +331,8 @@ function AnalisaIsi() {
                     <p className="font-semibold capitalize text-slate-900">
                       {r.format.replace(/_/g, " ")}
                     </p>
-                    <p className="text-sm capitalize text-slate-500">
-                      Tujuan: {r.tujuan}
+                    <p className="text-sm text-slate-500">
+                      Tujuan: {labelTujuan(r.tujuan)}
                     </p>
                   </div>
                   <span
@@ -373,7 +379,7 @@ function AnalisaIsi() {
                         {k.post_id}
                       </p>
                       <p className="text-sm capitalize text-slate-500">
-                        {k.format.replace(/_/g, " ")} · tujuan {k.tujuan}
+                        {k.format.replace(/_/g, " ")} · tujuan {labelTujuan(k.tujuan)}
                       </p>
                     </div>
                     <span
