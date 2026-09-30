@@ -393,7 +393,7 @@ export default function AnalisaLanjutan({
                         {labelFormat(d.format)}
                       </td>
                       <td className="max-w-[280px] py-2.5 pr-3 text-slate-600">
-                        <p className="text-[13px] leading-snug">
+                        <p className="break-words text-[13px] leading-snug">
                           {terbuka ? d.caption.replace(/\s+/g, " ").trim() : pendek}
                         </p>
                         {perlu && (
@@ -484,7 +484,7 @@ export default function AnalisaLanjutan({
                 {s.contoh && s.contoh.length > 0 && (
                   <div className="mt-2 space-y-1.5 border-t border-slate-200 pt-2">
                     {s.contoh.map((c) => (
-                      <p key={c.post_id} className="text-xs text-slate-600">
+                      <p key={c.post_id} className="break-words text-xs text-slate-600">
                         <span className="font-semibold text-slate-800">
                           WER {c.wer.toLocaleString("id-ID")}%
                         </span>{" "}
