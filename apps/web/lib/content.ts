@@ -16,6 +16,9 @@ import type {
   CsvColumnInfo,
   Interview,
   NicheSuggestion,
+  PerbandinganBulan,
+  PerbandinganData,
+  PerbandinganDelta,
   Rekomendasi,
 } from "./types";
 
@@ -439,3 +442,72 @@ export const demoNiches: NicheSuggestion[] = [
     is_selected: false,
   },
 ];
+
+/** Data demo perbandingan MoM/YoY: 12 bulan sintetis dengan delta terisi sebagian. */
+export function demoPerbandingan(): Promise<PerbandinganData> {
+  const namaBulan = ["Jan", "Feb", "Mar", "Apr", "Mei", "Jun", "Jul", "Agu", "Sep", "Okt", "Nov", "Des"];
+  const sekarang = new Date();
+  const historis: { views: number; engagement: number; jumlah_konten: number; reach: number; rata_skor: number }[] = [];
+  for (let i = 23; i >= 0; i--) {
+    const faktor = 1 + Math.sin(i / 2.4) * 0.35 + (23 - i) * 0.03;
+    const views = Math.round(12000 * faktor);
+    const engagement = Math.round(views * 0.06 * (1 + Math.sin(i) * 0.15));
+    historis.push({
+      views,
+      engagement,
+      jumlah_konten: 8 + (i % 5),
+      reach: Math.round(views * 0.8),
+      rata_skor: 0.55 + Math.sin(i / 3) * 0.15,
+    });
+  }
+  const bulan: PerbandinganBulan[] = [];
+  for (let i = 0; i < 12; i++) {
+    const idx = i + 12; // 12 bulan tampilan = paruh kedua historis
+    const h = historis[idx];
+    const d = new Date(sekarang.getFullYear(), sekarang.getMonth() - (11 - i), 1);
+    const kunci = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
+    const momH = historis[idx - 1];
+    const yoyH = i === 0 ? null : historis[idx - 12];
+    const delta = (cur: number, prev: number | null | undefined): number | null =>
+      prev === null || prev === undefined || prev === 0
+        ? null
+        : Math.round(((cur - prev) / prev) * 1000) / 10;
+    const mom: PerbandinganDelta = {
+      bulan_pembanding: momH ? `${d.getFullYear()}-${String(d.getMonth()).padStart(2, "0")}` : null,
+      views_pct: delta(h.views, momH?.views),
+      engagement_pct: delta(h.engagement, momH?.engagement),
+      jumlah_konten_pct: delta(h.jumlah_konten, momH?.jumlah_konten),
+      reach_pct: delta(h.reach, momH?.reach),
+      rata_skor_pct: delta(h.rata_skor, momH?.rata_skor),
+    };
+    const yoy: PerbandinganDelta = {
+      bulan_pembanding: yoyH ? `${d.getFullYear() - 1}-${String(d.getMonth() + 1).padStart(2, "0")}` : null,
+      views_pct: delta(h.views, yoyH?.views),
+      engagement_pct: delta(h.engagement, yoyH?.engagement),
+      jumlah_konten_pct: delta(h.jumlah_konten, yoyH?.jumlah_konten),
+      reach_pct: delta(h.reach, yoyH?.reach),
+      rata_skor_pct: delta(h.rata_skor, yoyH?.rata_skor),
+    };
+    bulan.push({
+      bulan: kunci,
+      label: `${namaBulan[d.getMonth()]} ${d.getFullYear()}`,
+      jumlah_konten: h.jumlah_konten,
+      views: h.views,
+      likes: Math.round(h.engagement * 0.6),
+      comments: Math.round(h.engagement * 0.2),
+      shares: Math.round(h.engagement * 0.12),
+      saves: Math.round(h.engagement * 0.08),
+      reach: h.reach,
+      engagement: h.engagement,
+      rata_skor: Math.round(h.rata_skor * 100) / 100,
+      rata_wer: 0.06,
+      mom,
+      yoy,
+    });
+  }
+  return Promise.resolve({
+    rentang: { mulai: bulan[0].bulan + "-01", selesai: "demo" },
+    platform: "semua",
+    bulan,
+  });
+}

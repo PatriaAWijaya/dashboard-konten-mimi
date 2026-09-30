@@ -189,6 +189,10 @@ async def upload_csv(
     file: Annotated[UploadFile, File(description="File CSV data konten.")],
     user: Annotated[User, Depends(get_current_user)],
     db: Annotated[AsyncSession, Depends(get_db)],
+    tujuan_default: Annotated[
+        str,
+        Form(description="Tujuan default bila CSV tidak punya kolom tujuan (mis. export Meta)."),
+    ] = "branding",
 ):
     """Upload file CSV metrik konten untuk satu brand."""
     ctx = await get_org_context(db, user, org_id, min_role=ROLE_EDITOR)
@@ -225,6 +229,7 @@ async def upload_csv(
         platform=platform,
         file_bytes=blob,
         filename=file.filename or "upload.csv",
+        tujuan_default=tujuan_default,
     )
     kolom = [c if isinstance(c, str) else str(c.get("nama", c)) for c in EXPECTED_COLUMNS]
     return CsvUploadOut(**hasil, kolom=kolom)
@@ -242,6 +247,10 @@ async def upload_csv_batch(
     files: Annotated[list[UploadFile], File(description="File-file CSV data konten (maks 10).")],
     user: Annotated[User, Depends(get_current_user)],
     db: Annotated[AsyncSession, Depends(get_db)],
+    tujuan_default: Annotated[
+        str,
+        Form(description="Tujuan default bila CSV tidak punya kolom tujuan (mis. export Meta)."),
+    ] = "branding",
 ):
     """Upload beberapa file CSV sekaligus untuk satu brand.
 
@@ -305,6 +314,7 @@ async def upload_csv_batch(
                 platform=platform_norm,
                 file_bytes=blob,
                 filename=nama,
+                tujuan_default=tujuan_default,
             )
         except ValueError as exc:
             await db.rollback()

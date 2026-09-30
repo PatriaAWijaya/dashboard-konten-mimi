@@ -79,7 +79,6 @@ export default function Navbar() {
   const navLinks: { href: string; label: string; match?: string }[] = [
     { href: "/dashboard", label: "Dasbor" },
     { href: "/upload", label: "Upload" },
-    { href: "/perbandingan", label: "Perbandingan" },
     {
       href: brandId ? `/brand/${brandId}` : "/pilih-brand",
       label: "Analitik",

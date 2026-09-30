@@ -2,18 +2,17 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { RequireAuth } from "@/lib/auth";
 import { api, ApiError } from "@/lib/api";
 import {
   DEMO_FALLBACK,
   apiOrDemo,
-  demoCsvColumns,
   getSelectedBrandId,
 } from "@/lib/content";
 import type {
   BatchFileResult,
   BatchUploadResult,
-  CsvColumnInfo,
   ScoreResult,
   UploadResult,
 } from "@/lib/types";
@@ -23,57 +22,36 @@ import {
   Card,
   PageHeader,
   Select,
+  Spinner,
 } from "@/components/ui";
 import BrandSelector from "@/components/BrandSelector";
 import DemoBadge from "@/components/DemoBadge";
 
 type PlatformPilih = "tiktok" | "instagram" | "auto";
-const PRESET_SKOR = [
-  { value: "30d", label: "30 hari terakhir" },
-  { value: "90d", label: "90 hari terakhir" },
-  { value: "12bln", label: "12 bulan terakhir" },
+const TUJUAN = [
+  { value: "edukasi", label: "Edukasi" },
+  { value: "hiburan", label: "Hiburan" },
+  { value: "interaksi", label: "Interaksi" },
+  { value: "jualan", label: "Jualan" },
+  { value: "branding", label: "Branding" },
 ] as const;
 
 function UploadIsi() {
+  const router = useRouter();
   const [brandId, setBrandId] = useState<string | null>(null);
-  const [platform, setPlatform] = useState<PlatformPilih>("tiktok");
+  const [platform, setPlatform] = useState<PlatformPilih>("auto");
+  const [tujuanDefault, setTujuanDefault] = useState<string>("branding");
   const [files, setFiles] = useState<File[]>([]);
-  const [kolom, setKolom] = useState<CsvColumnInfo[]>([]);
-  const [demoKolom, setDemoKolom] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [hasil, setHasil] = useState<BatchUploadResult | null>(null);
   const [demoHasil, setDemoHasil] = useState(false);
   const [error, setError] = useState("");
   const [scoring, setScoring] = useState(false);
-  const [skor, setSkor] = useState<ScoreResult | null>(null);
-  const [presetSkor, setPresetSkor] = useState<string>("30d");
   const [fileTerbuka, setFileTerbuka] = useState<string | null>(null);
 
   useEffect(() => {
     setBrandId(getSelectedBrandId());
   }, []);
-
-  // Dokumentasi format kolom (dengan fallback tabel statis).
-  useEffect(() => {
-    let batal = false;
-    apiOrDemo(
-      () => api.get<{ columns: CsvColumnInfo[] } | CsvColumnInfo[]>("/content/csv-format"),
-      demoCsvColumns
-    ).then(({ data, demo }) => {
-      if (!batal) {
-        const cols = Array.isArray(data) ? data : data.columns ?? [];
-        setKolom(cols);
-        setDemoKolom(demo);
-      }
-    });
-    return () => {
-      batal = true;
-    };
-  }, []);
-
-  function contohUrl() {
-    return `/contoh/${platform === "instagram" ? "instagram" : "tiktok"}_contoh.csv`;
-  }
 
   function tambahFiles(daftar: FileList | null) {
     if (!daftar) return;
@@ -91,7 +69,6 @@ function UploadIsi() {
     e.preventDefault();
     setError("");
     setHasil(null);
-    setSkor(null);
     if (!brandId) {
       setError("Pilih brand terlebih dahulu.");
       return;
@@ -105,6 +82,7 @@ function UploadIsi() {
       const form = new FormData();
       form.append("brand_id", brandId);
       form.append("platform", platform);
+      form.append("tujuan_default", tujuanDefault);
       for (const f of files) form.append("files", f);
       const { data, demo } = await apiOrDemo<BatchUploadResult>(
         () => api.postForm<BatchUploadResult>("/content/upload-batch", form),
@@ -112,6 +90,22 @@ function UploadIsi() {
       );
       setHasil(data);
       setDemoHasil(demo);
+      const totalMasuk = data.total_baru + data.total_diupdate;
+      if (!demo && totalMasuk > 0) {
+        // Upload memicu scoring otomatis, lalu pindah ke tab Analitik.
+        setScoring(true);
+        try {
+          await api.post<ScoreResult>(`/content/brands/${brandId}/score`, {
+            preset: "12bln",
+          });
+        } catch {
+          // Scoring gagal bukan akhir dunia: user bisa hitung ulang
+          // dari halaman analitik. Tetap lanjut ke sana.
+        } finally {
+          setScoring(false);
+        }
+        router.push(`/brand/${brandId}`);
+      }
     } catch (err) {
       setError(
         err instanceof ApiError ? err.message : "Gagal mengunggah file. Coba lagi."
@@ -121,88 +115,25 @@ function UploadIsi() {
     }
   }
 
-  async function jalankanScoring() {
-    if (!brandId) return;
-    setScoring(true);
-    setError("");
-    try {
-      const { data } = await apiOrDemo<ScoreResult>(
-        () => api.post<ScoreResult>(`/content/brands/${brandId}/score`, { preset: presetSkor }),
-        {
-          diskor: hasil?.total_baru ?? 0,
-          periode: `${PRESET_SKOR.find((p) => p.value === presetSkor)?.label ?? presetSkor} (demo)`,
-        }
-      );
-      setSkor(data);
-    } catch (err) {
-      setError(
-        err instanceof ApiError ? err.message : "Gagal menjalankan scoring."
-      );
-    } finally {
-      setScoring(false);
-    }
-  }
-
-  const presetLabel = PRESET_SKOR.find((p) => p.value === presetSkor)?.label;
-
   return (
     <div className="mx-auto max-w-4xl px-4 py-8 sm:px-6">
       <PageHeader
         title="Upload Data"
-        subtitle="Unggah satu atau beberapa file CSV metrik konten, lalu jalankan scoring."
+        subtitle="Unggah file CSV metrik konten — scoring berjalan otomatis lalu Anda dibawa ke Analitik."
         action={<DemoBadge tampil={demoHasil} />}
       />
 
-      {/* 1. Dokumentasi format kolom */}
+      {/* 1. Info format */}
       <Card className="mb-6">
-        <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
-          <h2 className="text-base font-semibold text-slate-900">
-            Format kolom CSV
-          </h2>
-          <a href={contohUrl()} download>
-            <Button variant="secondary">
-              Unduh contoh ({platform === "instagram" ? "Instagram" : "TikTok"})
-            </Button>
-          </a>
-        </div>
-        {demoKolom && (
-          <p className="mb-3 text-xs text-amber-700">
-            Dokumentasi kolom memakai tabel statis karena backend belum
-            tersedia (DEMO_FALLBACK).
-          </p>
-        )}
-        <div className="overflow-x-auto">
-          <table className="w-full min-w-[560px] text-left text-sm">
-            <thead>
-              <tr className="border-b border-slate-200 text-xs uppercase text-slate-500">
-                <th className="py-2 pr-4">Kolom</th>
-                <th className="py-2 pr-4">Deskripsi</th>
-                <th className="py-2">Wajib</th>
-              </tr>
-            </thead>
-            <tbody>
-              {kolom.map((k) => (
-                <tr key={k.nama} className="border-b border-slate-100 last:border-0">
-                  <td className="py-2 pr-4 font-mono text-[13px] font-medium text-slate-900">
-                    {k.nama}
-                  </td>
-                  <td className="py-2 pr-4 text-slate-600">{k.deskripsi}</td>
-                  <td className="py-2">
-                    {k.wajib ? (
-                      <span className="rounded-full bg-red-100 px-2 py-0.5 text-xs font-semibold text-red-700">
-                        Ya
-                      </span>
-                    ) : (
-                      <span className="rounded-full bg-slate-100 px-2 py-0.5 text-xs font-medium text-slate-500">
-                        Opsional
-                      </span>
-                    )}
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+        <h2 className="mb-1 text-base font-semibold text-slate-900">
+          Format file
+        </h2>
+        <p className="text-sm leading-relaxed text-slate-600">
+          File <strong>export langsung dari Meta</strong> (TikTok / Instagram)
+          didukung apa adanya — kolom dipetakan otomatis dan platform
+          dideteksi dari file. Tidak perlu mengubah atau menata ulang CSV
+          Anda.
+        </p>
       </Card>
 
       {/* 2. Form upload multi-file */}
@@ -222,18 +153,34 @@ function UploadIsi() {
           </div>
         )}
         <form onSubmit={handleUpload} className="space-y-4">
-          <div className="grid gap-4 sm:grid-cols-2">
+          <div className="grid gap-4 sm:grid-cols-3">
             <BrandSelector value={brandId} onChange={setBrandId} />
             <Select
               label="Platform"
               value={platform}
               onChange={(e) => setPlatform(e.target.value as PlatformPilih)}
             >
+              <option value="auto">Otomatis (dari file)</option>
               <option value="tiktok">TikTok</option>
               <option value="instagram">Instagram</option>
-              <option value="auto">Otomatis (dari kolom platform)</option>
+            </Select>
+            <Select
+              label="Tujuan default"
+              value={tujuanDefault}
+              onChange={(e) => setTujuanDefault(e.target.value)}
+            >
+              {TUJUAN.map((t) => (
+                <option key={t.value} value={t.value}>
+                  {t.label}
+                </option>
+              ))}
             </Select>
           </div>
+          <p className="-mt-2 text-xs text-slate-500">
+            Tujuan default dipakai bila file tidak punya kolom tujuan
+            (mis. export Meta). File berformat kolom aplikasi yang punya
+            kolom tujuan tetap memakai nilainya per baris.
+          </p>
           <label className="block">
             <span className="mb-1.5 block text-sm font-medium text-slate-700">
               File CSV (bisa pilih lebih dari satu, maks 10)
@@ -276,11 +223,18 @@ function UploadIsi() {
               ))}
             </ul>
           )}
-          <Button type="submit" disabled={uploading || files.length === 0}>
+          <Button type="submit" disabled={uploading || scoring || files.length === 0}>
             {uploading
               ? "Mengunggah…"
-              : `Upload${files.length > 0 ? ` ${files.length} file` : ""}`}
+              : scoring
+                ? "Menjalankan scoring otomatis…"
+                : `Upload${files.length > 0 ? ` ${files.length} file` : ""}`}
           </Button>
+          {scoring && (
+            <div className="flex items-center gap-2 text-sm text-slate-600">
+              <Spinner label="Menjalankan scoring otomatis, sebentar lagi pindah ke Analitik…" />
+            </div>
+          )}
         </form>
       </Card>
 
@@ -380,41 +334,13 @@ function UploadIsi() {
             ))}
           </div>
 
-          <div className="mt-6 flex flex-wrap items-center gap-3">
-            <Select
-              label="Periode scoring"
-              value={presetSkor}
-              onChange={(e) => setPresetSkor(e.target.value)}
-            >
-              {PRESET_SKOR.map((p) => (
-                <option key={p.value} value={p.value}>
-                  {p.label}
-                </option>
-              ))}
-            </Select>
-            <Button onClick={jalankanScoring} disabled={scoring}>
-              {scoring ? "Menghitung…" : "Jalankan Scoring"}
-            </Button>
-            {skor && (
-              <Alert kind="success">
-                Scoring selesai: <strong>{skor.diskor}</strong> konten diskor
-                ({typeof skor.periode === "string" ? skor.periode : presetLabel}).
-              </Alert>
-            )}
-          </div>
           {brandId && (
-            <div className="mt-4 flex flex-wrap gap-4">
+            <div className="mt-4">
               <Link
                 href={`/brand/${brandId}`}
                 className="text-sm font-medium text-indigo-600 hover:text-indigo-800"
               >
                 Lihat dasbor analitik →
-              </Link>
-              <Link
-                href="/perbandingan"
-                className="text-sm font-medium text-indigo-600 hover:text-indigo-800"
-              >
-                Bandingkan MoM / YoY →
               </Link>
             </div>
           )}
@@ -464,8 +390,8 @@ function simulasiUploadDemo(file: File): Promise<UploadResult> {
     const data = Math.max(0, baris.length - 1);
     const gagal: { baris: number; alasan: string }[] = [];
     const header = (baris[0] ?? "").split(",");
-    if (!header.includes("post_id")) {
-      gagal.push({ baris: 1, alasan: "Kolom wajib 'post_id' tidak ditemukan di header (simulasi demo)." });
+    if (!header.includes("post_id") && !header.includes("Post ID")) {
+      gagal.push({ baris: 1, alasan: "Kolom 'post_id'/'Post ID' tidak ditemukan di header (simulasi demo)." });
     }
     // Tandai satu baris contoh sebagai gagal agar tampilan terverifikasi.
     if (data >= 3) {
