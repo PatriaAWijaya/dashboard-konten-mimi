@@ -294,6 +294,23 @@ function TabMember() {
     }
   }
 
+  async function verifikasiManual(userId: string) {
+    setProsesId(userId);
+    setError("");
+    setSukses("");
+    try {
+      await api.post(`/admin/users/${userId}/verify-email`, {});
+      setSukses("Email user berhasil diverifikasi manual.");
+      await muat();
+    } catch (err) {
+      setError(
+        err instanceof ApiError ? err.message : "Gagal memverifikasi email."
+      );
+    } finally {
+      setProsesId(null);
+    }
+  }
+
   if (loading) return <Spinner label="Memuat daftar user…" />;
 
   return (
@@ -301,11 +318,13 @@ function TabMember() {
       {error && <Alert kind="error">{error}</Alert>}
       {sukses && <Alert kind="success">{sukses}</Alert>}
       <Card className="overflow-x-auto p-0">
-        <table className="w-full min-w-[720px] text-left text-sm">
+        <table className="w-full min-w-[880px] text-left text-sm">
           <thead>
             <tr className="border-b border-slate-200 text-xs uppercase tracking-wide text-slate-500">
               <th className="px-5 py-3 font-semibold">Nama</th>
               <th className="px-5 py-3 font-semibold">Email</th>
+              <th className="px-5 py-3 font-semibold">Terverifikasi</th>
+              <th className="px-5 py-3 font-semibold">Terdaftar</th>
               <th className="px-5 py-3 font-semibold">Status</th>
               <th className="px-5 py-3 font-semibold">Admin</th>
               <th className="px-5 py-3 font-semibold"></th>
@@ -316,6 +335,20 @@ function TabMember() {
               <tr key={u.id} className="border-b border-slate-100 last:border-0">
                 <td className="px-5 py-3 font-medium text-slate-900">{u.name}</td>
                 <td className="px-5 py-3 text-slate-600">{u.email}</td>
+                <td className="px-5 py-3">
+                  <span
+                    className={`inline-flex rounded-full px-2.5 py-0.5 text-xs font-medium ${
+                      u.email_verified
+                        ? "bg-emerald-100 text-emerald-800"
+                        : "bg-amber-100 text-amber-800"
+                    }`}
+                  >
+                    {u.email_verified ? "Ya" : "Belum"}
+                  </span>
+                </td>
+                <td className="px-5 py-3 whitespace-nowrap text-slate-600">
+                  {u.created_at ? formatTanggal(u.created_at) : "-"}
+                </td>
                 <td className="px-5 py-3">
                   <span
                     className={`inline-flex rounded-full px-2.5 py-0.5 text-xs font-medium ${
@@ -330,19 +363,31 @@ function TabMember() {
                 <td className="px-5 py-3 text-slate-600">
                   {u.is_superadmin ? "Ya" : "-"}
                 </td>
-                <td className="px-5 py-3 text-right">
-                  <Button
-                    variant="secondary"
-                    onClick={() => ubahStatus(u.id, !u.is_active)}
-                    disabled={prosesId === u.id}
-                    className="px-3! py-1.5! text-xs"
-                  >
-                    {prosesId === u.id
-                      ? "Memproses…"
-                      : u.is_active
-                        ? "Tangguhkan"
-                        : "Aktifkan"}
-                  </Button>
+                <td className="px-5 py-3">
+                  <div className="flex justify-end gap-2">
+                    {!u.email_verified && (
+                      <Button
+                        variant="secondary"
+                        onClick={() => verifikasiManual(u.id)}
+                        disabled={prosesId === u.id}
+                        className="px-3! py-1.5! text-xs"
+                      >
+                        {prosesId === u.id ? "Memproses…" : "Verifikasi"}
+                      </Button>
+                    )}
+                    <Button
+                      variant="secondary"
+                      onClick={() => ubahStatus(u.id, !u.is_active)}
+                      disabled={prosesId === u.id}
+                      className="px-3! py-1.5! text-xs"
+                    >
+                      {prosesId === u.id
+                        ? "Memproses…"
+                        : u.is_active
+                          ? "Tangguhkan"
+                          : "Aktifkan"}
+                    </Button>
+                  </div>
                 </td>
               </tr>
             ))}

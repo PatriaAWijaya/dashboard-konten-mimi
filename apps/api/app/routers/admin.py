@@ -19,7 +19,7 @@ from app.models.billing import (
     PaymentStatus,
 )
 from app.models.organization import Organization
-from app.models.tokens import RefreshToken
+from app.models.tokens import EmailVerificationToken, RefreshToken
 from app.models.user import User
 from app.models.audit import AuditLog
 from app.schemas.admin import (
@@ -268,6 +268,39 @@ async def activate_user(
     )
     await db.flush()
     return MessageResponse(message="Pengguna diaktifkan kembali.")
+
+
+@router.post("/admin/users/{user_id}/verify-email", response_model=MessageResponse)
+async def verify_user_email_manual(
+    user_id: Annotated[uuid.UUID, Path()],
+    admin: Annotated[User, Depends(require_superadmin)],
+    db: Annotated[AsyncSession, Depends(get_db)],
+):
+    """Verifikasi email user secara manual oleh superadmin.
+
+    Dipakai sebagai jalan keluar bila alur verifikasi via email terus gagal.
+    """
+    user = await db.get(User, user_id)
+    if user is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Pengguna tidak ditemukan.")
+    if user.email_verified:
+        return MessageResponse(message="Email pengguna sudah terverifikasi.")
+    user.email_verified = True
+    # Hanguskan token verifikasi yang belum dipakai agar tidak membingungkan.
+    result = await db.execute(
+        select(EmailVerificationToken).where(
+            EmailVerificationToken.user_id == user.id,
+            EmailVerificationToken.used_at.is_(None),
+        )
+    )
+    for token in result.scalars().all():
+        token.used_at = _now()
+    await log_audit(
+        db, actor_user_id=admin.id, action="user_email_verified_manual", entity_type="user", entity_id=user.id,
+        meta={"email": user.email},
+    )
+    await db.flush()
+    return MessageResponse(message="Email pengguna berhasil diverifikasi manual.")
 
 
 # ---------------------------------------------------------------------------
