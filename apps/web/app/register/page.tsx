@@ -250,6 +250,7 @@ export default function RegisterPage() {
                   placeholder="Min. 8 karakter"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
+                  togglePassword
                 />
                 <Input
                   label="Konfirmasi kata sandi"
@@ -259,6 +260,7 @@ export default function RegisterPage() {
                   placeholder="Ulangi kata sandi"
                   value={konfirmasi}
                   onChange={(e) => setKonfirmasi(e.target.value)}
+                  togglePassword
                 />
               </div>
               <Button type="submit" disabled={loading} className="w-full">
