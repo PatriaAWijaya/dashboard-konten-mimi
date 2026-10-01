@@ -3,7 +3,7 @@
 import type { ReactNode } from "react";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
-import { useParams } from "next/navigation";
+import { useBrandId } from "@/lib/brand";
 import { RequireAuth } from "@/lib/auth";
 import { api, ApiError } from "@/lib/api";
 import { apiOrDemo, demoRekomendasi } from "@/lib/content";
@@ -218,8 +218,7 @@ function KartuRekomendasi({
 }
 
 function RekomendasiIsi() {
-  const params = useParams();
-  const brandId = params.brandId as string;
+  const brandId = useBrandId();
   const [periode, setPeriode] = useState<PilihanPeriode>({ preset: "30d" });
   const [items, setItems] = useState<Rekomendasi[]>([]);
   const [demo, setDemo] = useState(false);

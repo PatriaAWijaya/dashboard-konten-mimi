@@ -1,10 +1,8 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { RequireAuth, useAuth } from "@/lib/auth";
-import { api } from "@/lib/api";
-import { apiOrDemo, demoBrands } from "@/lib/content";
-import type { Brand } from "@/lib/types";
+import { useState } from "react";
+import { RequireAuth } from "@/lib/auth";
+import { useBrands } from "@/lib/brand";
 import NicheFinder from "@/components/NicheFinder";
 
 /** Dropdown brand opsional — Niche Finder tetap jalan tanpa memilih brand. */
@@ -15,35 +13,7 @@ function PemilihBrand({
   value: string | null;
   onChange: (brandId: string | null) => void;
 }) {
-  const { selectedOrgId } = useAuth();
-  const [brands, setBrands] = useState<Brand[]>([]);
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    if (!selectedOrgId) {
-      setBrands([]);
-      setLoading(false);
-      return;
-    }
-    let batal = false;
-    setLoading(true);
-    apiOrDemo(
-      () => api.get<Brand[]>(`/organizations/${selectedOrgId}/brands`),
-      demoBrands
-    )
-      .then(({ data }) => {
-        if (!batal) setBrands(data);
-      })
-      .catch(() => {
-        if (!batal) setBrands([]);
-      })
-      .finally(() => {
-        if (!batal) setLoading(false);
-      });
-    return () => {
-      batal = true;
-    };
-  }, [selectedOrgId]);
+  const { brands, loading } = useBrands();
 
   return (
     <label className="mb-4 block">

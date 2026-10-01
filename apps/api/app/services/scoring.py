@@ -7,7 +7,7 @@ sehingga deterministik dan mudah diuji. Bagian DB hanya agregasi & upsert.
 from __future__ import annotations
 
 import uuid
-from datetime import date
+from datetime import date, datetime, timedelta, timezone
 from statistics import median
 
 from sqlalchemy import func, select
@@ -67,6 +67,25 @@ def compute_weighted_er(likes: float, comments: float, shares: float, saves: flo
     if views is None or views <= 0:
         return 0.0
     return (likes * 1 + comments * 3 + shares * 5 + saves * 5) / views
+
+
+def er_snapshot(snapshot: dict | None) -> float:
+    """Hitung weighted ER dari metrics_snapshot (JSONB) satu skor konten."""
+    snap = snapshot or {}
+    return compute_weighted_er(
+        float(snap.get("likes") or 0),
+        float(snap.get("comments") or 0),
+        float(snap.get("shares") or 0),
+        float(snap.get("saves") or 0),
+        float(snap.get("views") or 0),
+    )
+
+
+def batas_dt(awal: date, akhir: date) -> tuple[datetime, datetime]:
+    """Rentang [awal 00:00, akhir+1 00:00) UTC untuk filter posted_at."""
+    mulai = datetime(awal.year, awal.month, awal.day, tzinfo=timezone.utc)
+    selesai = datetime(akhir.year, akhir.month, akhir.day, tzinfo=timezone.utc) + timedelta(days=1)
+    return mulai, selesai
 
 
 def _clamp01(value: float) -> float:

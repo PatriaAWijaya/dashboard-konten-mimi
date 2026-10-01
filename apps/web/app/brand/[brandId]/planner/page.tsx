@@ -1,10 +1,11 @@
 "use client";
 
 import { Suspense, useCallback, useEffect, useMemo, useState } from "react";
-import { useParams, useSearchParams } from "next/navigation";
+import { useSearchParams } from "next/navigation";
+import { useBrandId } from "@/lib/brand";
 import { RequireAuth } from "@/lib/auth";
 import { api, apiDownload, ApiError } from "@/lib/api";
-import { formatTanggal } from "@/lib/format";
+import { formatPersen, formatTanggal } from "@/lib/format";
 import {
   Alert,
   Button,
@@ -118,16 +119,6 @@ interface Realisasi {
   narasi: string | null;
 }
 
-function fmtPersenRasio(n: number | null | undefined): string {
-  if (n === null || n === undefined) return "-";
-  return (
-    (n * 100).toLocaleString("id-ID", {
-      minimumFractionDigits: 1,
-      maximumFractionDigits: 1,
-    }) + "%"
-  );
-}
-
 function fmtRentangViews(
   min: number | null | undefined,
   maks: number | null | undefined
@@ -214,7 +205,7 @@ function KartuTargetEstimasi({
           <div className="flex items-center justify-between gap-3">
             <dt className="text-slate-500">Target ER</dt>
             <dd className="font-semibold tabular-nums text-orange-700">
-              {fmtPersenRasio(data.target_er)}
+              {formatPersen(data.target_er)}
             </dd>
           </div>
           {data.label && (
@@ -282,7 +273,7 @@ function RealisasiVsRencana({
               <p className="text-xs text-emerald-800">
                 Sesuai rencana
                 <br />
-                (rata ER {fmtPersenRasio(data.sesuai_rencana.rata_er)})
+                (rata ER {formatPersen(data.sesuai_rencana.rata_er)})
               </p>
             </div>
             <div className="rounded-xl bg-slate-100 px-3 py-3">
@@ -292,13 +283,13 @@ function RealisasiVsRencana({
               <p className="text-xs text-slate-600">
                 Di luar rencana
                 <br />
-                (rata ER {fmtPersenRasio(data.di_luar_rencana.rata_er)})
+                (rata ER {formatPersen(data.di_luar_rencana.rata_er)})
               </p>
             </div>
           </div>
           {data.rasio !== null && data.rasio !== undefined && (
             <p className="mt-3 text-center text-sm font-semibold text-slate-800">
-              Rasio kepatuhan: {fmtPersenRasio(data.rasio)}
+              Rasio kepatuhan: {formatPersen(data.rasio)}
             </p>
           )}
           <p className="mt-3 whitespace-pre-line text-sm leading-relaxed text-slate-700">
@@ -564,7 +555,7 @@ function Alokator({
                   </p>
                 )}
                 <p className="mt-1 text-xs text-slate-500">
-                  Target ER {fmtPersenRasio(s.target_er)} · estimasi views{" "}
+                  Target ER {formatPersen(s.target_er)} · estimasi views{" "}
                   {fmtRentangViews(s.target_views_min, s.target_views_max)}
                 </p>
               </div>
@@ -577,8 +568,7 @@ function Alokator({
 }
 
 function PlannerIsi() {
-  const params = useParams();
-  const brandId = params.brandId as string;
+  const brandId = useBrandId();
   const searchParams = useSearchParams();
 
   const [bulan, setBulan] = useState(() => bulanKey(new Date()));

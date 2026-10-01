@@ -1,10 +1,10 @@
 "use client";
 
 import { useState } from "react";
-import { useParams } from "next/navigation";
+import { useBrandId } from "@/lib/brand";
 import { RequireAuth } from "@/lib/auth";
 import { api, ApiError } from "@/lib/api";
-import { Button, Card, Input, Select, TextArea } from "@/components/ui";
+import { Alert, Button, Card, Input, Select, TextArea } from "@/components/ui";
 
 const GOALS = ["Awareness", "Edukasi", "Hiburan", "Konversi"];
 const CTAS = ["Save", "Share", "Comment", "Click link konversi", "Follow"];
@@ -21,8 +21,7 @@ const FRAMEWORKS = [
 type Hasil = { hasil: string; framework: string; platform: string };
 
 export default function CopywritingPage() {
-  const params = useParams();
-  const brandId = String(params.brandId ?? "");
+  const brandId = useBrandId();
   const [form, setForm] = useState({
     what: "",
     who: "",
@@ -120,7 +119,7 @@ export default function CopywritingPage() {
           </div>
         </Card>
 
-        {error && <p className="mt-3 text-sm text-red-600">{error}</p>}
+        <div className="mt-3">{error && <Alert kind="error">{error}</Alert>}</div>
 
         <Button onClick={generate} disabled={loading} className="mt-4">
           {loading ? "Menulis…" : "Generate Copywriting"}

@@ -23,9 +23,8 @@ from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.config import get_settings
-from app.core.deps import get_current_user, get_db, get_org_context, parse_org_header
+from app.core.deps import get_brand, get_current_user, get_db, get_org_context, parse_org_header
 from app.core.permissions import ROLE_EDITOR, ROLE_VIEWER
-from app.models.brand import Brand
 from app.models.content import (
     Content,
     ContentMetricsDaily,
@@ -59,7 +58,7 @@ from app.schemas.content import (
     RecommendationOut,
     ScoreOut,
 )
-from app.services.analisa_lanjutan import analisa_lanjutan
+from app.services.analisa_lanjutan import analisa_lanjutan, label_bulan
 from app.services.csv_import import AUTO_PLATFORM, EXPECTED_COLUMNS, import_csv
 from app.services.niche import (
     QUESTIONS,
@@ -85,12 +84,6 @@ PLATFORM_VALID = ("tiktok", "instagram", "facebook")
 # ---------------------------------------------------------------------------
 # Helper
 # ---------------------------------------------------------------------------
-
-async def _get_brand(db: AsyncSession, brand_id: uuid.UUID, org_id: uuid.UUID) -> Brand:
-    brand = await db.get(Brand, brand_id)
-    if brand is None or brand.organization_id != org_id:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Brand tidak ditemukan.")
-    return brand
 
 
 async def _get_interview(db: AsyncSession, iid: uuid.UUID, org_id: uuid.UUID) -> NicheInterview:
@@ -202,7 +195,7 @@ async def upload_csv(
         brand_uuid = uuid.UUID(brand_id)
     except ValueError:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="brand_id tidak valid.")
-    brand = await _get_brand(db, brand_uuid, ctx.organization.id)
+    brand = await get_brand(db, brand_uuid, ctx.organization.id)
 
     if platform not in PLATFORM_VALID:
         raise HTTPException(
@@ -267,7 +260,7 @@ async def upload_csv_batch(
         brand_uuid = uuid.UUID(brand_id)
     except ValueError:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="brand_id tidak valid.")
-    brand = await _get_brand(db, brand_uuid, ctx.organization.id)
+    brand = await get_brand(db, brand_uuid, ctx.organization.id)
 
     platform_norm = (platform or "").strip().lower()
     if platform_norm not in BATCH_PLATFORM_VALID:
@@ -373,7 +366,7 @@ async def hapus_konten_by_post_id(
     milik organisasi sendiri dengan peran minimal editor.
     """
     ctx = await get_org_context(db, user, org_id, min_role=ROLE_EDITOR)
-    brand = await _get_brand(db, brand_id, ctx.organization.id)
+    brand = await get_brand(db, brand_id, ctx.organization.id)
     hasil = await db.execute(
         select(Content).where(Content.brand_id == brand.id, Content.post_id == post_id)
     )
@@ -402,7 +395,7 @@ async def score_brand(
 ):
     """Jalankan skoring konten brand untuk satu periode."""
     ctx = await get_org_context(db, user, org_id, min_role=ROLE_EDITOR)
-    brand = await _get_brand(db, brand_id, ctx.organization.id)
+    brand = await get_brand(db, brand_id, ctx.organization.id)
     awal, akhir = _resolve_period(data)
     skor = await run_scoring(
         db, brand=brand, organization_id=ctx.organization.id,
@@ -430,7 +423,7 @@ async def brand_dashboard(
 ):
     """Dashboard agregat: kartu per platform, tren mingguan, daftar konten."""
     ctx = await get_org_context(db, user, org_id, min_role=ROLE_VIEWER)
-    brand = await _get_brand(db, brand_id, ctx.organization.id)
+    brand = await get_brand(db, brand_id, ctx.organization.id)
     periode = _periode_dari_query(preset, start, end) or PeriodeIn()
     awal, akhir = _resolve_period(periode)
     mulai_dt = datetime(awal.year, awal.month, awal.day, tzinfo=timezone.utc)
@@ -563,7 +556,7 @@ async def brand_analisa(
 ):
     """Laporan analisa kesesuaian pola konten (rule-based)."""
     ctx = await get_org_context(db, user, org_id, min_role=ROLE_VIEWER)
-    brand = await _get_brand(db, brand_id, ctx.organization.id)
+    brand = await get_brand(db, brand_id, ctx.organization.id)
     periode = _periode_dari_query(preset, start, end) or PeriodeIn()
     awal, akhir = _resolve_period(periode)
     hasil = await analisa_report(
@@ -594,7 +587,7 @@ async def brand_analisa_lanjutan(
     """Analisa lanjutan: komposisi engagement, total per format, detail per bulan,
     skor akun 1-10, diagnosis, dan saran berbasis pola winning."""
     ctx = await get_org_context(db, user, org_id, min_role=ROLE_VIEWER)
-    brand = await _get_brand(db, brand_id, ctx.organization.id)
+    brand = await get_brand(db, brand_id, ctx.organization.id)
     periode = _periode_dari_query(preset, start, end) or PeriodeIn()
     awal, akhir = _resolve_period(periode)
     hasil = await analisa_lanjutan(
@@ -609,8 +602,6 @@ async def brand_analisa_lanjutan(
 # Perbandingan MoM & YoY
 # ---------------------------------------------------------------------------
 
-_BULAN_SINGKAT = ["Jan", "Feb", "Mar", "Apr", "Mei", "Jun", "Jul", "Agu", "Sep", "Okt", "Nov", "Des"]
-
 
 def _geser_bulan(tahun: int, bulan: int, geser: int) -> tuple[int, int]:
     total = (tahun * 12 + (bulan - 1)) + geser
@@ -619,10 +610,6 @@ def _geser_bulan(tahun: int, bulan: int, geser: int) -> tuple[int, int]:
 
 def _kunci_bulan(tahun: int, bulan: int) -> str:
     return f"{tahun:04d}-{bulan:02d}"
-
-
-def _label_bulan(tahun: int, bulan: int) -> str:
-    return f"{_BULAN_SINGKAT[bulan - 1]} {tahun}"
 
 
 def _pct_perubahan(sekarang: float | None, pembanding: float | None) -> float | None:
@@ -648,7 +635,7 @@ async def brand_perbandingan(
     Delta bernilai None bila bulan pembanding belum punya data.
     """
     ctx = await get_org_context(db, user, org_id, min_role=ROLE_VIEWER)
-    brand = await _get_brand(db, brand_id, ctx.organization.id)
+    brand = await get_brand(db, brand_id, ctx.organization.id)
 
     platform_norm = (platform or "semua").strip().lower()
     if platform_norm not in ("semua", "tiktok", "instagram", "facebook"):
@@ -803,7 +790,7 @@ async def brand_perbandingan(
         deret.append(
             PerbandinganBulan(
                 bulan=kunci,
-                label=_label_bulan(t, b),
+                label=label_bulan(t, b),
                 jumlah_konten=n,
                 views=a["views"],
                 likes=a["likes"],
@@ -882,7 +869,7 @@ async def list_recommendations(
 ):
     """Daftar rekomendasi brand (opsional filter periode)."""
     ctx = await get_org_context(db, user, org_id, min_role=ROLE_VIEWER)
-    brand = await _get_brand(db, brand_id, ctx.organization.id)
+    brand = await get_brand(db, brand_id, ctx.organization.id)
     q = select(Recommendation).where(Recommendation.brand_id == brand.id)
     periode = _periode_dari_query(preset, start, end)
     if periode is not None:
@@ -907,7 +894,7 @@ async def generate_brand_recommendations(
 ):
     """Hasilkan rekomendasi baru (ada cache + anti-duplikat penolakan)."""
     ctx = await get_org_context(db, user, org_id, min_role=ROLE_EDITOR)
-    brand = await _get_brand(db, brand_id, ctx.organization.id)
+    brand = await get_brand(db, brand_id, ctx.organization.id)
     awal, akhir = _resolve_period(data)
     hasil = await generate_recommendations(
         db, brand=brand, organization_id=ctx.organization.id,
@@ -977,7 +964,7 @@ async def mulai_wawancara(
 ):
     """Mulai (atau lanjutkan) kuesioner niche 11 kartu."""
     ctx = await get_org_context(db, user, org_id, min_role=ROLE_EDITOR)
-    brand = await _get_brand(db, brand_id, ctx.organization.id)
+    brand = await get_brand(db, brand_id, ctx.organization.id)
     interview = await start_interview(
         db, brand=brand, organization_id=ctx.organization.id, user_id=user.id
     )
@@ -1092,7 +1079,7 @@ async def laporan_wawancara(
     ctx = await get_org_context(db, user, org_id, min_role=ROLE_EDITOR)
     interview = await _get_interview(db, iid, ctx.organization.id)
     brand = (
-        await _get_brand(db, interview.brand_id, ctx.organization.id)
+        await get_brand(db, interview.brand_id, ctx.organization.id)
         if interview.brand_id is not None
         else None
     )
@@ -1125,7 +1112,7 @@ async def generate_copywriting(
     from app.services.llm import get_llm_provider, resolve_llm_api_key
 
     ctx = await get_org_context(db, user, org_id, min_role=ROLE_EDITOR)
-    brand = await _get_brand(db, brand_id, ctx.organization.id)
+    brand = await get_brand(db, brand_id, ctx.organization.id)
 
     fw = data.framework.strip().lower()
     if fw not in FRAMEWORK_COPYWRITING:

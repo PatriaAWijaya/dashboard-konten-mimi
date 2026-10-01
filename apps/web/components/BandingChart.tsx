@@ -9,6 +9,7 @@ import {
   XAxis,
   YAxis,
 } from "recharts";
+import { formatAngka } from "@/lib/format";
 
 export type BandingItem = {
   label: string;
@@ -16,14 +17,6 @@ export type BandingItem = {
   mom?: number | null;
   yoy?: number | null;
 };
-
-function fmtAngka(n: number | null | undefined, desimal = 1): string {
-  if (n === null || n === undefined) return "-";
-  return n.toLocaleString("id-ID", {
-    minimumFractionDigits: desimal,
-    maximumFractionDigits: desimal,
-  });
-}
 
 /** Grafik batang perbandingan MoM/YoY — di-load lazy agar bundle awal ringan. */
 export default function BandingChart({
@@ -48,7 +41,7 @@ export default function BandingChart({
               const ket: string[] = [];
               if (p?.mom !== null && p?.mom !== undefined) ket.push(`MoM ${p.mom > 0 ? "+" : ""}${p.mom}%`);
               if (p?.yoy !== null && p?.yoy !== undefined) ket.push(`YoY ${p.yoy > 0 ? "+" : ""}${p.yoy}%`);
-              return [fmtAngka(typeof value === "number" ? value : null), ket.join(" · ") || label];
+              return [formatAngka(typeof value === "number" ? value : null, 1), ket.join(" · ") || label];
             }}
           />
           <Bar dataKey="Nilai" fill={warna} radius={[6, 6, 0, 0]} name={label} />

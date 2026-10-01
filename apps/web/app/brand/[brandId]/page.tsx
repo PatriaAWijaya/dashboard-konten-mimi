@@ -2,13 +2,13 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
-import { useParams } from "next/navigation";
+import { useBrandId } from "@/lib/brand";
 import dynamic from "next/dynamic";
 import { RequireAuth } from "@/lib/auth";
 import { api, ApiError } from "@/lib/api";
 import { apiOrDemo, demoDashboard } from "@/lib/content";
 import type { BrandDashboard, KartuPlatform, Platform, ScoreResult } from "@/lib/types";
-import { formatTanggal } from "@/lib/format";
+import { formatPersen, formatTanggal } from "@/lib/format";
 
 // Chart di-load lazy agar bundle awal ringan (recharts ~100kB).
 const TrenChart = dynamic(() => import("@/components/TrenChart"), {
@@ -22,23 +22,6 @@ import DemoBadge from "@/components/DemoBadge";
 import ExportPdfButton from "@/components/ExportPdfButton";
 // import OnboardingBanner from "@/components/OnboardingBanner"; // disembunyikan sementara
 import PeriodPicker, { type PilihanPeriode } from "@/components/PeriodPicker";
-
-function fmtAngka(n: number | null | undefined, desimal = 1): string {
-  if (n === null || n === undefined) return "-";
-  return n.toLocaleString("id-ID", {
-    minimumFractionDigits: desimal,
-    maximumFractionDigits: desimal,
-  });
-}
-
-// Backend mengirim skor (0-1) dan ER (rasio 0-1); tampilkan sebagai persen.
-function fmtPersen(n: number | null | undefined, desimal = 1): string {
-  if (n === null || n === undefined) return "-";
-  return (n * 100).toLocaleString("id-ID", {
-    minimumFractionDigits: desimal,
-    maximumFractionDigits: desimal,
-  }) + "%";
-}
 
 function KartuRingkasan({
   judul,
@@ -56,11 +39,11 @@ function KartuRingkasan({
           <p className="text-xs text-slate-500">Konten</p>
         </div>
         <div>
-          <p className="text-2xl font-bold text-orange-600">{fmtPersen(data.rata_skor)}</p>
+          <p className="text-2xl font-bold text-orange-600">{formatPersen(data.rata_skor)}</p>
           <p className="text-xs text-slate-500">Rata-rata skor</p>
         </div>
         <div>
-          <p className="text-2xl font-bold text-sky-600">{fmtPersen(data.rata_er)}</p>
+          <p className="text-2xl font-bold text-sky-600">{formatPersen(data.rata_er)}</p>
           <p className="text-xs text-slate-500">Rata-rata ER</p>
         </div>
       </div>
@@ -190,8 +173,7 @@ function KartuRingkasanPekan({ brandId }: { brandId: string }) {
 }
 
 function DasborBrandIsi() {
-  const params = useParams();
-  const brandId = params.brandId as string;
+  const brandId = useBrandId();
   const [periode, setPeriode] = useState<PilihanPeriode>({ preset: "30d" });
   const [data, setData] = useState<BrandDashboard | null>(null);
   const [demo, setDemo] = useState(false);
@@ -372,7 +354,7 @@ function DasborBrandIsi() {
                         {k.views?.toLocaleString("id-ID") ?? "-"}
                       </td>
                       <td className="py-2.5 pr-3 text-right tabular-nums text-slate-700">
-                        {k.er !== null && k.er !== undefined ? fmtPersen(k.er) : "-"}
+                        {formatPersen(k.er)}
                       </td>
                       <td className="py-2.5 pr-3 text-right font-semibold tabular-nums text-slate-900">
                         {k.score ?? "-"}

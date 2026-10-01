@@ -8,7 +8,7 @@ terbaik/terburuk) — tidak pernah data mentah per konten.
 from __future__ import annotations
 
 import uuid
-from datetime import date, datetime, timedelta, timezone
+from datetime import date
 
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -18,30 +18,13 @@ from app.models.content import Content, ContentScore, ScoreStatus
 from app.models.fase2 import Summary
 from app.services.llm import LLMProvider, get_llm_provider_for_db
 from app.services.notifications import notify_org
-from app.services.scoring import compute_weighted_er, get_or_create_active_config
-
-
-def _batas_dt(awal: date, akhir: date) -> tuple[datetime, datetime]:
-    mulai = datetime(awal.year, awal.month, awal.day, tzinfo=timezone.utc)
-    selesai = datetime(akhir.year, akhir.month, akhir.day, tzinfo=timezone.utc) + timedelta(days=1)
-    return mulai, selesai
-
-
-def _er_snapshot(snapshot: dict | None) -> float:
-    snap = snapshot or {}
-    return compute_weighted_er(
-        float(snap.get("likes") or 0),
-        float(snap.get("comments") or 0),
-        float(snap.get("shares") or 0),
-        float(snap.get("saves") or 0),
-        float(snap.get("views") or 0),
-    )
+from app.services.scoring import batas_dt, er_snapshot, get_or_create_active_config
 
 
 async def _agregat(
     db: AsyncSession, brand_id: uuid.UUID, awal: date, akhir: date
 ) -> dict:
-    mulai, selesai = _batas_dt(awal, akhir)
+    mulai, selesai = batas_dt(awal, akhir)
     baris = (
         await db.execute(
             select(Content, ContentScore)
@@ -61,7 +44,7 @@ async def _agregat(
     for content, skor in baris:
         if skor.score is not None:
             skor_list.append(float(skor.score))
-        er_list.append(_er_snapshot(skor.metrics_snapshot))
+        er_list.append(er_snapshot(skor.metrics_snapshot))
         key = (content.format, content.tujuan)
         p = pola.setdefault(key, {"n": 0, "menang": 0})
         p["n"] += 1

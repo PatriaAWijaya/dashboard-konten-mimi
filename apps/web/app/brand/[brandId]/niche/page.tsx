@@ -1,13 +1,12 @@
 "use client";
 
-import { useParams } from "next/navigation";
+import { useBrandId } from "@/lib/brand";
 import { RequireAuth } from "@/lib/auth";
 import BrandNav from "@/components/BrandNav";
 import NicheFinder from "@/components/NicheFinder";
 
 export default function NichePage() {
-  const params = useParams();
-  const brandId = params.brandId as string;
+  const brandId = useBrandId();
   return (
     <RequireAuth>
       <NicheFinder

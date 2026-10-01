@@ -2,9 +2,8 @@
 
 import { useEffect, useState } from "react";
 import { useAuth } from "@/lib/auth";
-import { api } from "@/lib/api";
-import { apiOrDemo, demoBrands, getSelectedBrandId, setSelectedBrandId } from "@/lib/content";
-import type { Brand } from "@/lib/types";
+import { getSelectedBrandId, setSelectedBrandId } from "@/lib/content";
+import { useBrands } from "@/lib/brand";
 
 // Dropdown pilih brand aktif. Menyimpan pilihan ke localStorage "dkai_brand_id".
 export default function BrandSelector({
@@ -17,38 +16,15 @@ export default function BrandSelector({
   className?: string;
 }) {
   const { selectedOrgId, user } = useAuth();
-  const [brands, setBrands] = useState<Brand[]>([]);
+  const { brands, loading } = useBrands();
   const [selected, setSelected] = useState<string>("");
-  const [loading, setLoading] = useState(true);
 
+  // Validasi pilihan tersimpan terhadap daftar brand yang ada.
   useEffect(() => {
-    if (!selectedOrgId) {
-      setBrands([]);
-      setLoading(false);
-      return;
-    }
-    let batal = false;
-    setLoading(true);
-    apiOrDemo(() => api.get<Brand[]>(`/organizations/${selectedOrgId}/brands`), demoBrands)
-      .then(({ data }) => {
-        if (batal) return;
-        setBrands(data);
-        const tersimpan = value ?? getSelectedBrandId();
-        const valid = data.find((b) => b.id === tersimpan);
-        setSelected(valid ? valid.id : "");
-      })
-      .catch(() => {
-        // Error HTTP (mis. 401/403) tidak ditelan jadi demo; biarkan daftar kosong.
-        // Halaman utama menampilkan pesan error yang sebenarnya.
-        if (!batal) setBrands([]);
-      })
-      .finally(() => {
-        if (!batal) setLoading(false);
-      });
-    return () => {
-      batal = true;
-    };
-  }, [selectedOrgId]); // eslint-disable-line react-hooks/exhaustive-deps
+    const tersimpan = value ?? getSelectedBrandId();
+    const valid = brands.find((b) => b.id === tersimpan);
+    setSelected(valid ? valid.id : "");
+  }, [brands]); // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
     if (value !== undefined) setSelected(value ?? "");

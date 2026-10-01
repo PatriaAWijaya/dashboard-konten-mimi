@@ -2,7 +2,7 @@
 
 import { useEffect, useState, type ReactNode } from "react";
 import { api, ApiError } from "@/lib/api";
-import { apiOrDemo, demoNicheQuestions, buatLaporanDemo } from "@/lib/content";
+import { apiOrDemo, buatLaporanDemo, demoInterview } from "@/lib/content";
 import type {
   Interview,
   InterviewQuestion,
@@ -182,13 +182,8 @@ export default function NicheFinder({
             return api.get<Interview>(`/content/niche/interviews/${dibuat.id}`);
           },
           () => ({
-            id: "interview-demo-1",
+            ...demoInterview,
             brand_id: brandId ?? "tanpa-brand",
-            current_step: 0,
-            answers: {},
-            skipped: [],
-            status: "berjalan",
-            questions: demoNicheQuestions,
           })
         );
         if (batal) return;

@@ -21,6 +21,7 @@ from abc import ABC, abstractmethod
 import httpx
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm import selectinload
 
 from app.models.fase2 import NotificationLog, NotificationLogStatus, NotificationPreference
 from app.models.organization import OrganizationMember
@@ -228,14 +229,14 @@ async def notify_org(
     """
     members = (
         await db.execute(
-            select(OrganizationMember).where(
-                OrganizationMember.organization_id == organization_id
-            )
+            select(OrganizationMember)
+            .where(OrganizationMember.organization_id == organization_id)
+            .options(selectinload(OrganizationMember.user))
         )
     ).scalars().all()
     terkirim = dilewati = gagal = 0
     for m in members:
-        user = await db.get(User, m.user_id)
+        user = m.user
         if user is None or not user.is_active:
             continue
         try:

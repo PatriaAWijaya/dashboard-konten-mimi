@@ -20,7 +20,7 @@ import {
 } from "@/components/ui";
 import { paymentStatusLabel } from "@/components/badges";
 
-type Tab = "antrean" | "riwayat" | "member" | "audit";
+type Tab = "pembayaran" | "riwayat" | "member" | "audit";
 
 function unduhBukti(paymentId: string, fileName: string, setError: (s: string) => void) {
   apiDownload(`/billing/payments/${paymentId}/file`)
@@ -42,7 +42,7 @@ function unduhBukti(paymentId: string, fileName: string, setError: (s: string) =
 }
 
 // ---------- Tab Pembayaran ----------
-function TabAntrean() {
+function TabPembayaran() {
   const [items, setItems] = useState<QueuedPayment[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -188,7 +188,7 @@ function TabAntrean() {
   );
 }
 
-// ---------- Tab Riwayat ----------
+// ---------- Tab Riwayat Pembayaran ----------
 function TabRiwayat() {
   const [items, setItems] = useState<QueuedPayment[]>([]);
   const [loading, setLoading] = useState(true);
@@ -455,14 +455,14 @@ function TabAudit() {
 
 // ---------- Halaman ----------
 const TABS: { id: Tab; label: string }[] = [
-  { id: "antrean", label: "Pembayaran" },
-  { id: "riwayat", label: "Riwayat" },
+  { id: "pembayaran", label: "Pembayaran" },
+  { id: "riwayat", label: "Riwayat Pembayaran" },
   { id: "member", label: "Member" },
   { id: "audit", label: "Audit Log" },
 ];
 
 function AdminIsi() {
-  const [tab, setTab] = useState<Tab>("antrean");
+  const [tab, setTab] = useState<Tab>("pembayaran");
 
   return (
     <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6">
@@ -491,7 +491,7 @@ function AdminIsi() {
           </button>
         ))}
       </div>
-      {tab === "antrean" && <TabAntrean />}
+      {tab === "pembayaran" && <TabPembayaran />}
       {tab === "riwayat" && <TabRiwayat />}
       {tab === "member" && <TabMember />}
       {tab === "audit" && <TabAudit />}

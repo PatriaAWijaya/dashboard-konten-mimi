@@ -10,6 +10,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.core.config import get_settings
 from app.core.deps import (
     OrgContext,
+    get_brand,
     get_current_user,
     get_db,
     get_org_context,
@@ -49,12 +50,8 @@ async def _ctx(
 
 
 async def _brand_milik_org(db: AsyncSession, ctx: OrgContext, brand_id: uuid.UUID) -> Brand:
-    brand = await db.get(Brand, brand_id)
-    if brand is None or brand.organization_id != ctx.organization.id:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail="Brand tidak ditemukan."
-        )
-    return brand
+    """Varian get_brand yang menerima OrgContext (dipakai semua endpoint onboarding)."""
+    return await get_brand(db, brand_id, ctx.organization.id)
 
 
 def _status_out(progress: OnboardingProgress | None) -> OnboardingStatusOut:

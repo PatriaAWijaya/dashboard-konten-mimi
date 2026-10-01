@@ -4,6 +4,7 @@ import { useCallback, useEffect, useState } from "react";
 import { Cell, Legend, Pie, PieChart, ResponsiveContainer, Tooltip } from "recharts";
 import { api, ApiError } from "@/lib/api";
 import { apiOrDemo, demoAnalisaLanjutan } from "@/lib/content";
+import { formatAngka, formatPersen } from "@/lib/format";
 import type { AnalisaLanjutan, DiagnosisItem } from "@/lib/types";
 import { Alert, Card, Select, Spinner } from "@/components/ui";
 
@@ -39,16 +40,6 @@ const WARNA_RANK = [
   "bg-orange-500 text-white",
   "bg-orange-200 text-orange-800",
 ];
-
-function fmt(n: number | null | undefined): string {
-  if (n === null || n === undefined) return "-";
-  return n.toLocaleString("id-ID");
-}
-
-function fmtPersenFraksi(n: number | null | undefined): string {
-  if (n === null || n === undefined) return "-";
-  return (n * 100).toLocaleString("id-ID", { maximumFractionDigits: 1 }) + "%";
-}
 
 /** Persentase nilai engagement terhadap views, mis. "6,4% dari views". */
 function persenDariViews(nilai: number | null | undefined, views: number | null | undefined): string {
@@ -200,8 +191,8 @@ export default function AnalisaLanjutan({
       <Card className="mb-8">
         <h2 className="text-lg font-semibold text-slate-900">Komposisi Engagement</h2>
         <p className="mb-4 text-sm text-slate-500">
-          Total tiap jenis engagement pada periode ini · {fmt(komposisi.jumlah_konten)} konten ·
-          rata-rata {fmt(komposisi.rata_engagement_per_konten)} engagement/konten
+          Total tiap jenis engagement pada periode ini · {formatAngka(komposisi.jumlah_konten)} konten ·
+          rata-rata {formatAngka(komposisi.rata_engagement_per_konten)} engagement/konten
         </p>
         <div className="grid gap-6 lg:grid-cols-2">
           <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
@@ -215,7 +206,7 @@ export default function AnalisaLanjutan({
                   {w.label}
                 </p>
                 <p className="mt-1 text-xl font-bold tabular-nums text-slate-900">
-                  {fmt(komposisi[w.kunci as keyof typeof komposisi] as number)}
+                  {formatAngka(komposisi[w.kunci as keyof typeof komposisi] as number)}
                 </p>
                 <p className="mt-0.5 text-[11px] tabular-nums text-slate-400">
                   {persenDariViews(komposisi[w.kunci as keyof typeof komposisi] as number, komposisi.views)}
@@ -225,7 +216,7 @@ export default function AnalisaLanjutan({
             <div className="rounded-xl bg-orange-50 p-3">
               <p className="text-xs font-medium text-orange-700">Total engagement</p>
               <p className="mt-1 text-xl font-bold tabular-nums text-orange-900">
-                {fmt(komposisi.total_engagement)}
+                {formatAngka(komposisi.total_engagement)}
               </p>
               <p className="mt-0.5 text-[11px] tabular-nums text-orange-600/70">
                 {persenDariViews(komposisi.total_engagement, komposisi.views)}
@@ -234,7 +225,7 @@ export default function AnalisaLanjutan({
             <div className="rounded-xl bg-slate-50 p-3">
               <p className="text-xs font-medium text-slate-500">Views</p>
               <p className="mt-1 text-xl font-bold tabular-nums text-slate-900">
-                {fmt(komposisi.views)}
+                {formatAngka(komposisi.views)}
               </p>
               <p className="mt-0.5 text-[11px] tabular-nums text-slate-400">
                 100% · baseline
@@ -243,7 +234,7 @@ export default function AnalisaLanjutan({
             <div className="rounded-xl bg-slate-50 p-3">
               <p className="text-xs font-medium text-slate-500">Reach</p>
               <p className="mt-1 text-xl font-bold tabular-nums text-slate-900">
-                {fmt(komposisi.reach)}
+                {formatAngka(komposisi.reach)}
               </p>
               <p className="mt-0.5 text-[11px] tabular-nums text-slate-400">
                 {persenDariViews(komposisi.reach, komposisi.views)}
@@ -272,7 +263,7 @@ export default function AnalisaLanjutan({
                     />
                   ))}
                 </Pie>
-                <Tooltip formatter={(v) => fmt(typeof v === "number" ? v : null)} />
+                <Tooltip formatter={(v) => formatAngka(typeof v === "number" ? v : null)} />
                 <Legend />
               </PieChart>
             </ResponsiveContainer>
@@ -316,18 +307,18 @@ export default function AnalisaLanjutan({
                   <td className="py-2.5 pr-3 font-medium text-slate-900">
                     {labelFormat(f.format)}
                   </td>
-                  <td className="py-2.5 pr-3 text-right tabular-nums">{fmt(f.jumlah)}</td>
-                  <td className="py-2.5 pr-3 text-right tabular-nums">{fmt(f.views)}</td>
-                  <td className="py-2.5 pr-3 text-right tabular-nums">{fmt(f.likes)}</td>
-                  <td className="py-2.5 pr-3 text-right tabular-nums">{fmt(f.comments)}</td>
-                  <td className="py-2.5 pr-3 text-right tabular-nums">{fmt(f.saves)}</td>
-                  <td className="py-2.5 pr-3 text-right tabular-nums">{fmt(f.shares)}</td>
-                  <td className="py-2.5 pr-3 text-right tabular-nums">{fmt(f.follows)}</td>
+                  <td className="py-2.5 pr-3 text-right tabular-nums">{formatAngka(f.jumlah)}</td>
+                  <td className="py-2.5 pr-3 text-right tabular-nums">{formatAngka(f.views)}</td>
+                  <td className="py-2.5 pr-3 text-right tabular-nums">{formatAngka(f.likes)}</td>
+                  <td className="py-2.5 pr-3 text-right tabular-nums">{formatAngka(f.comments)}</td>
+                  <td className="py-2.5 pr-3 text-right tabular-nums">{formatAngka(f.saves)}</td>
+                  <td className="py-2.5 pr-3 text-right tabular-nums">{formatAngka(f.shares)}</td>
+                  <td className="py-2.5 pr-3 text-right tabular-nums">{formatAngka(f.follows)}</td>
                   <td className="py-2.5 pr-3 text-right font-semibold tabular-nums text-slate-900">
-                    {fmt(f.total_engagement)}
+                    {formatAngka(f.total_engagement)}
                   </td>
                   <td className="py-2.5 text-right tabular-nums">
-                    {fmtPersenFraksi(f.rata_er)}
+                    {formatPersen(f.rata_er, 1, false)}
                   </td>
                 </tr>
               ))}
@@ -433,14 +424,14 @@ export default function AnalisaLanjutan({
                           </button>
                         )}
                       </td>
-                      <td className="py-2.5 pr-3 text-right tabular-nums">{fmt(d.views)}</td>
+                      <td className="py-2.5 pr-3 text-right tabular-nums">{formatAngka(d.views)}</td>
                       <td className="py-2.5 pr-3 text-right">
                         <p className="font-semibold tabular-nums text-slate-900">
-                          {fmt(d.total_engagement)}
+                          {formatAngka(d.total_engagement)}
                         </p>
                         <p className="text-[11px] tabular-nums text-slate-400">
-                          L {fmt(d.likes)} · K {fmt(d.comments)} · S {fmt(d.saves)} ·
-                          Sh {fmt(d.shares)} · F {fmt(d.follows)}
+                          L {formatAngka(d.likes)} · K {formatAngka(d.comments)} · S {formatAngka(d.saves)} ·
+                          Sh {formatAngka(d.shares)} · F {formatAngka(d.follows)}
                         </p>
                       </td>
                       <td className="py-2.5 pr-3">

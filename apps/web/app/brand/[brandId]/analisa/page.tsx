@@ -1,7 +1,8 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import { useParams, useSearchParams } from "next/navigation";
+import { useSearchParams } from "next/navigation";
+import { useBrandId } from "@/lib/brand";
 import dynamic from "next/dynamic";
 import { RequireAuth } from "@/lib/auth";
 import { api, ApiError } from "@/lib/api";
@@ -12,6 +13,7 @@ const BandingChart = dynamic(() => import("@/components/BandingChart"), {
   loading: () => <p className="text-sm text-slate-500">Memuat grafik…</p>,
 });
 import { apiOrDemo, demoAnalisa, demoPerbandingan } from "@/lib/content";
+import { formatAngka } from "@/lib/format";
 import type {
   AnalisaKesesuaian,
   PerbandinganBulan,
@@ -19,7 +21,7 @@ import type {
   PerbandinganDelta,
 } from "@/lib/types";
 import { Alert, Card, EmptyBox, PageHeader, Select, Spinner } from "@/components/ui";
-import { StatusKontenBadge, statusKontenTone, statusKontenLabel, verdictTone } from "@/components/badges";
+import { statusKontenTone, statusKontenLabel } from "@/components/badges";
 import BrandNav from "@/components/BrandNav";
 const AnalisaLanjutan = dynamic(() => import("@/components/AnalisaLanjutan"), {
   ssr: false,
@@ -59,11 +61,6 @@ const RENTANG_BANDING = [
 function labelTujuan(t: string): string {
   if (t === "account_growth") return "Account growth & engagement rate";
   return t.replace(/_/g, " ");
-}
-
-function fmtAngka(n: number | null | undefined): string {
-  if (n === null || n === undefined) return "-";
-  return n.toLocaleString("id-ID");
 }
 
 /** Badge delta MoM/YoY: ▲ hijau (naik), ▼ merah (turun), — abu (belum ada data pembanding). */
@@ -119,9 +116,8 @@ function deltaUntuk(
 }
 
 function AnalisaIsi() {
-  const params = useParams();
   const searchParams = useSearchParams();
-  const brandId = params.brandId as string;
+  const brandId = useBrandId();
   // Deep-link dari dasbor: ?bulan=YYYY-MM → periode custom satu bulan penuh.
   const [periode, setPeriode] = useState<PilihanPeriode>(() => {
     const b = searchParams.get("bulan");
@@ -312,7 +308,7 @@ function AnalisaIsi() {
                     .map((b) => (
                     <tr key={b.bulan} className="border-b border-slate-100 last:border-0 hover:bg-slate-50">
                       <td className="py-2.5 pr-3 font-medium text-slate-900">{b.label}</td>
-                      <td className="py-2.5 pr-3 text-right tabular-nums">{fmtAngka(b[bandingMetrik])}</td>
+                      <td className="py-2.5 pr-3 text-right tabular-nums">{formatAngka(b[bandingMetrik])}</td>
                       <td className="py-2.5 pr-3">
                         <DeltaBadge nilai={deltaUntuk(b, "mom", bandingMetrik)} jenis={`MoM ${labelMetrik}`} />
                       </td>

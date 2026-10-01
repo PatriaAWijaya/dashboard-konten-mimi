@@ -10,17 +10,13 @@ import {
   XAxis,
   YAxis,
 } from "recharts";
+import { formatPersen } from "@/lib/format";
 
 export type TrenItem = {
   label: string;
   rata_skor: number | null;
   rata_er: number | null;
 };
-
-function fmtPersen(n: number | null | undefined): string {
-  if (n === null || n === undefined) return "-";
-  return `${(n * 100).toLocaleString("id-ID", { maximumFractionDigits: 1 })}%`;
-}
 
 /** Grafik tren mingguan — di-load lazy agar bundle awal ringan. */
 export default function TrenChart({ data }: { data: TrenItem[] }) {
@@ -39,7 +35,7 @@ export default function TrenChart({ data }: { data: TrenItem[] }) {
               const v = typeof value === "number" ? value : null;
               const n = String(name ?? "");
               return [
-                `${fmtPersen(v)}`,
+                `${formatPersen(v, 1, false)}`,
                 n === "rata_er" ? "Rata-rata ER" : "Rata-rata skor",
               ];
             }}

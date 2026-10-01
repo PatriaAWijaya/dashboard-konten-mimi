@@ -14,6 +14,7 @@ from app.core.permissions import has_min_role
 from app.core.security import decode_token
 from app.db.session import get_session_factory
 from app.models.billing import Membership
+from app.models.brand import Brand
 from app.models.organization import Organization, OrganizationMember
 from app.models.user import User
 from app.services.maintenance import run_maintenance
@@ -182,3 +183,15 @@ def parse_org_header(x_organization_id: Annotated[str | None, Header(alias="X-Or
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST, detail="Header X-Organization-Id tidak valid."
         )
+
+
+# ---------------------------------------------------------------------------
+# Helper entitas umum
+# ---------------------------------------------------------------------------
+
+async def get_brand(db: AsyncSession, brand_id: uuid.UUID, org_id: uuid.UUID) -> Brand:
+    """Ambil brand milik organisasi. Raise 404 bila tidak ada / beda organisasi."""
+    brand = await db.get(Brand, brand_id)
+    if brand is None or brand.organization_id != org_id:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Brand tidak ditemukan.")
+    return brand

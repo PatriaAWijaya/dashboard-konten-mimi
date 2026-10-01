@@ -6,7 +6,7 @@ import string
 import uuid
 from datetime import datetime, timedelta, timezone
 
-from sqlalchemy import func, select, text
+from sqlalchemy import text
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -82,16 +82,3 @@ async def create_invoice(
             last_error = exc
             continue
     raise LookupError(f"Gagal membuat invoice setelah {attempts} percobaan.") from last_error
-
-
-async def get_invoice(db: AsyncSession, invoice_id: uuid.UUID) -> Invoice | None:
-    return await db.get(Invoice, invoice_id)
-
-
-async def list_invoices(db: AsyncSession, organization_id: uuid.UUID) -> list[Invoice]:
-    result = await db.execute(
-        select(Invoice)
-        .where(Invoice.organization_id == organization_id)
-        .order_by(Invoice.created_at.desc())
-    )
-    return list(result.scalars().all())

@@ -17,6 +17,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.config import get_settings
 from app.core.deps import (
+    get_brand,
     get_current_user,
     get_db,
     get_org_context,
@@ -24,13 +25,11 @@ from app.core.deps import (
     require_superadmin,
 )
 from app.core.permissions import ROLE_ADMIN, ROLE_EDITOR
-from app.models.brand import Brand
 from app.models.fase2 import (
     AppSetting,
     ConnectedAccount,
     Invitation,
     PlannedPost,
-    PlannerConfig,
     Summary,
 )
 from app.models.user import User
@@ -86,13 +85,6 @@ def _now():
     return datetime.now(timezone.utc)
 
 
-async def _get_brand(db: AsyncSession, brand_id: uuid.UUID, org_id: uuid.UUID) -> Brand:
-    brand = await db.get(Brand, brand_id)
-    if brand is None or brand.organization_id != org_id:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Brand tidak ditemukan.")
-    return brand
-
-
 async def _get_koneksi(db: AsyncSession, conn_id: uuid.UUID, org_id: uuid.UUID) -> ConnectedAccount:
     conn = await db.get(ConnectedAccount, conn_id)
     if conn is None or conn.organization_id != org_id:
@@ -131,7 +123,7 @@ async def oauth_mulai(
             detail=f"Platform '{platform}' tidak didukung. Pilihan: tiktok, instagram.",
         )
     ctx = await get_org_context(db, user, org_id, min_role=ROLE_EDITOR)
-    brand = await _get_brand(db, brand_id, ctx.organization.id)
+    brand = await get_brand(db, brand_id, ctx.organization.id)
     try:
         hasil = await start_oauth(db, brand, platform, user)
     except CredentialsNotConfigured as exc:
@@ -182,7 +174,7 @@ async def list_koneksi(
 ):
     """Daftar akun terhubung milik brand."""
     ctx = await get_org_context(db, user, org_id)
-    brand = await _get_brand(db, brand_id, ctx.organization.id)
+    brand = await get_brand(db, brand_id, ctx.organization.id)
     rows = (
         await db.execute(
             select(ConnectedAccount)
@@ -257,7 +249,7 @@ async def planner_list(
 ):
     """Daftar rencana konten brand (opsional filter bulan)."""
     ctx = await get_org_context(db, user, org_id)
-    brand = await _get_brand(db, brand_id, ctx.organization.id)
+    brand = await get_brand(db, brand_id, ctx.organization.id)
     try:
         rows = await planner_service.list_planned(
             db, brand_id=brand.id, organization_id=ctx.organization.id, bulan=bulan
@@ -281,7 +273,7 @@ async def planner_create(
 ):
     """Tambah rencana konten (min editor)."""
     ctx = await get_org_context(db, user, org_id, min_role=ROLE_EDITOR)
-    brand = await _get_brand(db, brand_id, ctx.organization.id)
+    brand = await get_brand(db, brand_id, ctx.organization.id)
     try:
         post = await planner_service.create_planned(
             db,
@@ -343,7 +335,7 @@ async def koneksi_status(
 ):
     """Status pemakaian slot akun per platform: {terpakai, batas, boleh_tambah}."""
     ctx = await get_org_context(db, user, org_id)
-    brand = await _get_brand(db, brand_id, ctx.organization.id)
+    brand = await get_brand(db, brand_id, ctx.organization.id)
     batas = await get_max_accounts_per_platform(db)
     platforms = {}
     for platform in PLATFORM_VALID:
@@ -372,7 +364,7 @@ async def baca_konfigurasi_planner(
 ):
     """Baca konfigurasi alokasi planner brand (dibuat dengan default bila belum ada)."""
     ctx = await get_org_context(db, user, org_id)
-    brand = await _get_brand(db, brand_id, ctx.organization.id)
+    brand = await get_brand(db, brand_id, ctx.organization.id)
     cfg = await allocator_service.get_or_create_planner_config(
         db, brand=brand, organization_id=ctx.organization.id
     )
@@ -392,7 +384,7 @@ async def ubah_konfigurasi_planner(
 ):
     """Ubah konfigurasi alokasi planner brand (min editor)."""
     ctx = await get_org_context(db, user, org_id, min_role=ROLE_EDITOR)
-    brand = await _get_brand(db, brand_id, ctx.organization.id)
+    brand = await get_brand(db, brand_id, ctx.organization.id)
     cfg = await allocator_service.get_or_create_planner_config(
         db, brand=brand, organization_id=ctx.organization.id
     )
@@ -426,7 +418,7 @@ async def alokasi_generate(
     Deterministik: input sama -> output sama.
     """
     ctx = await get_org_context(db, user, org_id, min_role=ROLE_EDITOR)
-    brand = await _get_brand(db, brand_id, ctx.organization.id)
+    brand = await get_brand(db, brand_id, ctx.organization.id)
     try:
         hasil = await allocator_service.generate_alokasi(db, brand=brand, minggu=data.minggu)
     except ValueError as exc:
@@ -450,7 +442,7 @@ async def alokasi_terima(
 ):
     """Terima preview alokasi -> buat planned_posts berstatus 'terjadwal' (min editor)."""
     ctx = await get_org_context(db, user, org_id, min_role=ROLE_EDITOR)
-    brand = await _get_brand(db, brand_id, ctx.organization.id)
+    brand = await get_brand(db, brand_id, ctx.organization.id)
     try:
         dibuat = await allocator_service.terima_alokasi(
             db,
@@ -484,7 +476,7 @@ async def planner_ringkasan(
     Semua angka diberi label "estimasi" — bukan angka pasti.
     """
     ctx = await get_org_context(db, user, org_id)
-    brand = await _get_brand(db, brand_id, ctx.organization.id)
+    brand = await get_brand(db, brand_id, ctx.organization.id)
     try:
         hasil = await allocator_service.ringkasan_planner(db, brand=brand, bulan=bulan)
     except ValueError as exc:
@@ -507,7 +499,7 @@ async def planner_export_csv(
     from fastapi.responses import Response
 
     ctx = await get_org_context(db, user, org_id)
-    brand = await _get_brand(db, brand_id, ctx.organization.id)
+    brand = await get_brand(db, brand_id, ctx.organization.id)
     try:
         rows = await allocator_service.daftar_rencana_bulan(db, brand=brand, bulan=bulan)
     except ValueError as exc:
@@ -557,7 +549,7 @@ async def planner_export_pdf(
     from fpdf import FPDF
 
     ctx = await get_org_context(db, user, org_id)
-    brand = await _get_brand(db, brand_id, ctx.organization.id)
+    brand = await get_brand(db, brand_id, ctx.organization.id)
     try:
         rows = await allocator_service.daftar_rencana_bulan(db, brand=brand, bulan=bulan)
         ringkasan = await allocator_service.ringkasan_planner(db, brand=brand, bulan=bulan)
@@ -623,7 +615,7 @@ async def planner_realisasi(
     apa adanya.
     """
     ctx = await get_org_context(db, user, org_id)
-    brand = await _get_brand(db, brand_id, ctx.organization.id)
+    brand = await get_brand(db, brand_id, ctx.organization.id)
     try:
         hasil = await allocator_service.realisasi_planner(db, brand=brand, bulan=bulan)
     except ValueError as exc:
@@ -730,7 +722,7 @@ async def baca_ringkasan(
 ):
     """Baca ringkasan mingguan (cached). {"ada": false} bila belum ada."""
     ctx = await get_org_context(db, user, org_id)
-    brand = await _get_brand(db, brand_id, ctx.organization.id)
+    brand = await get_brand(db, brand_id, ctx.organization.id)
     awal, akhir = _periode_minggu(minggu)
     summary = await db.scalar(
         select(Summary).where(
@@ -764,7 +756,7 @@ async def generate_ringkasan(
 ):
     """Generate (atau ambil dari cache) ringkasan mingguan (min editor)."""
     ctx = await get_org_context(db, user, org_id, min_role=ROLE_EDITOR)
-    brand = await _get_brand(db, brand_id, ctx.organization.id)
+    brand = await get_brand(db, brand_id, ctx.organization.id)
     if minggu is None:
         minggu = date.today() - timedelta(days=date.today().weekday())
     awal, akhir = _periode_minggu(minggu)

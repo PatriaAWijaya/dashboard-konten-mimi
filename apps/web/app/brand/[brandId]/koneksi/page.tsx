@@ -1,7 +1,7 @@
 "use client";
 
 import { Suspense } from "react";
-import { useParams } from "next/navigation";
+import { useBrandId } from "@/lib/brand";
 import { RequireAuth } from "@/lib/auth";
 import { PageHeader, Spinner } from "@/components/ui";
 import BrandNav from "@/components/BrandNav";
@@ -10,8 +10,7 @@ import BrandNav from "@/components/BrandNav";
 // Sinkronisasi otomatis (OAuth TikTok/Instagram) BELUM dibangun; halaman ini
 // hanya menampilkan placeholder "Coming Soon" sesuai instruksi.
 function KoneksiIsi() {
-  const params = useParams();
-  const brandId = params.brandId as string;
+  const brandId = useBrandId();
 
   return (
     <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6">

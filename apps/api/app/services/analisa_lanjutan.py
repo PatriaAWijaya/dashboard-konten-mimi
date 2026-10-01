@@ -113,11 +113,12 @@ AMBANG_UJI_200 = 200
 def _pilar_dari_item(it: dict) -> str:
     return PILAR_DARI_KATEGORI.get(it["kategori"], "konversi")
 
-_BULAN_SINGKAT = ["Jan", "Feb", "Mar", "Apr", "Mei", "Jun", "Jul", "Agu", "Sep", "Okt", "Nov", "Des"]
+BULAN_SINGKAT = ["Jan", "Feb", "Mar", "Apr", "Mei", "Jun", "Jul", "Agu", "Sep", "Okt", "Nov", "Des"]
 
 
-def _label_bulan(tahun: int, bulan: int) -> str:
-    return f"{_BULAN_SINGKAT[bulan - 1]} {tahun}"
+def label_bulan(tahun: int, bulan: int) -> str:
+    """Label 'Agu 2026' untuk kunci bulan. Dipakai juga oleh router content (perbandingan)."""
+    return f"{BULAN_SINGKAT[bulan - 1]} {tahun}"
 
 
 def _bulan_sebelum(tahun: int, bulan: int, geser: int) -> tuple[int, int]:
@@ -277,7 +278,7 @@ async def analisa_lanjutan(
         p = it["content"].posted_at
         if p:
             kunci = f"{p.year:04d}-{p.month:02d}"
-            bulan_tersedia[kunci] = _label_bulan(p.year, p.month)
+            bulan_tersedia[kunci] = label_bulan(p.year, p.month)
     bulan_urut = sorted(bulan_tersedia)
     if bulan and bulan not in bulan_tersedia:
         bulan = None

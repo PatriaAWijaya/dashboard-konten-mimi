@@ -41,3 +41,33 @@ export function formatSisaWaktu(ms: number): string {
   if (jam > 0) return `${jam} jam ${menit} mnt ${detik} dtk`;
   return `${menit} mnt ${detik} dtk`;
 }
+
+// Angka dengan pemisah ribuan id-ID. Tanpa `desimal` = apa adanya
+// (n.toLocaleString("id-ID")); dengan `desimal` = digit desimal dipaksa.
+export function formatAngka(
+  nilai: number | null | undefined,
+  desimal?: number
+): string {
+  if (nilai === null || nilai === undefined) return "-";
+  return desimal === undefined
+    ? nilai.toLocaleString("id-ID")
+    : nilai.toLocaleString("id-ID", {
+        minimumFractionDigits: desimal,
+        maximumFractionDigits: desimal,
+      });
+}
+
+// Persen dari rasio 0-1 (mis. 0,5 → "50,0%").
+// `tetap = true` (default): digit desimal selalu tampil sejumlah `desimal`.
+// `tetap = false`: digit desimal hanya tampil bila perlu ("50%").
+export function formatPersen(
+  nilai: number | null | undefined,
+  desimal = 1,
+  tetap = true
+): string {
+  if (nilai === null || nilai === undefined) return "-";
+  const opsi = tetap
+    ? { minimumFractionDigits: desimal, maximumFractionDigits: desimal }
+    : { maximumFractionDigits: desimal };
+  return (nilai * 100).toLocaleString("id-ID", opsi) + "%";
+}

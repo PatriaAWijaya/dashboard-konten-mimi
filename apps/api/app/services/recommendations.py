@@ -15,7 +15,7 @@ Dipakai dari model asli app.models.content (Worker Data):
 from __future__ import annotations
 
 import uuid
-from datetime import date, datetime, timedelta, timezone
+from datetime import date
 
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -31,9 +31,8 @@ from app.models.content import (
     RecommendationType,
     ScoreStatus,
 )
-from app.services.llm import get_llm_provider_for_db
 from app.services.notifications import notify_org
-from app.services.scoring import compute_weighted_er, get_or_create_active_config
+from app.services.scoring import batas_dt, er_snapshot, get_or_create_active_config
 from app.services.suitability import evaluate_suitability
 
 # Ambang rule-based (fraksi 0..1)
@@ -43,17 +42,11 @@ WIN_RATE_KURANGI = 0.2
 MAX_PERBAIKI = 3
 
 
-def _batas_dt(awal: date, akhir: date) -> tuple[datetime, datetime]:
-    mulai = datetime(awal.year, awal.month, awal.day, tzinfo=timezone.utc)
-    selesai = datetime(akhir.year, akhir.month, akhir.day, tzinfo=timezone.utc) + timedelta(days=1)
-    return mulai, selesai
-
-
 async def _baris_skor(
     db: AsyncSession, brand_id: uuid.UUID, awal: date, akhir: date
 ) -> list[tuple]:
     """Baris (Content, ContentScore) untuk brand dalam periode."""
-    mulai, selesai = _batas_dt(awal, akhir)
+    mulai, selesai = batas_dt(awal, akhir)
     return (
         await db.execute(
             select(Content, ContentScore)
@@ -67,17 +60,6 @@ async def _baris_skor(
     ).all()
 
 
-def _er_snapshot(snapshot: dict | None) -> float:
-    snap = snapshot or {}
-    return compute_weighted_er(
-        float(snap.get("likes") or 0),
-        float(snap.get("comments") or 0),
-        float(snap.get("shares") or 0),
-        float(snap.get("saves") or 0),
-        float(snap.get("views") or 0),
-    )
-
-
 def _agg_rates(snapshot: dict | None, fmt: str, tujuan: str) -> dict:
     """Bangun agg untuk evaluate_suitability dari metrics_snapshot."""
     snap = dict(snapshot or {})
@@ -89,7 +71,7 @@ def _agg_rates(snapshot: dict | None, fmt: str, tujuan: str) -> dict:
         agg["save_rate"] = float(snap.get("saves") or 0) / views
         agg["share_rate"] = float(snap.get("shares") or 0) / views
         agg["comment_rate"] = float(snap.get("comments") or 0) / views
-        agg["er"] = _er_snapshot(snap)
+        agg["er"] = er_snapshot(snap)
     else:
         agg["save_rate"] = agg["share_rate"] = agg["comment_rate"] = agg["er"] = 0.0
     return agg
@@ -336,7 +318,7 @@ async def generate_recommendations(
             p["menang"] += 1
         if skor.score is not None:
             p["skor"].append(float(skor.score))
-        p["er"].append(_er_snapshot(skor.metrics_snapshot))
+        p["er"].append(er_snapshot(skor.metrics_snapshot))
         kc = per_konten.setdefault(
             content.id,
             {"post_id": content.post_id, "format": content.format, "tujuan": content.tujuan,
