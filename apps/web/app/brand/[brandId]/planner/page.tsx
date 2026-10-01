@@ -112,8 +112,8 @@ interface SlotUsulan {
 }
 
 interface Realisasi {
-  sesuai_rencana: { jumlah: number; rata_wer: number | null };
-  di_luar_rencana: { jumlah: number; rata_wer: number | null };
+  sesuai_rencana: { jumlah: number; rata_er: number | null };
+  di_luar_rencana: { jumlah: number; rata_er: number | null };
   rasio: number | null;
   narasi: string | null;
 }
@@ -282,7 +282,7 @@ function RealisasiVsRencana({
               <p className="text-xs text-emerald-800">
                 Sesuai rencana
                 <br />
-                (rata WER {fmtPersenRasio(data.sesuai_rencana.rata_wer)})
+                (rata ER {fmtPersenRasio(data.sesuai_rencana.rata_er)})
               </p>
             </div>
             <div className="rounded-xl bg-slate-100 px-3 py-3">
@@ -292,7 +292,7 @@ function RealisasiVsRencana({
               <p className="text-xs text-slate-600">
                 Di luar rencana
                 <br />
-                (rata WER {fmtPersenRasio(data.di_luar_rencana.rata_wer)})
+                (rata ER {fmtPersenRasio(data.di_luar_rencana.rata_er)})
               </p>
             </div>
           </div>

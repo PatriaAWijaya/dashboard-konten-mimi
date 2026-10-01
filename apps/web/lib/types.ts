@@ -174,7 +174,7 @@ export interface PerbandinganBulan {
   reach: number;
   engagement: number;
   rata_skor: number | null;
-  rata_wer: number;
+  rata_er: number;
   mom: PerbandinganDelta | null;
   yoy: PerbandinganDelta | null;
 }
@@ -193,7 +193,7 @@ export interface ScoreResult {
 export interface KartuPlatform {
   jumlah_konten: number;
   rata_skor: number | null;
-  rata_wer: number | null;
+  rata_er: number | null;
   menang: number;
   cukup: number;
   kurang: number;
@@ -209,7 +209,7 @@ export interface KontenRow {
   tujuan: string;
   posted_at: string | null;
   views: number | null;
-  wer: number | null;
+  er: number | null;
   score: number | null;
   status: StatusKonten;
   labels: string[];
@@ -217,7 +217,7 @@ export interface KontenRow {
 
 export interface BrandDashboard {
   kartu: { tiktok: KartuPlatform; instagram: KartuPlatform };
-  tren: { label: string; rata_skor: number | null; rata_wer: number | null }[];
+  tren: { label: string; rata_skor: number | null; rata_er: number | null }[];
   konten: KontenRow[];
 }
 
@@ -409,7 +409,7 @@ export interface KomposisiEngagement {
   total_engagement: number;
   jumlah_konten: number;
   rata_engagement_per_konten: number;
-  rata_wer: number;
+  rata_er: number;
 }
 
 export interface FormatTotal {
@@ -423,7 +423,7 @@ export interface FormatTotal {
   shares: number;
   follows: number;
   total_engagement: number;
-  rata_wer: number;
+  rata_er: number;
 }
 
 export interface OpsiLabel {
@@ -453,7 +453,7 @@ export interface KontenDetailItem {
   shares: number;
   follows: number;
   total_engagement: number;
-  wer: number;
+  er: number;
   cta: string[];
   cta_label: string[];
   kategori: string;
@@ -488,7 +488,7 @@ export interface SaranItem {
     post_id: string;
     post_url?: string | null;
     caption_singkat: string;
-    wer: number;
+    er: number;
     format: string;
   }[];
 }

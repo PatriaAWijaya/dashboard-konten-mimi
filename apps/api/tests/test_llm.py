@@ -39,7 +39,7 @@ async def test_mock_rekomendasi_mencantumkan_angka_context():
         "menang": 7,
         "win_rate": 0.5833,
         "avg_score": 72.4,
-        "avg_wer": 4.1,
+        "avg_er": 4.1,
         "contoh_post_ids": ["abc123", "def456"],
     }
     teks = await MockLLMProvider().narrate("rekomendasi", ctx)
@@ -52,7 +52,7 @@ async def test_mock_rekomendasi_tiap_tipe():
     for tipe in ("perbanyak", "kurangi", "perbaiki", "coba_baru"):
         ctx = {
             "type": tipe, "format": "reels", "tujuan": "edukasi", "n": 5,
-            "menang": 1, "win_rate": 0.2, "avg_score": 50.0, "avg_wer": 2.5,
+            "menang": 1, "win_rate": 0.2, "avg_score": 50.0, "avg_er": 2.5,
             "contoh_post_ids": ["x1"], "niche": "Niche A",
             "match_percent": 0.75, "total_konten": 20,
             "suitability_verdict": "tidak_sesuai", "pola_bermasalah": "reels/edukasi",

@@ -165,7 +165,7 @@ async def test_template_threshold_semua_kategori(client, db_super):
         body = r.json()
         ekspektasi = onboarding_service.TEMPLATE_THRESHOLD_PER_KATEGORI[kategori]
         assert body["kategori"] == kategori
-        for kunci in ("tiktok_wer", "instagram_wer", "skor_menang", "skor_cukup"):
+        for kunci in ("tiktok_er", "instagram_er", "skor_menang", "skor_cukup"):
             assert body[kunci] == pytest.approx(ekspektasi[kunci])
 
     # Default 'lainnya' = nilai default scoring sekarang.
@@ -173,8 +173,8 @@ async def test_template_threshold_semua_kategori(client, db_super):
         f"{BASE}/onboarding/template-threshold", params={"kategori": "lainnya"}, headers=h
     )
     body = r.json()
-    assert body["tiktok_wer"] == pytest.approx(0.08)
-    assert body["instagram_wer"] == pytest.approx(0.05)
+    assert body["tiktok_er"] == pytest.approx(0.08)
+    assert body["instagram_er"] == pytest.approx(0.05)
     assert body["skor_menang"] == pytest.approx(0.7)
     assert body["skor_cukup"] == pytest.approx(0.4)
 
@@ -213,7 +213,7 @@ async def test_preview_kemenangan_tanpa_menyimpan_config(client, db_super):
 
     r = await client.post(
         f"{BASE}/onboarding/preview-kemenangan",
-        json={"brand_id": brand_id, "draft": {"tiktok_wer": 0.08, "instagram_wer": 0.05}},
+        json={"brand_id": brand_id, "draft": {"tiktok_er": 0.08, "instagram_er": 0.05}},
         headers=h,
     )
     assert r.status_code == 200, r.text
@@ -236,7 +236,7 @@ async def test_preview_kemenangan_tanpa_menyimpan_config(client, db_super):
         f"{BASE}/onboarding/preview-kemenangan",
         json={
             "brand_id": brand_id,
-            "draft": {"tiktok_wer": 0.01, "instagram_wer": 0.01, "skor_menang": 0.01},
+            "draft": {"tiktok_er": 0.01, "instagram_er": 0.01, "skor_menang": 0.01},
         },
         headers=h,
     )
@@ -246,7 +246,7 @@ async def test_preview_kemenangan_tanpa_menyimpan_config(client, db_super):
     # Draft tidak valid → 422.
     r = await client.post(
         f"{BASE}/onboarding/preview-kemenangan",
-        json={"brand_id": brand_id, "draft": {"tiktok_wer": 1.5, "instagram_wer": 0.05}},
+        json={"brand_id": brand_id, "draft": {"tiktok_er": 1.5, "instagram_er": 0.05}},
         headers=h,
     )
     assert r.status_code == 422
@@ -257,7 +257,7 @@ async def test_preview_kemenangan_tanpa_data(client, db_super):
     h = auth_headers(token, org_id)
     r = await client.post(
         f"{BASE}/onboarding/preview-kemenangan",
-        json={"brand_id": brand_id, "draft": {"tiktok_wer": 0.08, "instagram_wer": 0.05}},
+        json={"brand_id": brand_id, "draft": {"tiktok_er": 0.08, "instagram_er": 0.05}},
         headers=h,
     )
     assert r.status_code == 200, r.text

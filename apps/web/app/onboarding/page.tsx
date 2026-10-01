@@ -25,8 +25,8 @@ interface StatusOnboarding {
 }
 
 interface TemplateThreshold {
-  tiktok_wer: number;
-  instagram_wer: number;
+  tiktok_er: number;
+  instagram_er: number;
   skor_menang: number;
   skor_cukup: number;
 }
@@ -397,8 +397,8 @@ function LangkahKemenangan({
       if (batal) return;
       if (r.ok) {
         // Backend mengirim rasio 0-1; UI memakai persen.
-        setTiktokWer(Math.round((r.data.tiktok_wer ?? 0.08) * 1000) / 10);
-        setIgWer(Math.round((r.data.instagram_wer ?? 0.05) * 1000) / 10);
+        setTiktokWer(Math.round((r.data.tiktok_er ?? 0.08) * 1000) / 10);
+        setIgWer(Math.round((r.data.instagram_er ?? 0.05) * 1000) / 10);
         setSkorMenang(r.data.skor_menang ?? null);
         setSkorCukup(r.data.skor_cukup ?? null);
         setTemplateAda(true);
@@ -419,7 +419,7 @@ function LangkahKemenangan({
     const r = await panggilDefensif(() =>
       api.post<PreviewKemenangan>("/onboarding/preview-kemenangan", {
         brand_id: brandId,
-        draft: { tiktok_wer: tiktokWer / 100, instagram_wer: igWer / 100 },
+        draft: { tiktok_er: tiktokWer / 100, instagram_er: igWer / 100 },
       })
     );
     if (r.ok) {
@@ -437,7 +437,7 @@ function LangkahKemenangan({
         Definisi konten menang
       </h2>
       <p className="mt-1 text-sm text-slate-500">
-        Tentukan ambang weighted engagement rate (WER) per platform. Geser
+        Tentukan ambang engagement rate (ER) per platform. Geser
         slider lalu klik Pratinjau untuk melihat dampaknya ke konten Anda —
         <span className="font-medium"> langkah ini hanya pratinjau</span>,
         belum menyimpan pengaturan permanen.
@@ -460,17 +460,17 @@ function LangkahKemenangan({
           <div>
             <div className="mb-2 flex items-center justify-between">
               <label
-                htmlFor="wer-tiktok"
+                htmlFor="er-tiktok"
                 className="text-sm font-medium text-slate-700"
               >
-                🎵 Ambang WER TikTok
+                🎵 Ambang ER TikTok
               </label>
               <span className="rounded-lg bg-orange-50 px-3 py-1 text-sm font-bold text-orange-700">
                 {tiktokWer.toLocaleString("id-ID")}%
               </span>
             </div>
             <input
-              id="wer-tiktok"
+              id="er-tiktok"
               type="range"
               min={0}
               max={20}
@@ -483,17 +483,17 @@ function LangkahKemenangan({
           <div>
             <div className="mb-2 flex items-center justify-between">
               <label
-                htmlFor="wer-ig"
+                htmlFor="er-ig"
                 className="text-sm font-medium text-slate-700"
               >
-                📸 Ambang WER Instagram
+                📸 Ambang ER Instagram
               </label>
               <span className="rounded-lg bg-orange-50 px-3 py-1 text-sm font-bold text-orange-700">
                 {igWer.toLocaleString("id-ID")}%
               </span>
             </div>
             <input
-              id="wer-ig"
+              id="er-ig"
               type="range"
               min={0}
               max={20}

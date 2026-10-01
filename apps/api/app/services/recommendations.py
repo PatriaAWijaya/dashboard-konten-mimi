@@ -2,11 +2,11 @@
 
 Prinsip "agregat dulu, narasi kemudian": semua kandidat dihitung dari agregat
 rule-based per (format, tujuan); LLM hanya menerima dict agregat berisi angka
-bukti (n, win_rate, avg_score, avg_wer, contoh post_id).
+bukti (n, win_rate, avg_score, avg_er, contoh post_id).
 
 Dipakai dari model asli app.models.content (Worker Data):
-- ContentScore tidak punya brand_id/wer: join ke Content untuk brand &
-  periode; WER dihitung dari metrics_snapshot via compute_weighted_er.
+- ContentScore tidak punya brand_id/er: join ke Content untuk brand &
+  periode; ER dihitung dari metrics_snapshot via compute_weighted_er.
 - Recommendation: type, title (wajib), narrative, evidence (JSON — di sini
   format/tujuan/niche disimpan), reference_content_ids, status
   ('baru'|'diterima'|'ditolak'), period_start/end, config_version, dedup_key.
@@ -67,7 +67,7 @@ async def _baris_skor(
     ).all()
 
 
-def _wer_snapshot(snapshot: dict | None) -> float:
+def _er_snapshot(snapshot: dict | None) -> float:
     snap = snapshot or {}
     return compute_weighted_er(
         float(snap.get("likes") or 0),
@@ -89,9 +89,9 @@ def _agg_rates(snapshot: dict | None, fmt: str, tujuan: str) -> dict:
         agg["save_rate"] = float(snap.get("saves") or 0) / views
         agg["share_rate"] = float(snap.get("shares") or 0) / views
         agg["comment_rate"] = float(snap.get("comments") or 0) / views
-        agg["weighted_er"] = _wer_snapshot(snap)
+        agg["er"] = _er_snapshot(snap)
     else:
-        agg["save_rate"] = agg["share_rate"] = agg["comment_rate"] = agg["weighted_er"] = 0.0
+        agg["save_rate"] = agg["share_rate"] = agg["comment_rate"] = agg["er"] = 0.0
     return agg
 
 
@@ -167,28 +167,31 @@ METRIK_DOMINAN = {
 
 
 def _narasi_sederhana(tipe: str, ctx: dict) -> str:
-    """Narasi bahasa sehari-hari (gaya sama seperti Rekomendasi Umum/Khusus).
-
-    Menggantikan output LLM yang teknis ("win rate 0,0%", "status 'menang'", ...).
-    """
+    """Narasi pola REKOMENDASI: perintah langsung + data + vonis + arahan perbaikan."""
     fmt = _nama_format(ctx.get("format"))
     tjn = _LABEL_TUJUAN.get(str(ctx.get("tujuan") or ""), str(ctx.get("tujuan") or ""))
     n = int(ctx.get("n") or 0)
     menang = int(ctx.get("menang") or 0)
+    skor = ctx.get("avg_score")
+    skor_txt = f"{float(skor):.1f}".replace(".", ",") if skor is not None else "-"
+    er = ctx.get("avg_er")
+    er_txt = f"{float(er) * 100:.1f}".replace(".", ",") if er is not None else "-"
 
     if tipe == RecommendationType.PERBANYAK:
         return (
-            f"Pola {fmt} untuk {tjn} terbukti bekerja di akunmu: {menang} dari {n} konten "
-            f"berkinerja baik. Audiensmu merespons pola ini dengan positif. "
-            f"Perbanyak dengan variasi topik yang masih sejalur — pertahankan rumusnya, "
+            f"REKOMENDASI, perbanyak produksi konten {fmt} untuk {tjn}. "
+            f"Dari {n} konten {fmt} yang diproduksi, {menang} berkinerja baik "
+            f"dengan skor rata-rata {skor_txt} dan ER {er_txt}%. "
+            f"Pola ini terbukti disukai audiensmu — pertahankan rumusnya, "
             f"variasikan angle dan contohnya agar tidak monoton."
         )
     if tipe == RecommendationType.KURANGI:
         return (
-            f"Pola {fmt} untuk {tjn} kurang direspons audiensmu: hanya {menang} dari {n} "
-            f"konten yang berkinerja baik. Daripada terus memproduksi pola yang tidak "
-            f"bekerja, kurangi porsinya dan alihkan energimu ke format yang terbukti "
-            f"disukai audiens."
+            f"REKOMENDASI, kurangi produksi konten {fmt} untuk {tjn}. "
+            f"Rata-rata dari {n} konten {fmt} yang diproduksi skornya hanya {skor_txt} "
+            f"dengan ER {er_txt}%. "
+            f"Cara produksi konten seperti ini hanya buang energi dan waktu, "
+            f"alihkan energimu ke format yang terbukti bekerja."
         )
     if tipe == RecommendationType.PERBAIKI:
         info = METRIK_DOMINAN.get(str(ctx.get("format") or "").lower(), {})
@@ -212,17 +215,18 @@ def _narasi_sederhana(tipe: str, ctx: dict) -> str:
             ),
         }.get(str(ctx.get("format") or "").lower(), "perkuat hook di 3 detik pertama")
         return (
-            f"Ada {n} konten {fmt} untuk {tjn} yang performanya di bawah standar. "
-            f"Masalah utamanya ada di {label_metrik} — metrik yang paling menentukan "
-            f"untuk format ini. Sebelum membuat pola seperti ini lagi, {saran}. "
-            f"Lihat contoh konten acuan di bawah untuk gambaran konkretnya."
+            f"REKOMENDASI, perbaiki cara produksi konten {fmt} untuk {tjn}. "
+            f"Dari {n} konten {fmt} yang diproduksi, performanya di bawah standar "
+            f"dengan masalah utama di {label_metrik}. "
+            f"Cara produksi seperti ini hanya buang energi dan waktu — "
+            f"perbaiki mulai dari {saran}."
         )
     if tipe == RecommendationType.COBA_BARU:
         niche = ctx.get("niche")
         dasar = f" untuk niche {niche}" if niche else ""
         return (
-            f"Kombinasi {fmt} untuk {tjn}{dasar} belum pernah kamu coba di periode ini. "
-            f"Melihat pola yang sudah bekerja di akunmu, kombinasi ini layak diuji. "
+            f"REKOMENDASI, uji kombinasi {fmt} untuk {tjn}{dasar}. "
+            f"Kombinasi ini belum pernah kamu coba di periode ini. "
             f"Mulai dengan 3-5 konten sebagai eksperimen kecil, evaluasi hasilnya "
             f"setelah 2 minggu, lalu putuskan lanjut atau stop."
         )
@@ -320,13 +324,13 @@ async def generate_recommendations(
     per_konten: dict[uuid.UUID, dict] = {}
     for content, skor in baris:
         key = (content.format, content.tujuan)
-        p = pola.setdefault(key, {"n": set(), "menang": 0, "skor": [], "wer": []})
+        p = pola.setdefault(key, {"n": set(), "menang": 0, "skor": [], "er": []})
         p["n"].add(content.id)
         if skor.status == ScoreStatus.MENANG:
             p["menang"] += 1
         if skor.score is not None:
             p["skor"].append(float(skor.score))
-        p["wer"].append(_wer_snapshot(skor.metrics_snapshot))
+        p["er"].append(_er_snapshot(skor.metrics_snapshot))
         kc = per_konten.setdefault(
             content.id,
             {"post_id": content.post_id, "format": content.format, "tujuan": content.tujuan,
@@ -342,7 +346,7 @@ async def generate_recommendations(
             "menang": p["menang"],
             "win_rate": (p["menang"] / n) if n else 0.0,
             "avg_score": sum(p["skor"]) / len(p["skor"]) if p["skor"] else 0.0,
-            "avg_wer": sum(p["wer"]) / len(p["wer"]) if p["wer"] else 0.0,
+            "avg_er": sum(p["er"]) / len(p["er"]) if p["er"] else 0.0,
         }
 
     def _contoh(key: tuple[str, str], status_utama: str | None = None, limit: int = 3) -> list[str]:
@@ -391,7 +395,7 @@ async def generate_recommendations(
             "menang": r["menang"],
             "win_rate": round(r["win_rate"], 4),
             "avg_score": round(r["avg_score"], 4),
-            "avg_wer": round(r["avg_wer"], 4),
+            "avg_er": round(r["avg_er"], 4),
             "contoh_post_ids": _contoh(key),
         }
         ctx.update(tambahan)
@@ -463,7 +467,7 @@ async def generate_recommendations(
                     "menang": 0,
                     "win_rate": 0.0,
                     "avg_score": 0.0,
-                    "avg_wer": 0.0,
+                    "avg_er": 0.0,
                     "contoh_post_ids": [],
                     "match_percent": round(float(nic.match_percent or 0) / 100, 4),
                     "total_konten": n_unik,
@@ -485,7 +489,7 @@ async def generate_recommendations(
                             "menang": 0,
                             "win_rate": 0.0,
                             "avg_score": 0.0,
-                            "avg_wer": 0.0,
+                            "avg_er": 0.0,
                             "contoh_post_ids": [],
                             "total_konten": n_unik,
                         },

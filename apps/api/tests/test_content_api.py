@@ -144,7 +144,7 @@ async def test_upload_csv_lalu_score_dashboard_analisa(client, db_super):
     assert len(dash["konten"]) == 12
     assert len(dash["tren"]) >= 1
     for item in dash["konten"]:
-        assert item["wer"] >= 0
+        assert item["er"] >= 0
         assert isinstance(item["labels"], list)
         assert item["status"] in ("menang", "cukup", "kurang", "belum_diskor")
 

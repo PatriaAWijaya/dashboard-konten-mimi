@@ -28,7 +28,7 @@ DEFAULT_WEIGHTS = {
     "save_rate": 0.25,
     "share_rate": 0.20,
     "comment_rate": 0.15,
-    "weighted_er": 0.20,
+    "er": 0.20,
     "retensi": 0.15,
     "reach_abs": 0.05,
 }
@@ -36,8 +36,8 @@ DEFAULT_WEIGHTS = {
 # Threshold default.
 DEFAULT_THRESHOLDS = {
     "min_views": 1000,
-    "tiktok_min_wer": 0.08,
-    "instagram_min_wer": 0.05,
+    "tiktok_min_er": 0.08,
+    "instagram_min_er": 0.05,
     "relative_multiplier": 1.5,
     "menang_score": 0.7,
     "cukup_score": 0.4,
@@ -49,7 +49,7 @@ BASE_RATES = {
     "save_rate": 0.02,
     "share_rate": 0.015,
     "comment_rate": 0.01,
-    "weighted_er": 0.06,
+    "er": 0.06,
     "retensi": 0.5,
 }
 
@@ -58,7 +58,7 @@ REACH_BASELINE = 10_000
 # Retensi dihitung sebagai proxy: avg_watch_seconds / 30 detik, di-clamp 0..1.
 RETENSI_REF_SECONDS = 30.0
 
-_COMPONENT_KEYS = ("save_rate", "share_rate", "comment_rate", "weighted_er", "retensi", "reach_abs")
+_COMPONENT_KEYS = ("save_rate", "share_rate", "comment_rate", "er", "retensi", "reach_abs")
 
 
 def compute_weighted_er(likes: float, comments: float, shares: float, saves: float, views: float) -> float:
@@ -83,7 +83,7 @@ def score_content(
     metrics: dict,
     weights: dict,
     thresholds: dict,
-    median_wer: float | None = None,
+    median_er: float | None = None,
 ) -> dict:
     """Nilai satu konten dari metrik agregatnya.
 
@@ -116,7 +116,7 @@ def score_content(
     save_rate = saves / views
     share_rate = shares / views
     comment_rate = comments / views
-    wer = compute_weighted_er(likes, comments, shares, saves, views)
+    er = compute_weighted_er(likes, comments, shares, saves, views)
     retensi = _clamp01(avg_watch / RETENSI_REF_SECONDS)
     reach_ref = max(reach, float(views))
 
@@ -124,7 +124,7 @@ def score_content(
         "save_rate": _norm(save_rate, BASE_RATES["save_rate"]),
         "share_rate": _norm(share_rate, BASE_RATES["share_rate"]),
         "comment_rate": _norm(comment_rate, BASE_RATES["comment_rate"]),
-        "weighted_er": _norm(wer, BASE_RATES["weighted_er"]),
+        "er": _norm(er, BASE_RATES["er"]),
         "retensi": _norm(retensi, BASE_RATES["retensi"]),
         "reach_abs": _norm(reach_ref, REACH_BASELINE),
     }
@@ -144,12 +144,12 @@ def score_content(
         labels.append("share_tinggi")
     if comment_rate >= 2 * BASE_RATES["comment_rate"]:
         labels.append("comment_tinggi")
-    min_wer = float(thresholds.get(f"{platform}_min_wer", thresholds.get("tiktok_min_wer", 0.08)))
-    if wer >= min_wer:
-        labels.append("wer_tinggi")
+    min_er = float(thresholds.get(f"{platform}_min_er", thresholds.get("tiktok_min_er", 0.08)))
+    if er >= min_er:
+        labels.append("er_tinggi")
     rel_mult = float(thresholds.get("relative_multiplier", 1.5))
-    if median_wer is not None and median_wer > 0 and wer >= rel_mult * median_wer:
-        labels.append("wer_relatif_tinggi")
+    if median_er is not None and median_er > 0 and er >= rel_mult * median_er:
+        labels.append("er_relatif_tinggi")
     if retensi >= 2 * BASE_RATES["retensi"]:
         labels.append("retensi_tinggi")
 
@@ -276,8 +276,8 @@ async def run_scoring(
     ).all()
 
     min_views = int(config.thresholds.get("min_views", 1000))
-    # Median weighted_er per platform dari konten yang lolos gerbang views.
-    wers_by_platform: dict[str, list[float]] = {}
+    # Median er per platform dari konten yang lolos gerbang views.
+    ers_by_platform: dict[str, list[float]] = {}
     agg_by_content: dict[uuid.UUID, dict] = {}
     for row in rows:
         agg = {
@@ -296,11 +296,11 @@ async def run_scoring(
         }
         agg_by_content[row.content_id] = agg
         if agg["views"] >= min_views:
-            wers_by_platform.setdefault(agg["platform"], []).append(
+            ers_by_platform.setdefault(agg["platform"], []).append(
                 compute_weighted_er(agg["likes"], agg["comments"], agg["shares"], agg["saves"], agg["views"])
             )
     median_by_platform = {
-        platform: median(wers) for platform, wers in wers_by_platform.items() if wers
+        platform: median(ers) for platform, ers in ers_by_platform.items() if ers
     }
 
     results: list[ContentScore] = []
@@ -325,7 +325,7 @@ async def run_scoring(
             agg,
             config.weights,
             config.thresholds,
-            median_wer=median_by_platform.get(agg["platform"]),
+            median_er=median_by_platform.get(agg["platform"]),
         )
         existing = peta_skor.get(content_id)
         if existing is None:

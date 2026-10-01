@@ -152,7 +152,7 @@ async def _skor_terbaru(db: AsyncSession, brand_id: uuid.UUID) -> list[tuple[Con
     return hasil
 
 
-def _wer_dari_snapshot(snapshot: dict | None) -> float:
+def _er_dari_snapshot(snapshot: dict | None) -> float:
     snap = snapshot or {}
     return compute_weighted_er(
         float(snap.get("likes") or 0),
@@ -202,15 +202,15 @@ def _rentang_views(menang: list[tuple[Content, ContentScore]], fmt: str | None) 
     return max(0, int(round(mean - std))), int(round(mean + std))
 
 
-def _rata_wer(menang: list[tuple[Content, ContentScore]], fmt: str | None = None) -> float | None:
-    wers = [
-        _wer_dari_snapshot(s.metrics_snapshot)
+def _rata_er(menang: list[tuple[Content, ContentScore]], fmt: str | None = None) -> float | None:
+    ers = [
+        _er_dari_snapshot(s.metrics_snapshot)
         for c, s in menang
         if fmt is None or c.format == fmt
     ]
-    if not wers:
+    if not ers:
         return None
-    return round(statistics.fmean(wers), 4)
+    return round(statistics.fmean(ers), 4)
 
 
 # ---------------------------------------------------------------------------
@@ -229,9 +229,9 @@ def _kalimat_pertama(teks: str | None, batas: int = 160) -> str:
     return teks[:batas].strip()
 
 
-def _rentang_er(avg_wer: float | None) -> list[float]:
-    """Rentang ±20% dari rata-rata WER (selalu rentang, bukan angka tunggal)."""
-    w = max(float(avg_wer or 0.0), 0.0)
+def _rentang_er(avg_er: float | None) -> list[float]:
+    """Rentang ±20% dari rata-rata ER (selalu rentang, bukan angka tunggal)."""
+    w = max(float(avg_er or 0.0), 0.0)
     return [round(w * 0.8, 4), round(w * 1.2, 4)]
 
 
@@ -295,11 +295,11 @@ def _slot_dari_rekomendasi(
     if tujuan not in ContentTujuan.ALL:
         tujuan = "edukasi"
     vmin, vmax = _rentang_views(menang, fmt)
-    avg_wer = evidence.get("avg_wer")
+    avg_er = evidence.get("avg_er")
     try:
-        avg_wer = float(avg_wer) if avg_wer is not None else 0.0
+        avg_er = float(avg_er) if avg_er is not None else 0.0
     except (TypeError, ValueError):
-        avg_wer = 0.0
+        avg_er = 0.0
     return {
         "tanggal": tanggal,
         "platform": platform,
@@ -308,7 +308,7 @@ def _slot_dari_rekomendasi(
         "topik": (rec.title or "").strip()[:255],
         "hook": _kalimat_pertama(rec.narrative),
         "konten_acuan_ids": list(rec.reference_content_ids or []),
-        "target_er": _rentang_er(avg_wer),
+        "target_er": _rentang_er(avg_er),
         "target_views_min": vmin,
         "target_views_max": vmax,
         "sumber_rekomendasi_id": rec.id,
@@ -351,7 +351,7 @@ def _slot_eksperimen(
             "diposting brand — pantau respons audiens selama 7 hari."
         ),
         "konten_acuan_ids": [],
-        "target_er": _rentang_er(_rata_wer(menang)),
+        "target_er": _rentang_er(_rata_er(menang)),
         "target_views_min": vmin,
         "target_views_max": vmax,
         "sumber_rekomendasi_id": None,
@@ -454,7 +454,7 @@ async def generate_alokasi(
                     "topik": f"Konten {f} mengikuti pola menang",
                     "hook": "Lanjutkan pola format yang terbukti menang untuk brand ini.",
                     "konten_acuan_ids": [],
-                    "target_er": _rentang_er(_rata_wer(menang, f)),
+                    "target_er": _rentang_er(_rata_er(menang, f)),
                     "target_views_min": vmin,
                     "target_views_max": vmax,
                     "sumber_rekomendasi_id": None,
@@ -614,7 +614,7 @@ async def ringkasan_planner(db: AsyncSession, *, brand: Brand, bulan: str) -> di
         "total_rencana": len(rencana),
         "estimasi_views_min": vmin_total if ada_estimasi else 0,
         "estimasi_views_max": vmax_total if ada_estimasi else 0,
-        "target_er": _rata_wer(menang),
+        "target_er": _rata_er(menang),
         "label": "estimasi",
         "catatan": CATATAN_ESTIMASI,
     }
@@ -676,7 +676,7 @@ async def realisasi_planner(db: AsyncSession, *, brand: Brand, bulan: str) -> di
 
     def _wer(c: Content) -> float | None:
         s = skor_map.get(c.id)
-        return _wer_dari_snapshot(s.metrics_snapshot) if s else None
+        return _er_dari_snapshot(s.metrics_snapshot) if s else None
 
     def _cocok(c: Content, p: PlannedPost) -> bool:
         return (
@@ -697,8 +697,8 @@ async def realisasi_planner(db: AsyncSession, *, brand: Brand, bulan: str) -> di
     di_luar = [c for c in konten if c.id not in id_sesuai]
 
     def _rata(cs: list[Content]) -> float | None:
-        wers = [w for w in (_wer(c) for c in cs) if w is not None]
-        return round(statistics.fmean(wers), 4) if wers else None
+        ers = [w for w in (_wer(c) for c in cs) if w is not None]
+        return round(statistics.fmean(ers), 4) if ers else None
 
     rata_sesuai = _rata(sesuai)
     rata_luar = _rata(di_luar)
@@ -725,8 +725,8 @@ async def realisasi_planner(db: AsyncSession, *, brand: Brand, bulan: str) -> di
         narasi = "Belum ada konten terbit pada bulan ini."
 
     return {
-        "sesuai_rencana": {"jumlah": len(sesuai), "rata_wer": rata_sesuai},
-        "di_luar_rencana": {"jumlah": len(di_luar), "rata_wer": rata_luar},
+        "sesuai_rencana": {"jumlah": len(sesuai), "rata_er": rata_sesuai},
+        "di_luar_rencana": {"jumlah": len(di_luar), "rata_er": rata_luar},
         "rasio": rasio,
         "narasi": narasi,
     }

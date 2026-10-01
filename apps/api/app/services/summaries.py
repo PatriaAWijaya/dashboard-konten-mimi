@@ -1,7 +1,7 @@
 """Ringkasan naratif mingguan per brand (cached di tabel summaries).
 
 Prinsip "agregat dulu, narasi kemudian": LLM hanya menerima dict agregat
-(total konten, rata-rata skor/WER, top-3 pola format×tujuan, 3 konten
+(total konten, rata-rata skor/ER, top-3 pola format×tujuan, 3 konten
 terbaik/terburuk) — tidak pernah data mentah per konten.
 """
 
@@ -27,7 +27,7 @@ def _batas_dt(awal: date, akhir: date) -> tuple[datetime, datetime]:
     return mulai, selesai
 
 
-def _wer_snapshot(snapshot: dict | None) -> float:
+def _er_snapshot(snapshot: dict | None) -> float:
     snap = snapshot or {}
     return compute_weighted_er(
         float(snap.get("likes") or 0),
@@ -55,13 +55,13 @@ async def _agregat(
     ).all()
 
     skor_list: list[float] = []
-    wer_list: list[float] = []
+    er_list: list[float] = []
     pola: dict[tuple[str, str], dict] = {}
     per_konten: dict[str, dict] = {}
     for content, skor in baris:
         if skor.score is not None:
             skor_list.append(float(skor.score))
-        wer_list.append(_wer_snapshot(skor.metrics_snapshot))
+        er_list.append(_er_snapshot(skor.metrics_snapshot))
         key = (content.format, content.tujuan)
         p = pola.setdefault(key, {"n": 0, "menang": 0})
         p["n"] += 1
@@ -104,7 +104,7 @@ async def _agregat(
     return {
         "total_konten": len(per_konten),
         "rata_skor": _rata(skor_list),
-        "rata_wer": _rata(wer_list),
+        "rata_er": _rata(er_list),
         "pola_top3": pola_top,
         "konten_terbaik": terbaik,
         "konten_terburuk": terburuk,

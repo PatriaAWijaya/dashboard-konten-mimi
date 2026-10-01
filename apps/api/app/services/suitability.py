@@ -31,7 +31,7 @@ METRIC_LABELS = {
     "save_rate": "save rate",
     "share_rate": "share rate",
     "comment_rate": "comment rate",
-    "weighted_er": "weighted engagement rate",
+    "er": "engagement rate",
     "views": "views",
     "reach": "reach",
     "likes": "likes",
@@ -85,7 +85,7 @@ SUITABILITY_MATRIX: dict[tuple[str, str], dict] = {
 }
 
 DEFAULT_ENTRY = {
-    "metrik_utama": ["weighted_er", "comment_rate", "share_rate"],
+    "metrik_utama": ["er", "comment_rate", "share_rate"],
     "deskripsi": (
         "Kombinasi format×tujuan ini belum punya aturan khusus, "
         "jadi dinilai dari engagement berbobot secara umum."
@@ -96,7 +96,7 @@ SUGGESTION_TEMPLATES = {
     "save_rate": "Tambahkan CTA 'simpan postingan ini' dan pastikan ada insight yang layak disimpan (checklist, template, atau langkah praktis).",
     "share_rate": "Buat konten yang membuat orang ingin menandai temannya, misalnya dengan ajakan 'tag teman yang butuh info ini'.",
     "comment_rate": "Tutup caption dengan satu pertanyaan terbuka yang mudah dijawab audiens.",
-    "weighted_er": "Perkuat 3 detik pertama (hook) supaya interaksi naik sebelum orang scroll lewat.",
+    "er": "Perkuat 3 detik pertama (hook) supaya interaksi naik sebelum orang scroll lewat.",
     "views": "Perbaiki hook dan cover/thumbnail, lalu posting di jam audiens paling aktif.",
     "reach": "Dorong share ke story dan jajal kolaborasi agar jangkauan meluas.",
     "likes": "Minta like secara eksplisit di caption untuk konten yang memang disukai audiens.",
@@ -119,7 +119,7 @@ def _baseline_for(metric: str) -> float:
 def evaluate_suitability(agg: dict) -> dict:
     """Nilai kesesuaian pola format×tujuan dari metrik agregat satu konten.
 
-    agg: format, tujuan, save_rate, share_rate, comment_rate, weighted_er,
+    agg: format, tujuan, save_rate, share_rate, comment_rate, er,
         views, reach, likes, comments, shares, saves, avg_watch_seconds,
         replies, sticker_taps, link_clicks.
     """
@@ -192,7 +192,7 @@ def _rates_from_snapshot(snapshot: dict) -> dict:
         agg["save_rate"] = float(snapshot.get("saves") or 0) / views
         agg["share_rate"] = float(snapshot.get("shares") or 0) / views
         agg["comment_rate"] = float(snapshot.get("comments") or 0) / views
-        agg["weighted_er"] = compute_weighted_er(
+        agg["er"] = compute_weighted_er(
             float(snapshot.get("likes") or 0),
             float(snapshot.get("comments") or 0),
             float(snapshot.get("shares") or 0),
@@ -200,7 +200,7 @@ def _rates_from_snapshot(snapshot: dict) -> dict:
             views,
         )
     else:
-        agg["save_rate"] = agg["share_rate"] = agg["comment_rate"] = agg["weighted_er"] = 0.0
+        agg["save_rate"] = agg["share_rate"] = agg["comment_rate"] = agg["er"] = 0.0
     return agg
 
 

@@ -165,7 +165,7 @@ async def _agregat_per_konten(
         comments = int(r.comments or 0)
         shares = int(r.shares or 0)
         saves = int(r.saves or 0)
-        wer = compute_weighted_er(likes, comments, shares, saves, views)
+        er = compute_weighted_er(likes, comments, shares, saves, views)
         hasil[r.content_id] = {
             "content": c,
             "views": views,
@@ -176,7 +176,7 @@ async def _agregat_per_konten(
             "saves": saves,
             "follows": int(r.follows or 0),
             "engagement": likes + comments + shares + saves,
-            "wer": wer,
+            "er": er,
             "cta": deteksi_cta(c.caption),
             "kategori": deteksi_kategori(c.caption),
         }
@@ -186,7 +186,7 @@ async def _agregat_per_konten(
             hasil[c.id] = {
                 "content": c, "views": 0, "reach": 0, "likes": 0,
                 "comments": 0, "shares": 0, "saves": 0, "follows": 0,
-                "engagement": 0, "wer": 0.0,
+                "engagement": 0, "er": 0.0,
                 "cta": deteksi_cta(c.caption), "kategori": deteksi_kategori(c.caption),
             }
     return hasil
@@ -248,7 +248,7 @@ async def analisa_lanjutan(
         "total_engagement": tot["engagement"],
         "jumlah_konten": n,
         "rata_engagement_per_konten": round(tot["engagement"] / n, 1) if n else 0,
-        "rata_wer": round(sum(it["wer"] for it in items) / n, 4) if n else 0,
+        "rata_er": round(sum(it["er"] for it in items) / n, 4) if n else 0,
     }
 
     # ---- 2. Total per format ----
@@ -263,11 +263,11 @@ async def analisa_lanjutan(
         for k in ("views", "reach", "likes", "comments", "saves", "shares", "follows"):
             d[k] += it[k]
         d["total_engagement"] += it["engagement"]
-        d["wer_sum"] += it["wer"]
+        d["wer_sum"] += it["er"]
     daftar_format = []
     for f in sorted(per_format):
         d = per_format[f]
-        d["rata_wer"] = round(d["wer_sum"] / d["jumlah"], 4) if d["jumlah"] else 0
+        d["rata_er"] = round(d["wer_sum"] / d["jumlah"], 4) if d["jumlah"] else 0
         del d["wer_sum"]
         daftar_format.append(d)
 
@@ -319,7 +319,7 @@ async def analisa_lanjutan(
                 "views": it["views"], "reach": it["reach"], "likes": it["likes"],
                 "comments": it["comments"], "saves": it["saves"], "shares": it["shares"],
                 "follows": it["follows"], "total_engagement": it["engagement"],
-                "wer": round(it["wer"], 4),
+                "er": round(it["er"], 4),
                 "cta": it["cta"],
                 "cta_label": [CTA_LABELS.get(x, x) for x in it["cta"]],
                 "kategori": it["kategori"],
@@ -330,7 +330,7 @@ async def analisa_lanjutan(
     # ---- 5. Skor akun 1-10 (selaras framework Strategi Instagram Organik) ----
     # Bab 1 (algoritma = makcomblang): yang dinilai SINYAL engagement
     # (saves, shares, comments) bukan vanity metrics (views, likes).
-    avg_wer = komposisi["rata_wer"]
+    avg_er = komposisi["rata_er"]
     tot_views = tot["views"] or 1
     sinyal_rasio = (tot["saves"] * 5 + tot["shares"] * 5 + tot["comments"] * 3) / tot_views
     komponen = []
@@ -510,22 +510,22 @@ async def analisa_lanjutan(
 
     # ---- 7. Saran berbasis pola winning + framework (3S Power, growth loop) ----
     layak = [it for it in items if it["views"] >= 500]
-    layak.sort(key=lambda x: x["wer"], reverse=True)
+    layak.sort(key=lambda x: x["er"], reverse=True)
     topn = max(5, int(len(layak) * 0.1))
     top = layak[:topn]
     saran: list[dict] = []
-    dasar = f"Berdasarkan {len(top)} konten terbaik (10% WER teratas, min. 500 views)."
+    dasar = f"Berdasarkan {len(top)} konten terbaik (10% ER teratas, min. 500 views)."
     if top:
         fmt_top = Counter((it["content"].format or "lainnya").lower() for it in top)
         fmt_umum, fmt_n = fmt_top.most_common(1)[0]
-        wer_fmt = sum(it["wer"] for it in top if (it["content"].format or "lainnya").lower() == fmt_umum) / fmt_n
+        wer_fmt = sum(it["er"] for it in top if (it["content"].format or "lainnya").lower() == fmt_umum) / fmt_n
         peran_format = {"reels": "menjangkau audiens baru (watch time & shares)",
                         "carousel": "edukasi mendalam (saves & shares)",
                         "foto": "menjangkau audiens baru"}.get(fmt_umum, "menarik perhatian")
         saran.append({
             "judul": f"Perbanyak format {fmt_umum}",
             "detail": (f"{fmt_n} dari {len(top)} konten terbaik adalah {fmt_umum} "
-                       f"(rata-rata WER {wer_fmt * 100:.1f}%). Peran format ini: {peran_format}. "
+                       f"(rata-rata ER {wer_fmt * 100:.1f}%). Peran format ini: {peran_format}. "
                        f"Jadikan format utama minggu ini."),
             "dasar": dasar,
         })
@@ -565,7 +565,7 @@ async def analisa_lanjutan(
                 "post_id": it["content"].post_id,
                 "post_url": it["content"].post_url,
                 "caption_singkat": cap[:120] + ("…" if len(cap) > 120 else ""),
-                "wer": round(it["wer"] * 100, 1),
+                "er": round(it["er"] * 100, 1),
                 "format": (it["content"].format or "lainnya").lower(),
             })
         saran.append({

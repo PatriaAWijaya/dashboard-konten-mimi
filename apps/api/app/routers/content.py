@@ -467,7 +467,7 @@ async def brand_dashboard(
     # ada konten), agar frontend tidak perlu menebak keberadaan kunci.
     for plat in ("tiktok", "instagram"):
         kartu_data.setdefault(
-            plat, {"n": 0, "skor": 0.0, "wer": 0.0, "menang": 0, "cukup": 0, "kurang": 0}
+            plat, {"n": 0, "skor": 0.0, "er": 0.0, "menang": 0, "cukup": 0, "kurang": 0}
         )
     tren_data: dict[int, dict] = {}
     konten: list[DashboardKontenItem] = []
@@ -476,7 +476,7 @@ async def brand_dashboard(
         nilai_skor = float(skor.score) if skor and skor.score is not None else None
         snap = dict(skor.metrics_snapshot or {}) if skor else {}
         views = int(snap.get("views") or 0)
-        wer = compute_weighted_er(
+        er = compute_weighted_er(
             float(snap.get("likes") or 0),
             float(snap.get("comments") or 0),
             float(snap.get("shares") or 0),
@@ -487,23 +487,23 @@ async def brand_dashboard(
 
         plat = (content.platform or "lainnya").lower()
         k = kartu_data.setdefault(
-            plat, {"n": 0, "skor": 0.0, "wer": 0.0, "menang": 0, "cukup": 0, "kurang": 0}
+            plat, {"n": 0, "skor": 0.0, "er": 0.0, "menang": 0, "cukup": 0, "kurang": 0}
         )
         k["n"] += 1
         if nilai_skor is not None:
             k["skor"] += nilai_skor
-        k["wer"] += wer
+        k["er"] += er
         if status_skor in ("menang", "cukup", "kurang"):
             k[status_skor] += 1
 
         posted = content.posted_at
         if posted:
             idx = max((posted.date() - awal).days, 0) // 7
-            t = tren_data.setdefault(idx, {"n": 0, "skor": 0.0, "wer": 0.0})
+            t = tren_data.setdefault(idx, {"n": 0, "skor": 0.0, "er": 0.0})
             t["n"] += 1
             if nilai_skor is not None:
                 t["skor"] += nilai_skor
-            t["wer"] += wer
+            t["er"] += er
 
         konten.append(
             DashboardKontenItem(
@@ -514,7 +514,7 @@ async def brand_dashboard(
                 tujuan=content.tujuan,
                 posted_at=content.posted_at,
                 views=views,
-                wer=round(wer, 4),
+                er=round(er, 4),
                 score=nilai_skor,
                 status=status_skor,
                 labels=list(skor.labels or []) if skor else [],
@@ -525,7 +525,7 @@ async def brand_dashboard(
         plat: DashboardKartu(
             jumlah_konten=v["n"],
             rata_skor=round(v["skor"] / v["n"], 2) if v["n"] else 0.0,
-            rata_wer=round(v["wer"] / v["n"], 2) if v["n"] else 0.0,
+            rata_er=round(v["er"] / v["n"], 2) if v["n"] else 0.0,
             menang=v["menang"],
             cukup=v["cukup"],
             kurang=v["kurang"],
@@ -536,7 +536,7 @@ async def brand_dashboard(
         DashboardTren(
             label=f"W{idx + 1}",
             rata_skor=round(v["skor"] / v["n"], 2) if v["n"] else 0.0,
-            rata_wer=round(v["wer"] / v["n"], 2) if v["n"] else 0.0,
+            rata_er=round(v["er"] / v["n"], 2) if v["n"] else 0.0,
         )
         for idx, v in sorted(tren_data.items())
     ]
@@ -727,11 +727,11 @@ async def brand_perbandingan(
         a = agregat.setdefault(
             kunci,
             {"n": 0, "views": 0, "likes": 0, "comments": 0, "shares": 0,
-             "saves": 0, "follows": 0, "reach": 0, "wer": 0.0, "skor": 0.0, "n_skor": 0},
+             "saves": 0, "follows": 0, "reach": 0, "er": 0.0, "skor": 0.0, "n_skor": 0},
         )
         m = metrik_per_konten.get(content.id, {"views": 0, "likes": 0, "comments": 0, "shares": 0, "saves": 0, "follows": 0, "reach": 0})
         views = m["views"]
-        wer = compute_weighted_er(m["likes"], m["comments"], m["shares"], m["saves"], views)
+        er = compute_weighted_er(m["likes"], m["comments"], m["shares"], m["saves"], views)
         skor = skor_terbaru.get(content.id)
         nilai_skor = float(skor.score) if skor and skor.score is not None else None
         a["n"] += 1
@@ -742,7 +742,7 @@ async def brand_perbandingan(
         a["saves"] += m["saves"]
         a["follows"] += m["follows"]
         a["reach"] += m["reach"]
-        a["wer"] += wer
+        a["er"] += er
         if nilai_skor is not None:
             a["skor"] += nilai_skor
             a["n_skor"] += 1
@@ -781,7 +781,7 @@ async def brand_perbandingan(
         kunci = _kunci_bulan(t, b)
         a = agregat.get(kunci, {"n": 0, "views": 0, "likes": 0, "comments": 0,
                                "shares": 0, "saves": 0, "follows": 0, "reach": 0,
-                               "wer": 0.0, "skor": 0.0, "n_skor": 0})
+                               "er": 0.0, "skor": 0.0, "n_skor": 0})
         n = a["n"]
         kunci_mom = _kunci_bulan(*_geser_bulan(t, b, -1))
         kunci_yoy = _kunci_bulan(*_geser_bulan(t, b, -12))
@@ -799,7 +799,7 @@ async def brand_perbandingan(
                 reach=a["reach"],
                 engagement=a["likes"] + a["comments"] + a["shares"] + a["saves"],
                 rata_skor=round(a["skor"] / a["n_skor"], 2) if a["n_skor"] else None,
-                rata_wer=round(a["wer"] / n, 4) if n else 0.0,
+                rata_er=round(a["er"] / n, 4) if n else 0.0,
                 mom=_delta(kunci, kunci_mom),
                 yoy=_delta(kunci, kunci_yoy),
             )

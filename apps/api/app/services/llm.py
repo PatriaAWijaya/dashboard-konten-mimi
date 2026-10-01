@@ -78,13 +78,13 @@ class MockLLMProvider(LLMProvider):
         menang = int(ctx.get("menang", 0) or 0)
         wr = _pct(ctx.get("win_rate", 0.0))
         avg_skor = _fmt(ctx.get("avg_score"))
-        avg_wer = _fmt(ctx.get("avg_wer"))
+        avg_er = _fmt(ctx.get("avg_er"))
         contoh = ctx.get("contoh_post_ids") or []
         contoh_txt = ", ".join(str(p) for p in contoh[:3]) if contoh else "-"
 
         bukti = (
             f"Bukti data periode ini: {n} konten, {menang} di antaranya berstatus 'menang' "
-            f"(win rate {wr}), rata-rata skor {avg_skor}, rata-rata WER {avg_wer}%. "
+            f"(win rate {wr}), rata-rata skor {avg_skor}, rata-rata ER {avg_er}%. "
             f"Contoh konten: {contoh_txt}."
         )
 
@@ -213,7 +213,7 @@ class MockLLMProvider(LLMProvider):
         akhir = ctx.get("period_end") or "-"
         total = int(ctx.get("total_konten") or 0)
         rata_skor = _fmt(ctx.get("rata_skor"))
-        rata_wer = _fmt(ctx.get("rata_wer"))
+        rata_er = _fmt(ctx.get("rata_er"))
         pola = ctx.get("pola_top3") or []
         terbaik = ctx.get("konten_terbaik") or []
         terburuk = ctx.get("konten_terburuk") or []
@@ -222,7 +222,7 @@ class MockLLMProvider(LLMProvider):
             f'Ringkasan kinerja konten "{brand}" periode {awal} s.d. {akhir}.',
             "",
             f"Total {total} konten dianalisis; rata-rata skor {rata_skor}, "
-            f"rata-rata WER {rata_wer}%.",
+            f"rata-rata ER {rata_er}%.",
             "",
         ]
         if pola:

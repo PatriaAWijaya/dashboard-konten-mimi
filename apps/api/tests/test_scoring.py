@@ -1,4 +1,4 @@
-"""Tes scoring konten: determinisme, rumus WER, gerbang views, threshold platform, batas status."""
+"""Tes scoring konten: determinisme, rumus ER, gerbang views, threshold platform, batas status."""
 
 import pytest
 
@@ -75,24 +75,24 @@ def test_gerbang_min_views():
 
 
 def test_threshold_wer_beda_platform():
-    # wer = 60/1000 = 0.06 → di atas 5% (IG) tapi di bawah 8% (TikTok)
+    # er = 60/1000 = 0.06 → di atas 5% (IG) tapi di bawah 8% (TikTok)
     m = _metrics(views=1000, likes=60, comments=0, shares=0, saves=0)
     ig = score_content(m | {"platform": "instagram"}, DEFAULT_WEIGHTS, DEFAULT_THRESHOLDS)
     tt = score_content(m | {"platform": "tiktok"}, DEFAULT_WEIGHTS, DEFAULT_THRESHOLDS)
-    assert "wer_tinggi" in ig["labels"]
-    assert "wer_tinggi" not in tt["labels"]
+    assert "er_tinggi" in ig["labels"]
+    assert "er_tinggi" not in tt["labels"]
 
 
 def test_label_wer_relatif():
-    m = _metrics(views=10000, likes=1000, comments=0, shares=0, saves=0)  # wer = 0.10
-    tanpa_median = score_content(m, DEFAULT_WEIGHTS, DEFAULT_THRESHOLDS, median_wer=None)
-    assert "wer_relatif_tinggi" not in tanpa_median["labels"]
+    m = _metrics(views=10000, likes=1000, comments=0, shares=0, saves=0)  # er = 0.10
+    tanpa_median = score_content(m, DEFAULT_WEIGHTS, DEFAULT_THRESHOLDS, median_er=None)
+    assert "er_relatif_tinggi" not in tanpa_median["labels"]
     # 0.10 >= 1.5 * 0.05 → label muncul
-    dengan_median = score_content(m, DEFAULT_WEIGHTS, DEFAULT_THRESHOLDS, median_wer=0.05)
-    assert "wer_relatif_tinggi" in dengan_median["labels"]
+    dengan_median = score_content(m, DEFAULT_WEIGHTS, DEFAULT_THRESHOLDS, median_er=0.05)
+    assert "er_relatif_tinggi" in dengan_median["labels"]
     # 0.10 < 1.5 * 0.10 → label tidak muncul
-    median_tinggi = score_content(m, DEFAULT_WEIGHTS, DEFAULT_THRESHOLDS, median_wer=0.10)
-    assert "wer_relatif_tinggi" not in median_tinggi["labels"]
+    median_tinggi = score_content(m, DEFAULT_WEIGHTS, DEFAULT_THRESHOLDS, median_er=0.10)
+    assert "er_relatif_tinggi" not in median_tinggi["labels"]
 
 
 def test_status_menang():
@@ -123,7 +123,7 @@ def test_status_kurang():
 def test_menang_lewat_jumlah_label():
     # Skor < 0.7 tapi 3+ label winner → tetap 'menang' (cabang OR).
     weights = {"save_rate": 0.1, "share_rate": 0.1, "comment_rate": 0.1,
-               "weighted_er": 0.1, "retensi": 0.3, "reach_abs": 0.3}
+               "er": 0.1, "retensi": 0.3, "reach_abs": 0.3}
     m = _metrics(views=2000, likes=0, comments=40, shares=60, saves=80,
                  avg_watch_seconds=0.0, reach=0)
     hasil = score_content(m, weights, DEFAULT_THRESHOLDS)

@@ -25,9 +25,9 @@ SENIN = date(2026, 9, 7)  # Senin
 assert SENIN.weekday() == 0
 
 METRIK_MENANG = {"views": 20000, "likes": 2000, "comments": 400, "shares": 600, "saves": 800}
-# WER menang = (2000 + 400*3 + 600*5 + 800*5) / 20000 = 0.51
+# ER menang = (2000 + 400*3 + 600*5 + 800*5) / 20000 = 0.51
 METRIK_KURANG = {"views": 1500, "likes": 5, "comments": 0, "shares": 0, "saves": 2}
-# WER kurang = (5 + 0 + 0 + 10) / 1500 = 0.01
+# ER kurang = (5 + 0 + 0 + 10) / 1500 = 0.01
 
 
 def _headers_for(user):
@@ -84,14 +84,14 @@ async def _seed_brand(db, *, n_reels_menang=4, n_carousel_menang=0, n_kurang=0):
     return {"owner": owner, "org": org, "brand": brand, "contents": contents}
 
 
-async def _terima_rekomendasi(db, org, brand, fmt, tjn, avg_wer, ref_post_ids, tipe=RecommendationType.PERBANYAK):
+async def _terima_rekomendasi(db, org, brand, fmt, tjn, avg_er, ref_post_ids, tipe=RecommendationType.PERBANYAK):
     rec = Recommendation(
         organization_id=org.id, brand_id=brand.id, type=tipe,
         title=f"Perbanyak {fmt} {tjn}",
         narrative=f"Pola {fmt} untuk tujuan {tjn} menunjukkan performa baik. Lanjutkan dengan variasi topik.",
         evidence={
             "type": tipe, "format": fmt, "tujuan": tjn, "n": 4, "menang": 4,
-            "win_rate": 1.0, "avg_score": 1.0, "avg_wer": avg_wer,
+            "win_rate": 1.0, "avg_score": 1.0, "avg_er": avg_er,
             "contoh_post_ids": ref_post_ids,
         },
         reference_content_ids=list(ref_post_ids),
@@ -354,7 +354,7 @@ async def test_ringkasan_berlabel_estimasi(client, db_super):
     assert data["estimasi_views_min"] == 60000
     assert data["estimasi_views_max"] == 60000
     assert data["estimasi_views_min"] <= data["estimasi_views_max"]
-    # target ER = rata-rata WER pola menang = 0.51
+    # target ER = rata-rata ER pola menang = 0.51
     assert abs(data["target_er"] - 0.51) < 1e-6
 
     r = await client.get(
@@ -475,10 +475,10 @@ async def test_realisasi_rasio_benar(client, db_super):
     assert r.status_code == 200, r.text
     data = r.json()
     assert data["sesuai_rencana"]["jumlah"] == 1
-    assert abs(data["sesuai_rencana"]["rata_wer"] - 0.51) < 1e-6
+    assert abs(data["sesuai_rencana"]["rata_er"] - 0.51) < 1e-6
     # 2 konten KURANG dari seed + 1 manual
     assert data["di_luar_rencana"]["jumlah"] == 3
-    assert abs(data["di_luar_rencana"]["rata_wer"] - 0.01) < 1e-6
+    assert abs(data["di_luar_rencana"]["rata_er"] - 0.01) < 1e-6
     assert abs(data["rasio"] - 51.0) < 1e-6
     assert data["narasi"] == "Konten sesuai rencana ER-nya 51,0× dibanding di luar rencana."
 

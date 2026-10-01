@@ -304,7 +304,7 @@ export default function AnalisaLanjutan({
                 <th className="py-2 pr-3 text-right">Shares</th>
                 <th className="py-2 pr-3 text-right">Follows</th>
                 <th className="py-2 pr-3 text-right">Total eng.</th>
-                <th className="py-2 text-right">Rata-rata WER</th>
+                <th className="py-2 text-right">Rata-rata ER</th>
               </tr>
             </thead>
             <tbody>
@@ -327,7 +327,7 @@ export default function AnalisaLanjutan({
                     {fmt(f.total_engagement)}
                   </td>
                   <td className="py-2.5 text-right tabular-nums">
-                    {fmtPersenFraksi(f.rata_wer)}
+                    {fmtPersenFraksi(f.rata_er)}
                   </td>
                 </tr>
               ))}
@@ -502,7 +502,7 @@ export default function AnalisaLanjutan({
                   {saranWinning.contoh.length} Konten Terbaik
                 </h2>
                 <p className="mb-4 text-sm text-slate-500">
-                  WER tertinggi pada periode ini — bahan growth loop.
+                  ER tertinggi pada periode ini — bahan growth loop.
                 </p>
                 <div className="space-y-3">
                   {saranWinning.contoh.map((c, idx) => (
@@ -515,7 +515,7 @@ export default function AnalisaLanjutan({
                       </span>
                       <div className="min-w-0">
                         <p className="text-xs font-semibold text-slate-800">
-                          WER {c.wer.toLocaleString("id-ID")}% · {labelFormat(c.format)}
+                          ER {c.er.toLocaleString("id-ID")}% · {labelFormat(c.format)}
                         </p>
                         <p className="mt-0.5 break-words text-xs text-slate-600">
                           {c.caption_singkat}

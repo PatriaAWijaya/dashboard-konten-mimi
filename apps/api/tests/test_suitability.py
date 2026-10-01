@@ -17,7 +17,7 @@ from .conftest import create_org_direct, create_user_direct
 def _agg(**over):
     base = {
         "format": "carousel", "tujuan": "edukasi",
-        "save_rate": 0.0, "share_rate": 0.0, "comment_rate": 0.0, "weighted_er": 0.0,
+        "save_rate": 0.0, "share_rate": 0.0, "comment_rate": 0.0, "er": 0.0,
         "views": 0, "reach": 0, "likes": 0, "comments": 0, "shares": 0, "saves": 0,
         "avg_watch_seconds": 0.0, "replies": 0, "sticker_taps": 0, "link_clicks": 0,
     }
@@ -58,7 +58,7 @@ def test_reels_hiburan_views_rendah_tidak_sesuai():
 
 def test_kombinasi_tak_dikenal_pakai_default():
     hasil = evaluate_suitability(_agg(
-        format="live", tujuan="jualan", weighted_er=0.2, comment_rate=0.05,
+        format="live", tujuan="jualan", er=0.2, comment_rate=0.05,
         share_rate=0.05, views=30000,
     ))
     assert ("live", "jualan") not in SUITABILITY_MATRIX

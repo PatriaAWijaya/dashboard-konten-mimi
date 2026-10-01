@@ -33,7 +33,7 @@ function fmtAngka(n: number | null | undefined, desimal = 1): string {
   });
 }
 
-// Backend mengirim skor (0-1) dan WER (rasio 0-1); tampilkan sebagai persen.
+// Backend mengirim skor (0-1) dan ER (rasio 0-1); tampilkan sebagai persen.
 function fmtPersen(n: number | null | undefined, desimal = 1): string {
   if (n === null || n === undefined) return "-";
   return (n * 100).toLocaleString("id-ID", {
@@ -62,8 +62,8 @@ function KartuRingkasan({
           <p className="text-xs text-slate-500">Rata-rata skor</p>
         </div>
         <div>
-          <p className="text-2xl font-bold text-sky-600">{fmtPersen(data.rata_wer)}</p>
-          <p className="text-xs text-slate-500">Rata-rata WER</p>
+          <p className="text-2xl font-bold text-sky-600">{fmtPersen(data.rata_er)}</p>
+          <p className="text-xs text-slate-500">Rata-rata ER</p>
         </div>
       </div>
       <div className="mt-4 flex flex-wrap gap-2">
@@ -349,13 +349,13 @@ function DasborBrandIsi() {
                         const n = String(name ?? "");
                         return [
                           `${fmtPersen(v)}`,
-                          n === "rata_wer" ? "Rata-rata WER" : "Rata-rata skor",
+                          n === "rata_er" ? "Rata-rata ER" : "Rata-rata skor",
                         ];
                       }}
                     />
                     <Legend />
                     <Line type="monotone" dataKey="rata_skor" name="Rata-rata skor" stroke="#4f46e5" strokeWidth={2} dot={false} />
-                    <Line type="monotone" dataKey="rata_wer" name="Rata-rata WER (%)" stroke="#f59e0b" strokeWidth={2} dot={false} />
+                    <Line type="monotone" dataKey="rata_er" name="Rata-rata ER (%)" stroke="#f59e0b" strokeWidth={2} dot={false} />
                   </LineChart>
                 </ResponsiveContainer>
               </div>
@@ -376,7 +376,7 @@ function DasborBrandIsi() {
                     <th className="py-2 pr-3">Format</th>
                     <th className="py-2 pr-3">Tujuan</th>
                     <th className="py-2 pr-3 text-right">Views</th>
-                    <th className="py-2 pr-3 text-right">WER</th>
+                    <th className="py-2 pr-3 text-right">ER</th>
                     <th className="py-2 pr-3 text-right">Skor</th>
                     <th className="py-2 pr-3">Status</th>
                     <th className="py-2">Label</th>
@@ -395,7 +395,7 @@ function DasborBrandIsi() {
                         {k.views?.toLocaleString("id-ID") ?? "-"}
                       </td>
                       <td className="py-2.5 pr-3 text-right tabular-nums text-slate-700">
-                        {k.wer !== null && k.wer !== undefined ? fmtPersen(k.wer) : "-"}
+                        {k.er !== null && k.er !== undefined ? fmtPersen(k.er) : "-"}
                       </td>
                       <td className="py-2.5 pr-3 text-right font-semibold tabular-nums text-slate-900">
                         {k.score ?? "-"}
@@ -418,7 +418,7 @@ function DasborBrandIsi() {
               </table>
             </div>
             <p className="mt-3 text-xs text-slate-400">
-              Data per {formatTanggal(new Date().toISOString())} · WER = weighted
+              Data per {formatTanggal(new Date().toISOString())} · ER = weighted
               engagement rate.
             </p>
           </Card>

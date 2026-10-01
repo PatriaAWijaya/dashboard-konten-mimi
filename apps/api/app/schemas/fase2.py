@@ -150,7 +150,7 @@ class RingkasanPlannerOut(BaseModel):
 
 class RealisasiGrup(BaseModel):
     jumlah: int
-    rata_wer: float | None
+    rata_er: float | None
 
 
 class RealisasiOut(BaseModel):

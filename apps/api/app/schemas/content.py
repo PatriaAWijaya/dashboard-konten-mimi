@@ -58,7 +58,7 @@ class ScoreOut(BaseModel):
 class DashboardKartu(BaseModel):
     jumlah_konten: int
     rata_skor: float
-    rata_wer: float
+    rata_er: float
     menang: int
     cukup: int
     kurang: int
@@ -67,7 +67,7 @@ class DashboardKartu(BaseModel):
 class DashboardTren(BaseModel):
     label: str = Field(description="Label minggu, mis. W1, W2.")
     rata_skor: float
-    rata_wer: float
+    rata_er: float
 
 
 class DashboardKontenItem(BaseModel):
@@ -78,7 +78,7 @@ class DashboardKontenItem(BaseModel):
     tujuan: str | None
     posted_at: datetime | None
     views: int = Field(description="Views agregat dari snapshot skor.")
-    wer: float = Field(description="Weighted engagement rate dari snapshot skor.")
+    er: float = Field(description="Engagement rate dari snapshot skor.")
     score: float | None
     status: str
     labels: list[str]
@@ -86,7 +86,7 @@ class DashboardKontenItem(BaseModel):
 
 class DashboardOut(BaseModel):
     kartu: dict[str, DashboardKartu] = Field(description="Agregat per platform: tiktok, instagram.")
-    tren: list[DashboardTren] = Field(description="Agregasi mingguan skor & WER.")
+    tren: list[DashboardTren] = Field(description="Agregasi mingguan skor & ER.")
     konten: list[DashboardKontenItem] = Field(description="Daftar konten terperinci.")
 
 
@@ -145,7 +145,7 @@ class PerbandinganBulan(BaseModel):
     reach: int = 0
     engagement: int = Field(default=0, description="likes+comments+shares+saves.")
     rata_skor: float | None = None
-    rata_wer: float = 0.0
+    rata_er: float = 0.0
     mom: PerbandinganDelta | None = Field(default=None, description="Perbandingan month-on-month.")
     yoy: PerbandinganDelta | None = Field(default=None, description="Perbandingan year-on-year.")
 
@@ -163,7 +163,7 @@ class RecommendationOut(BaseModel):
     type: str = Field(description="Jenis: perbanyak, kurangi, perbaiki, coba_baru.")
     title: str = Field(description="Judul rekomendasi.")
     narrative: str = Field(description="Narasi rekomendasi (dari LLM, berbasis angka bukti).")
-    evidence: dict = Field(description="Angka bukti: n, win_rate, avg_score, avg_wer, contoh, format, tujuan.")
+    evidence: dict = Field(description="Angka bukti: n, win_rate, avg_score, avg_er, contoh, format, tujuan.")
     reference_content_ids: list = Field(description="Contoh post_id pendukung.")
     reference_contents: list[dict] = Field(
         default_factory=list,
@@ -231,7 +231,7 @@ class KomposisiEngagement(BaseModel):
     total_engagement: int = Field(description="likes+comments+saves+shares.")
     jumlah_konten: int
     rata_engagement_per_konten: float
-    rata_wer: float = Field(description="Rata-rata weighted engagement rate (fraksi).")
+    rata_er: float = Field(description="Rata-rata engagement rate (fraksi).")
 
 
 class FormatTotal(BaseModel):
@@ -245,7 +245,7 @@ class FormatTotal(BaseModel):
     shares: int
     follows: int
     total_engagement: int
-    rata_wer: float
+    rata_er: float
 
 
 class OpsiLabel(BaseModel):
@@ -275,7 +275,7 @@ class KontenDetailItem(BaseModel):
     shares: int
     follows: int
     total_engagement: int
-    wer: float
+    er: float
     cta: list[str]
     cta_label: list[str]
     kategori: str
