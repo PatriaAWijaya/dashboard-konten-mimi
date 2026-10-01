@@ -15,6 +15,12 @@ import {
   type RencanaFunnel,
   type TujuanCampaign,
 } from "@/lib/funnel";
+import {
+  LABEL_KANAL,
+  TONE_KANAL,
+  buatTimelineTerintegrasi,
+  type KanalTimeline,
+} from "@/lib/timeline";
 
 const SEMUA_PLATFORM: PlatformFunnel[] = ["instagram", "tiktok", "facebook"];
 const BARIS_PER_HALAMAN = 20;
@@ -61,6 +67,7 @@ export default function GeneratePlanner() {
   const [brief, setBrief] = useState<BriefCampaign | null>(null);
   const [error, setError] = useState("");
   const [halaman, setHalaman] = useState(1);
+  const [filterKanal, setFilterKanal] = useState<KanalTimeline | "semua">("semua");
 
   function togglePlatform(p: PlatformFunnel) {
     setPlatform((prev) =>
@@ -87,6 +94,7 @@ export default function GeneratePlanner() {
       setRencana(hasil);
       setBrief({ apa: apa.trim(), mengapa, siapa: siapa.trim(), dimana: dimana.trim(), bagaimana: bagaimana.trim() });
       setHalaman(1);
+      setFilterKanal("semua");
     } catch (e) {
       setRencana(null);
       setBrief(null);
@@ -94,16 +102,38 @@ export default function GeneratePlanner() {
     }
   }
 
+  const timeline = useMemo(
+    () => (rencana && brief ? buatTimelineTerintegrasi(rencana, brief) : []),
+    [rencana, brief]
+  );
+  const kanalTersedia = useMemo(
+    () =>
+      (Object.keys(LABEL_KANAL) as KanalTimeline[]).filter((k) =>
+        timeline.some((it) => it.kanal === k)
+      ),
+    [timeline]
+  );
+  const timelineFilter = useMemo(
+    () =>
+      filterKanal === "semua"
+        ? timeline
+        : timeline.filter((it) => it.kanal === filterKanal),
+    [timeline, filterKanal]
+  );
   const totalHalaman = useMemo(
     () =>
-      rencana ? Math.max(1, Math.ceil(rencana.items.length / BARIS_PER_HALAMAN)) : 1,
-    [rencana]
+      Math.max(1, Math.ceil(timelineFilter.length / BARIS_PER_HALAMAN)),
+    [timelineFilter]
   );
   const itemsHalaman = useMemo(() => {
-    if (!rencana) return [];
     const awal = (halaman - 1) * BARIS_PER_HALAMAN;
-    return rencana.items.slice(awal, awal + BARIS_PER_HALAMAN);
-  }, [rencana, halaman]);
+    return timelineFilter.slice(awal, awal + BARIS_PER_HALAMAN);
+  }, [timelineFilter, halaman]);
+
+  function pilihFilter(k: KanalTimeline | "semua") {
+    setFilterKanal(k);
+    setHalaman(1);
+  }
 
   const urutanFase: FaseFunnel[] = ["TOFU", "MOFU", "BOFU"];
 
@@ -285,13 +315,19 @@ export default function GeneratePlanner() {
         <Card>
           <div className="mb-4 flex flex-wrap items-center justify-between gap-2">
             <h2 className="text-base font-semibold text-slate-900">
-              Jadwal {formatTanggalPanjang(rencana.tanggalMulai)} —{" "}
-              {formatTanggalPanjang(rencana.tanggalTarget)}
+              Timeline Campaign Terintegrasi
             </h2>
             <p className="text-xs text-slate-500">
-              {rencana.totalHari} hari · {rencana.totalKonten} konten
+              {rencana.totalHari} hari · {rencana.totalKonten} konten ·{" "}
+              {timeline.length - rencana.totalKonten} aktivitas pendukung
             </p>
           </div>
+          <p className="mb-4 text-sm text-slate-500">
+            Usulan menyeluruh {formatTanggalPanjang(rencana.tanggalMulai)} —{" "}
+            {formatTanggalPanjang(rencana.tanggalTarget)}: konten organik
+            ditopang placement ads, kolaborasi, web internal, dan galang dana,
+            tersusun kronologis per fase.
+          </p>
 
           <div className="mb-5 grid grid-cols-3 gap-3">
             {urutanFase.map((f) => (
@@ -314,20 +350,49 @@ export default function GeneratePlanner() {
             ))}
           </div>
 
+          <div className="mb-4 flex flex-wrap gap-2">
+            <button
+              type="button"
+              onClick={() => pilihFilter("semua")}
+              className={`rounded-full border px-3.5 py-1.5 text-xs font-semibold transition ${
+                filterKanal === "semua"
+                  ? "border-orange-500 bg-orange-50 text-orange-700"
+                  : "border-slate-300 bg-white text-slate-500 hover:border-slate-400"
+              }`}
+            >
+              Semua ({timeline.length})
+            </button>
+            {kanalTersedia.map((k) => (
+              <button
+                key={k}
+                type="button"
+                onClick={() => pilihFilter(k)}
+                className={`rounded-full border px-3.5 py-1.5 text-xs font-semibold transition ${
+                  filterKanal === k
+                    ? "border-orange-500 bg-orange-50 text-orange-700"
+                    : "border-slate-300 bg-white text-slate-500 hover:border-slate-400"
+                }`}
+              >
+                {LABEL_KANAL[k]} ({timeline.filter((it) => it.kanal === k).length})
+              </button>
+            ))}
+          </div>
+
           <div className="overflow-x-auto">
             <table className="w-full text-left text-sm">
               <thead>
                 <tr className="border-b border-slate-200 text-xs uppercase text-slate-400">
                   <th className="px-3 py-2 font-semibold">Tanggal</th>
                   <th className="px-3 py-2 font-semibold">Fase</th>
-                  <th className="px-3 py-2 font-semibold">Jenis konten</th>
-                  <th className="px-3 py-2 font-semibold">Format saran</th>
+                  <th className="px-3 py-2 font-semibold">Kanal</th>
+                  <th className="px-3 py-2 font-semibold">Kegiatan</th>
+                  <th className="px-3 py-2 font-semibold">Detail</th>
                 </tr>
               </thead>
               <tbody>
                 {itemsHalaman.map((it, i) => (
                   <tr
-                    key={`${it.tanggal}-${i}`}
+                    key={`${it.tanggal}-${it.kanal}-${i}`}
                     className="border-b border-slate-100 last:border-0"
                   >
                     <td className="whitespace-nowrap px-3 py-2.5 font-medium text-slate-900">
@@ -340,8 +405,17 @@ export default function GeneratePlanner() {
                         {it.fase}
                       </span>
                     </td>
-                    <td className="px-3 py-2.5 text-slate-700">{it.jenisKonten}</td>
-                    <td className="px-3 py-2.5 text-slate-500">{it.formatSaran}</td>
+                    <td className="px-3 py-2.5">
+                      <span
+                        className={`inline-block whitespace-nowrap rounded-full px-2.5 py-0.5 text-xs font-bold ${TONE_KANAL[it.kanal]}`}
+                      >
+                        {LABEL_KANAL[it.kanal]}
+                      </span>
+                    </td>
+                    <td className="px-3 py-2.5 font-medium text-slate-700">
+                      {it.kegiatan}
+                    </td>
+                    <td className="px-3 py-2.5 text-slate-500">{it.detail}</td>
                   </tr>
                 ))}
               </tbody>
