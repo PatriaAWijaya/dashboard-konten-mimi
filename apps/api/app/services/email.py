@@ -143,7 +143,7 @@ class SmtpEmailService(EmailService):
         link = verification_link(token)
         body = (
             f"Halo {name},\n\nTerima kasih telah mendaftar di MySocial Watch.\n"
-            f"Klik tautan berikut untuk memverifikasi email Anda (berlaku 24 jam):\n\n{link}\n\n"
+            f"Klik tautan berikut untuk memverifikasi email Anda (berlaku 15 menit):\n\n{link}\n\n"
             f"Jika tautan tidak bisa diklik, salin token berikut lalu tempel di halaman verifikasi:\n\n{token}\n"
         )
         self._send(to_email, "Verifikasi Email — MySocial Watch", body)
@@ -221,7 +221,7 @@ class BrevoHttpEmailService(EmailService):
         link = verification_link(token)
         body = (
             f"Halo {name},\n\nTerima kasih telah mendaftar di MySocial Watch.\n"
-            f"Klik tautan berikut untuk memverifikasi email Anda (berlaku 24 jam):\n\n{link}\n\n"
+            f"Klik tautan berikut untuk memverifikasi email Anda (berlaku 15 menit):\n\n{link}\n\n"
             f"Jika tautan tidak bisa diklik, salin token berikut lalu tempel di halaman verifikasi:\n\n{token}\n"
         )
         html = (
@@ -230,7 +230,7 @@ class BrevoHttpEmailService(EmailService):
             f"<p><a href=\"{link}\" style=\"display:inline-block;padding:12px 24px;"
             f"background:#0f766e;color:#ffffff;text-decoration:none;border-radius:8px;\">"
             f"Verifikasi Email Saya</a></p>"
-            f"<p>Atau klik tautan berikut (berlaku 24 jam):<br><a href=\"{link}\">{link}</a></p>"
+            f"<p>Atau klik tautan berikut (berlaku 15 menit):<br><a href=\"{link}\">{link}</a></p>"
             f"<p>Jika tautan tidak bisa diklik, salin token berikut lalu tempel di halaman verifikasi:<br>"
             f"<code>{token}</code></p>"
         )

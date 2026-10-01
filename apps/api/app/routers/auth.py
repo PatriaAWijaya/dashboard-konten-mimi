@@ -53,8 +53,12 @@ def _now():
     return datetime.now(timezone.utc)
 
 
-def _email_token_expiry() -> datetime:
-    return _now() + timedelta(hours=get_settings().EMAIL_TOKEN_EXPIRE_HOURS)
+def _verification_token_expiry() -> datetime:
+    return _now() + timedelta(minutes=get_settings().EMAIL_VERIFICATION_EXPIRE_MINUTES)
+
+
+def _password_reset_token_expiry() -> datetime:
+    return _now() + timedelta(hours=get_settings().PASSWORD_RESET_EXPIRE_HOURS)
 
 
 async def _find_auth_row(db: AsyncSession, email: str) -> dict | None:
@@ -106,7 +110,7 @@ async def register(
     token = generate_token()
     db.add(
         EmailVerificationToken(
-            user_id=user.id, token_hash=hash_token(token), expires_at=_email_token_expiry()
+            user_id=user.id, token_hash=hash_token(token), expires_at=_verification_token_expiry()
         )
     )
     await db.flush()
@@ -186,7 +190,7 @@ async def resend_verification(
     token = generate_token()
     db.add(
         EmailVerificationToken(
-            user_id=user.id, token_hash=hash_token(token), expires_at=_email_token_expiry()
+            user_id=user.id, token_hash=hash_token(token), expires_at=_verification_token_expiry()
         )
     )
     await db.flush()
@@ -321,7 +325,7 @@ async def forgot_password(
         token = generate_token()
         db.add(
             PasswordResetToken(
-                user_id=row["id"], token_hash=hash_token(token), expires_at=_email_token_expiry()
+                user_id=row["id"], token_hash=hash_token(token), expires_at=_password_reset_token_expiry()
             )
         )
         await db.flush()

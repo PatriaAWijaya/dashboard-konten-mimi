@@ -57,7 +57,8 @@ class Settings(BaseSettings):
     SEED_ADMIN_PASSWORD: str = "Admin123!"
 
     # --- Token email ---
-    EMAIL_TOKEN_EXPIRE_HOURS: int = 24
+    EMAIL_VERIFICATION_EXPIRE_MINUTES: int = 15
+    PASSWORD_RESET_EXPIRE_HOURS: int = 24
 
     # --- Password ---
     PASSWORD_MIN_LENGTH: int = 8
