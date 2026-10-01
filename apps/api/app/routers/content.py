@@ -69,6 +69,7 @@ from app.services.niche import (
 from app.services.recommendations import (
     generate_recommendations,
     generate_rekomendasi_struktur,
+    migrasi_narasi_lama,
     set_recommendation_status,
 )
 from app.services.scoring import compute_weighted_er, run_scoring
@@ -874,6 +875,8 @@ async def list_recommendations(
         awal, akhir = _resolve_period(periode)
         q = q.where(Recommendation.period_start == awal, Recommendation.period_end == akhir)
     rows = (await db.execute(q.order_by(Recommendation.created_at.desc()).limit(50))).scalars().all()
+    # Migrasi narasi lama ke bahasa sehari-hari saat dibaca.
+    await migrasi_narasi_lama(db, list(rows))
     return await _enrich_recommendations(db, brand.id, list(rows))
 
 
