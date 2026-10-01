@@ -18,6 +18,7 @@ import {
   TextArea,
 } from "@/components/ui";
 import BrandNav from "@/components/BrandNav";
+import GeneratePlanner from "@/components/GeneratePlanner";
 
 type StatusRencana = "ide" | "terjadwal" | "terbit" | "dibatalkan";
 
@@ -571,6 +572,7 @@ function PlannerIsi() {
   const brandId = useBrandId();
   const searchParams = useSearchParams();
 
+  const [tab, setTab] = useState<"kalender" | "generate">("kalender");
   const [bulan, setBulan] = useState(() => bulanKey(new Date()));
   const [items, setItems] = useState<Rencana[]>([]);
   const [loading, setLoading] = useState(true);
@@ -737,6 +739,33 @@ function PlannerIsi() {
         </div>
       )}
 
+      {/* Tab Kalender / Generate Planner */}
+      <div className="mb-6 flex gap-1 border-b border-slate-200">
+        {(
+          [
+            { id: "kalender", label: "Kalender" },
+            { id: "generate", label: "Generate Planner" },
+          ] as const
+        ).map((t) => (
+          <button
+            key={t.id}
+            type="button"
+            onClick={() => setTab(t.id)}
+            className={`-mb-px border-b-2 px-4 py-2.5 text-sm font-semibold transition ${
+              tab === t.id
+                ? "border-orange-500 text-orange-700"
+                : "border-transparent text-slate-500 hover:border-slate-300 hover:text-slate-700"
+            }`}
+          >
+            {t.label}
+          </button>
+        ))}
+      </div>
+
+      {tab === "generate" ? (
+        <GeneratePlanner />
+      ) : (
+        <>
       <div className="grid gap-6 lg:grid-cols-5">
         {/* Kalender */}
         <Card className="lg:col-span-3">
@@ -978,6 +1007,8 @@ function PlannerIsi() {
           </div>
         )}
       </Card>
+        </>
+      )}
     </div>
   );
 }
