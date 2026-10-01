@@ -22,6 +22,10 @@ import {
   type KanalTimeline,
 } from "@/lib/timeline";
 import { exportTimelinePdf } from "@/lib/export-timeline-pdf";
+import {
+  rekomendasiTema,
+  type RekomendasiTema,
+} from "@/lib/tema";
 
 const SEMUA_PLATFORM: PlatformFunnel[] = ["instagram", "tiktok", "facebook"];
 const BARIS_PER_HALAMAN = 20;
@@ -69,6 +73,17 @@ export default function GeneratePlanner() {
   const [error, setError] = useState("");
   const [halaman, setHalaman] = useState(1);
   const [filterKanal, setFilterKanal] = useState<KanalTimeline | "semua">("semua");
+  // Rekomendasi tema campaign + pilihan user (disnapshot saat generate)
+  const [temaOpsi, setTemaOpsi] = useState<RekomendasiTema[]>([]);
+  const [temaId, setTemaId] = useState<string | null>(null);
+  const [namaMomentum, setNamaMomentum] = useState<string | null>(null);
+  const [snap, setSnap] = useState<{
+    tanggalMulai: string;
+    tanggalTarget: string;
+    frekuensi: number;
+    platform: PlatformFunnel[];
+    tujuan: TujuanCampaign;
+  } | null>(null);
 
   function togglePlatform(p: PlatformFunnel) {
     setPlatform((prev) =>
@@ -85,21 +100,53 @@ export default function GeneratePlanner() {
       return;
     }
     try {
+      const freq = Number(frekuensi);
+      const rek = rekomendasiTema({ mengapa }, tanggalMulai, tanggalTarget);
+      const temaPertama = rek.daftar[0] ?? null;
       const hasil = buatRencanaFunnel({
         tanggalMulai,
         tanggalTarget,
-        frekuensi: Number(frekuensi),
+        frekuensi: freq,
         platform,
         tujuan: mengapa,
+        tema: temaPertama
+          ? { namaTema: temaPertama.namaTema, angle: temaPertama.angle }
+          : undefined,
       });
       setRencana(hasil);
       setBrief({ apa: apa.trim(), mengapa, siapa: siapa.trim(), dimana: dimana.trim(), bagaimana: bagaimana.trim() });
+      setTemaOpsi(rek.daftar);
+      setTemaId(temaPertama ? temaPertama.id : null);
+      setNamaMomentum(rek.momentum ? rek.momentum.nama : null);
+      setSnap({ tanggalMulai, tanggalTarget, frekuensi: freq, platform, tujuan: mengapa });
       setHalaman(1);
       setFilterKanal("semua");
     } catch (e) {
       setRencana(null);
       setBrief(null);
       setError(e instanceof Error ? e.message : "Gagal membuat rencana.");
+    }
+  }
+
+  const temaTerpilih = useMemo(
+    () => temaOpsi.find((t) => t.id === temaId) ?? null,
+    [temaOpsi, temaId]
+  );
+
+  /** Ganti tema → rencana dihitung ulang dengan tema baru. */
+  function pilihTema(id: string) {
+    const t = temaOpsi.find((x) => x.id === id);
+    if (!t || !snap) return;
+    try {
+      const hasil = buatRencanaFunnel({
+        ...snap,
+        tema: { namaTema: t.namaTema, angle: t.angle },
+      });
+      setTemaId(id);
+      setRencana(hasil);
+      setHalaman(1);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Gagal menerapkan tema.");
     }
   }
 
@@ -313,6 +360,84 @@ export default function GeneratePlanner() {
             ))}
           </dl>
         </Card>
+
+        {/* Rekomendasi Tema Campaign */}
+        {temaOpsi.length > 0 && (
+          <Card>
+            <h2 className="text-base font-semibold text-slate-900">
+              Rekomendasi Tema Campaign
+            </h2>
+            <p className="mt-1 text-sm text-slate-500">
+              {namaMomentum
+                ? `Momentum terdeteksi: ${namaMomentum}.`
+                : "Tidak ada momentum hari besar pada rentang ini — tema umum."}{" "}
+              Pilih satu tema; seluruh kegiatan konten organik memakai nama
+              tema ini dan detailnya mengikuti big idea.
+            </p>
+            <div
+              role="radiogroup"
+              aria-label="Pilihan tema campaign"
+              className="mt-4 grid gap-3 md:grid-cols-2"
+            >
+              {temaOpsi.map((t) => {
+                const aktif = t.id === temaId;
+                return (
+                  <button
+                    key={t.id}
+                    type="button"
+                    role="radio"
+                    aria-checked={aktif}
+                    onClick={() => pilihTema(t.id)}
+                    className={`rounded-xl border p-4 text-left transition ${
+                      aktif
+                        ? "border-orange-500 bg-orange-50 ring-2 ring-orange-500"
+                        : "border-slate-200 bg-white hover:border-orange-300"
+                    }`}
+                  >
+                    <p className="flex items-center gap-2 text-sm font-bold text-slate-900">
+                      <span
+                        aria-hidden
+                        className={`inline-block h-3.5 w-3.5 rounded-full border-2 ${
+                          aktif ? "border-orange-500 bg-orange-500" : "border-slate-300"
+                        }`}
+                      />
+                      {t.namaTema}
+                    </p>
+                    <p className="mt-2 text-sm text-slate-700">
+                      <span className="font-semibold">Big idea:</span> {t.bigIdea}
+                    </p>
+                    <dl className="mt-3 space-y-2 text-xs text-slate-500">
+                      <div>
+                        <dt className="font-semibold uppercase text-slate-400">
+                          Dasar tren (6 bulan terakhir)
+                        </dt>
+                        <dd className="mt-0.5">{t.tren}</dd>
+                      </div>
+                      <div>
+                        <dt className="font-semibold uppercase text-slate-400">
+                          Pola acuan
+                        </dt>
+                        <dd className="mt-0.5">{t.polaAcuan}</dd>
+                      </div>
+                      <div>
+                        <dt className="font-semibold uppercase text-slate-400">
+                          Kenapa cocok
+                        </dt>
+                        <dd className="mt-0.5">{t.penjelasan}</dd>
+                      </div>
+                    </dl>
+                  </button>
+                );
+              })}
+            </div>
+            <p className="mt-3 text-xs text-slate-400">
+              Pola acuan diambil dari riset benchmark campaign Ramadhan &amp;
+              Qurban 2026 (Rumah Zakat vs Dompet Dhuafa) dan tren sosial–keagamaan
+              April–September 2026.
+            </p>
+          </Card>
+        )}
+
         <Card>
           <div className="mb-4 flex flex-wrap items-center justify-between gap-2">
             <h2 className="text-base font-semibold text-slate-900">
@@ -326,7 +451,14 @@ export default function GeneratePlanner() {
               <Button
                 variant="secondary"
                 onClick={() =>
-                  brief && exportTimelinePdf(brief, rencana, timeline, filterKanal)
+                  brief &&
+                  exportTimelinePdf(
+                    brief,
+                    rencana,
+                    timeline,
+                    filterKanal,
+                    temaTerpilih
+                  )
                 }
                 className="px-3! py-1.5! text-xs"
               >

@@ -11,6 +11,7 @@ import {
   type ItemTimeline,
   type KanalTimeline,
 } from "./timeline";
+import type { RekomendasiTema } from "./tema";
 
 function formatTanggalPanjang(iso: string): string {
   const [y, m, d] = iso.split("-").map(Number);
@@ -38,7 +39,8 @@ export function exportTimelinePdf(
   brief: BriefCampaign,
   rencana: RencanaFunnel,
   timeline: ItemTimeline[],
-  filterKanal: KanalTimeline | "semua" = "semua"
+  filterKanal: KanalTimeline | "semua" = "semua",
+  tema: RekomendasiTema | null = null
 ) {
   const doc = new jsPDF({ unit: "mm", format: "a4" });
   const lebar = doc.internal.pageSize.getWidth();
@@ -89,6 +91,32 @@ export function exportTimelinePdf(
   });
   y = (doc as unknown as { lastAutoTable: { finalY: number } }).lastAutoTable
     .finalY + 8;
+
+  // Tema campaign terpilih
+  if (tema) {
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(12);
+    doc.text("Tema Campaign Terpilih", 14, y);
+    y += 6;
+    autoTable(doc, {
+      startY: y,
+      head: [["Unsur", "Keterangan"]],
+      body: [
+        ["Tema", tema.namaTema],
+        ["Big idea", tema.bigIdea],
+        ["Momentum", tema.momentum],
+        ["Dasar tren", tema.tren],
+        ["Pola acuan", tema.polaAcuan],
+      ],
+      theme: "grid",
+      headStyles: { fillColor: [249, 115, 22], fontSize: 9 },
+      bodyStyles: { fontSize: 9 },
+      columnStyles: { 0: { cellWidth: 28, fontStyle: "bold" } },
+      margin: { left: 14, right: 14 },
+    });
+    y = (doc as unknown as { lastAutoTable: { finalY: number } })
+      .lastAutoTable.finalY + 8;
+  }
 
   // Ringkasan fase
   doc.setFont("helvetica", "bold");

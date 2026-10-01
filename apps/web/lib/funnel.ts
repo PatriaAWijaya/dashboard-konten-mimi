@@ -165,12 +165,17 @@ const ADAPTASI_BOFU: Record<TujuanCampaign, { penawaran: string; cta: string }> 
 };
 
 /** 5W1H event campaign — dasar pelaksanaan campaign. */
-export interface BriefCampaign {
-  apa: string; // nama event/campaign
+export interface BriefCampaign {  apa: string; // nama event/campaign
   mengapa: TujuanCampaign; // tujuan campaign
   siapa: string; // target audiens
   dimana: string; // lokasi / platform event
   bagaimana: string; // mekanisme pelaksanaan
+}
+
+/** Tema campaign terpilih — menamai kegiatan & menjelaskan big idea per fase. */
+export interface TemaKonten {
+  namaTema: string;
+  angle: Record<FaseFunnel, string>;
 }
 
 export interface ItemJadwal {
@@ -179,6 +184,8 @@ export interface ItemJadwal {
   jenisKonten: string;
   formatSaran: string;
   tujuan: string;
+  temaNama?: string;
+  penjelasanTema?: string;
 }
 
 export interface RencanaFunnel {
@@ -196,6 +203,7 @@ export interface OpsiFunnel {
   frekuensi: number; // posting per minggu, 1–7
   platform: PlatformFunnel[];
   tujuan?: TujuanCampaign; // default "jualan"
+  tema?: TemaKonten; // tema campaign terpilih (opsional)
 }
 
 /** Bank konten per fase; BOFU disesuaikan dengan tujuan campaign. */
@@ -299,6 +307,12 @@ export function buatRencanaFunnel(opsi: OpsiFunnel): RencanaFunnel {
         jenisKonten: jenis.nama,
         formatSaran: formatUnik,
         tujuan: jenis.tujuan,
+        ...(opsi.tema
+          ? {
+              temaNama: opsi.tema.namaTema,
+              penjelasanTema: opsi.tema.angle[slot.fase],
+            }
+          : {}),
       });
     }
   }

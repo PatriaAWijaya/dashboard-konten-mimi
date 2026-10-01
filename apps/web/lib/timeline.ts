@@ -74,8 +74,10 @@ export function buatTimelineTerintegrasi(
     tanggal: it.tanggal,
     fase: it.fase,
     kanal: "konten" as KanalTimeline,
-    kegiatan: it.jenisKonten,
-    detail: it.formatSaran,
+    kegiatan: it.temaNama ? `${it.jenisKonten} ${it.temaNama}` : it.jenisKonten,
+    detail: it.penjelasanTema
+      ? `${it.penjelasanTema} · Format: ${it.formatSaran}`
+      : it.formatSaran,
   }));
 
   const t0 = rencana.tanggalMulai;
