@@ -9,6 +9,7 @@ Revises: 0009_perf_indexes
 
 from alembic import op
 import sqlalchemy as sa
+from sqlalchemy.dialects import postgresql
 
 
 revision = "0010_niche_brand_nullable"
@@ -19,7 +20,7 @@ def upgrade() -> None:
     op.alter_column(
         "niche_interviews",
         "brand_id",
-        existing_type=sa.dialects.postgresql.UUID(as_uuid=True),
+        existing_type=postgresql.UUID(as_uuid=True),
         nullable=True,
     )
 
@@ -28,6 +29,6 @@ def downgrade() -> None:
     op.alter_column(
         "niche_interviews",
         "brand_id",
-        existing_type=sa.dialects.postgresql.UUID(as_uuid=True),
+        existing_type=postgresql.UUID(as_uuid=True),
         nullable=False,
     )
