@@ -63,11 +63,13 @@ async def get_db(request: Request) -> AsyncIterator[AsyncSession]:
         request.state.jwt_user_id = jwt_user_id
         try:
             yield session
-            # Commit hanya bila ada perubahan; request read-only tidak perlu roundtrip.
-            if session.dirty or session.new or session.deleted:
-                await session.commit()
-            else:
-                await session.rollback()
+            # Commit SELALU: kondisi "hanya bila ada perubahan" pernah dicoba
+            # (hemat 1 roundtrip) tapi salah — flush() memindahkan objek dari
+            # session.new ke persistent sehingga endpoint yang flush tanpa
+            # commit eksplisit (register, resend-verifikasi, dsb.) diam-diam
+            # ter-rollback padahal email sudah terkirim & respons 201 sudah
+            # dibuat. Jangan dioptimasi lagi.
+            await session.commit()
         except Exception:
             await session.rollback()
             raise
