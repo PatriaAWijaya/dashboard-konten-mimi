@@ -305,6 +305,65 @@ class MockLLMProvider(LLMProvider):
                 f"KESENJANGAN: {who} mengira {why}, padahal {how}.\n\n"
                 f"WAWASAN BARU ({pov}): {cta}."
             )
+        elif fw == "golden_circle":
+            isi = (
+                f"WHY (tujuan/keyakinan): {pov} — {why}.\n\n"
+                f"HOW (cara unik): {how}.\n\n"
+                f"WHAT (yang ditawarkan): {what}.\n\n"
+                f"AJAKAN: {cta}."
+            )
+        elif fw == "pixar":
+            isi = (
+                f"ONCE UPON A TIME (konteks): {who} — {what}.\n\n"
+                f"EVERY DAY (rutinitas): {why}.\n\n"
+                f"ONE DAY (peristiwa pemicu): {how}.\n\n"
+                f"BECAUSE OF THAT (konsekuensi): {pov}.\n\n"
+                f"UNTIL FINALLY (resolusi): {cta}."
+            )
+        elif fw == "hero_journey":
+            isi = (
+                f"PANGGILAN BERPETUALANG: {who} menghadapi {what}.\n\n"
+                f"UJIAN & TANTANGAN: {why}.\n\n"
+                f"KEMBALI MEMBAWA KEMENANGAN: {how} — {pov}.\n\n"
+                f"AJAKAN: {cta}."
+            )
+        elif fw == "minto":
+            isi = (
+                f"IDE UTAMA DULU: {what} — {pov}.\n\n"
+                f"ARGUMEN PENDUKUNG: {why}; {how}.\n\n"
+                f"DETAIL: {who}.\n\n"
+                f"AJAKAN: {cta}."
+            )
+        elif fw == "abt":
+            isi = (
+                f"AND (konteks bersama): {who} — {what}.\n\n"
+                f"BUT (masalah/tantangan): {why}.\n\n"
+                f"THEREFORE (solusi): {how}.\n\n"
+                f"AJAKAN: {cta}."
+            )
+        elif fw == "what_sowhat_nowwhat":
+            isi = (
+                f"WHAT (fakta): {what}.\n\n"
+                f"SO WHAT (relevansi & dampak): {why} — penting untuk {audiens}.\n\n"
+                f"NOW WHAT (langkah nyata): {how}.\n\n"
+                f"AJAKAN: {cta}."
+            )
+        elif fw == "hso":
+            isi = (
+                f"HOOK: {what} — {why}.\n\n"
+                f"STORY: {who} — {how}.\n\n"
+                f"OFFER: {pov}.\n\n"
+                f"AJAKAN: {cta}."
+            )
+        elif fw == "five_cs":
+            isi = (
+                f"CLARITY (jelas & fokus): {what}.\n\n"
+                f"CONNECTION (relevan untuk audiens): {audiens} — {why}.\n\n"
+                f"CHARACTER (tokoh yang hidup): {who}.\n\n"
+                f"CONFLICT (tantangan): {how}.\n\n"
+                f"CLOSURE (penutup berkesan): {pov}.\n\n"
+                f"AJAKAN: {cta}."
+            )
         else:
             isi = f"{what}\n\n{pov}\n\nAJAKAN: {cta}."
         return f"{pembuka}\n\n{isi}\n\n(Catatan: ini draf template. Aktifkan provider LLM (OpenAI/Anthropic) untuk copywriting yang lebih natural.)"

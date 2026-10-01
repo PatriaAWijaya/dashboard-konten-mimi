@@ -331,6 +331,14 @@ FRAMEWORK_COPYWRITING = (
     "bab",
     "freytag",
     "truth_gap",
+    "golden_circle",
+    "pixar",
+    "hero_journey",
+    "minto",
+    "abt",
+    "what_sowhat_nowwhat",
+    "hso",
+    "five_cs",
 )
 
 LABEL_FRAMEWORK = {
@@ -339,6 +347,14 @@ LABEL_FRAMEWORK = {
     "bab": "Before-After-Bridge",
     "freytag": "Freytag's Pyramid",
     "truth_gap": "The Truth Gap (Kindra Hall)",
+    "golden_circle": "Golden Circle (Simon Sinek)",
+    "pixar": "Pixar Pitch (Pixar Studios)",
+    "hero_journey": "Hero's Journey",
+    "minto": "Pyramid Principle (Barbara Minto)",
+    "abt": "ABT — And, But, Therefore (Randy Olson)",
+    "what_sowhat_nowwhat": "What, So What, Now What",
+    "hso": "Hook, Story, Offer",
+    "five_cs": "5 C's of Storytelling",
 }
 
 
