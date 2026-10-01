@@ -319,3 +319,46 @@ class AnalisaLanjutanOut(BaseModel):
     skor_akun: SkorAkun | None = None
     diagnosis: list[DiagnosisItem] = Field(default_factory=list)
     saran: list[SaranItem] = Field(default_factory=list)
+
+
+# ---------------------------------------------------------------------------
+# Copywriting generator
+# ---------------------------------------------------------------------------
+
+FRAMEWORK_COPYWRITING = (
+    "storybrand",
+    "pas",
+    "bab",
+    "freytag",
+    "truth_gap",
+)
+
+LABEL_FRAMEWORK = {
+    "storybrand": "StoryBrand (Donald Miller)",
+    "pas": "Problem-Agitate-Solve",
+    "bab": "Before-After-Bridge",
+    "freytag": "Freytag's Pyramid",
+    "truth_gap": "The Truth Gap (Kindra Hall)",
+}
+
+
+class CopywritingIn(BaseModel):
+    what: str = Field(description="What: tentang apa konten ini.")
+    who: str = Field(default="", description="Who: siapa yang terlibat.")
+    when: str = Field(default="", description="When: kapan.")
+    where: str = Field(default="", description="Where: di mana.")
+    why: str = Field(default="", description="Why: kenapa penting.")
+    how: str = Field(default="", description="How: bagaimana caranya.")
+    pov: str = Field(default="", description="Sudut pandang brand.")
+    target_audiens: str = Field(default="", description="Target audiens.")
+    goals: str = Field(description="Tujuan: Awareness | Edukasi | Hiburan | Konversi.")
+    cta: str = Field(description="CTA: save | share | comment | click link konversi | follow.")
+    gaya_bahasa: str = Field(description="Gaya bahasa.")
+    platform: str = Field(description="Platform tujuan.")
+    framework: str = Field(description="Framework storytelling.")
+
+
+class CopywritingOut(BaseModel):
+    hasil: str
+    framework: str
+    platform: str

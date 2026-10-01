@@ -15,6 +15,7 @@ export default function BrandNav({ brandId }: { brandId: string }) {
     { href: `/brand/${brandId}/analisa`, label: "Analisa", exact: false },
     { href: `/brand/${brandId}/rekomendasi`, label: "Rekomendasi", exact: false },
     { href: `/brand/${brandId}/niche`, label: "Niche Finder", exact: false },
+    { href: `/brand/${brandId}/copywriting`, label: "Copywriting", exact: false },
     { href: `/brand/${brandId}/planner`, label: "Planner", exact: false },
     { href: `/brand/${brandId}/koneksi`, label: "Koneksi", exact: false },
   ];

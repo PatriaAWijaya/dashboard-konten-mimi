@@ -15,7 +15,7 @@ import httpx
 from app.core.config import get_settings
 
 # Jenis narasi yang didukung oleh narrate().
-NARRATE_KINDS = ("rekomendasi", "brand_dna", "niche", "ringkasan")
+NARRATE_KINDS = ("rekomendasi", "brand_dna", "niche", "ringkasan", "copywriting")
 
 
 class LLMProvider(ABC):
@@ -66,6 +66,8 @@ class MockLLMProvider(LLMProvider):
             return self._narrate_niche(context)
         if kind == "ringkasan":
             return self._narrate_ringkasan(context)
+        if kind == "copywriting":
+            return self._narrate_copywriting(context)
         raise ValueError(f"Jenis narasi tidak dikenal: '{kind}'. Pilihan: {', '.join(NARRATE_KINDS)}.")
 
     # -- rekomendasi ------------------------------------------------------
@@ -247,12 +249,89 @@ class MockLLMProvider(LLMProvider):
         ]
         return "\n".join(baris)
 
+    # -- copywriting ------------------------------------------------------
+
+    def _narrate_copywriting(self, ctx: dict) -> str:
+        """Template copywriting mengikuti struktur framework terpilih.
+
+        Versi mock: menyusun draf terstruktur dari input pengguna.
+        Untuk hasil yang lebih natural, aktifkan provider openai/anthropic.
+        """
+        fw = str(ctx.get("framework") or "")
+        what = ctx.get("what") or "-"
+        who = ctx.get("who") or "-"
+        why = ctx.get("why") or "-"
+        how = ctx.get("how") or "-"
+        pov = ctx.get("pov") or "-"
+        audiens = ctx.get("target_audiens") or "-"
+        goals = ctx.get("goals") or "-"
+        cta = ctx.get("cta") or "-"
+        gaya = ctx.get("gaya_bahasa") or "-"
+        platform = ctx.get("platform") or "-"
+
+        pembuka = f"[Draf {fw} — {platform} | {gaya} | tujuan: {goals}]"
+        if fw == "storybrand":
+            isi = (
+                f"HOOK (pahlawan = audiens): {who} — {what}.\n\n"
+                f"MASALAH: {why}.\n\n"
+                f"PANDUAN (brand sebagai pemandu): {how}.\n\n"
+                f"RENCANA: {pov}.\n\n"
+                f"AJAKAN: {cta}."
+            )
+        elif fw == "pas":
+            isi = (
+                f"MASALAH: {who} menghadapi {what}.\n\n"
+                f"AGITASI: {why} — kalau dibiarkan, dampaknya ke {audiens}.\n\n"
+                f"SOLUSI: {how}.\n\n"
+                f"AJAKAN: {cta}."
+            )
+        elif fw == "bab":
+            isi = (
+                f"SEBELUM: {who} — {what} ({why}).\n\n"
+                f"SESUDAH: {how}.\n\n"
+                f"JEMBATAN: {pov}.\n\n"
+                f"AJAKAN: {cta}."
+            )
+        elif fw == "freytag":
+            isi = (
+                f"PEMBUKA: {who} — {what}.\n\n"
+                f"PEMICU: {why}.\n\n"
+                f"KLIMAKS: {how}.\n\n"
+                f"PENUTUP ({pov}): {cta}."
+            )
+        elif fw == "truth_gap":
+            isi = (
+                f"FAKTA MENGEJUTKAN: {what}.\n\n"
+                f"KESENJANGAN: {who} mengira {why}, padahal {how}.\n\n"
+                f"WAWASAN BARU ({pov}): {cta}."
+            )
+        else:
+            isi = f"{what}\n\n{pov}\n\nAJAKAN: {cta}."
+        return f"{pembuka}\n\n{isi}\n\n(Catatan: ini draf template. Aktifkan provider LLM (OpenAI/Anthropic) untuk copywriting yang lebih natural.)"
+
 
 # ---------------------------------------------------------------------------
 # Provider OpenAI (chat completions via httpx)
 # ---------------------------------------------------------------------------
 
 def _build_prompt(kind: str, context: dict) -> tuple[str, str]:
+    if kind == "copywriting":
+        system = (
+            "Kamu adalah copywriter profesional berbahasa Indonesia. "
+            "Tulis copywriting yang natural, mengalir, dan siap posting — "
+            "bukan template kaku. Sesuaikan panjang dan format dengan platform: "
+            "Instagram/Facebook/TikTok/Threads singkat dan memikat (maksimal 150 kata, "
+            "boleh pakai emoji secukupnya dan hashtag relevan), "
+            "Blog Artikel lebih panjang dan terstruktur. "
+            "Ikuti struktur framework storytelling yang diminta. "
+            "Gunakan HANYA fakta dari konteks; jangan mengarang klaim baru."
+        )
+        user = (
+            "Buatkan copywriting berdasarkan brief berikut.\n"
+            f"Konteks (JSON):\n{json.dumps(context, ensure_ascii=False, default=str)}\n\n"
+            "Hasilkan hanya copywriting-nya saja, tanpa penjelasan tambahan."
+        )
+        return system, user
     system = (
         "Kamu adalah asisten strategi konten. Tulis SELALU dalam Bahasa Indonesia. "
         "Gunakan HANYA angka dan fakta yang ada di konteks JSON berikut; "

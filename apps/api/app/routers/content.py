@@ -50,6 +50,8 @@ from app.schemas.content import (
     InterviewStartOut,
     JawabIn,
     JawabOut,
+    CopywritingIn,
+    CopywritingOut,
     PerbandinganBulan,
     PerbandinganDelta,
     PerbandinganOut,
@@ -1057,3 +1059,64 @@ async def laporan_wawancara(
     except ValueError as exc:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(exc))
     return laporan
+
+
+# ---------------------------------------------------------------------------
+# Copywriting generator
+# ---------------------------------------------------------------------------
+
+@router.post(
+    "/content/brands/{brand_id}/copywriting/generate",
+    response_model=CopywritingOut,
+)
+async def generate_copywriting(
+    brand_id: Annotated[uuid.UUID, Path()],
+    org_id: Annotated[uuid.UUID, Depends(parse_org_header)],
+    user: Annotated[User, Depends(get_current_user)],
+    db: Annotated[AsyncSession, Depends(get_db)],
+    data: CopywritingIn,
+):
+    """Generate copywriting dari brief 5W1H + framework storytelling."""
+    from app.schemas.content import FRAMEWORK_COPYWRITING, LABEL_FRAMEWORK
+    from app.services.llm import get_llm_provider, resolve_llm_api_key
+
+    ctx = await get_org_context(db, user, org_id, min_role=ROLE_EDITOR)
+    brand = await _get_brand(db, brand_id, ctx.organization.id)
+
+    fw = data.framework.strip().lower()
+    if fw not in FRAMEWORK_COPYWRITING:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"Framework tidak dikenal: '{data.framework}'.",
+        )
+    if not data.what.strip():
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Kolom 'What' wajib diisi.",
+        )
+
+    konteks = {
+        "brand": brand.nama,
+        "framework": LABEL_FRAMEWORK[fw],
+        "what": data.what.strip(),
+        "who": data.who.strip(),
+        "when": data.when.strip(),
+        "where": data.where.strip(),
+        "why": data.why.strip(),
+        "how": data.how.strip(),
+        "pov": data.pov.strip(),
+        "target_audiens": data.target_audiens.strip(),
+        "goals": data.goals.strip(),
+        "cta": data.cta.strip(),
+        "gaya_bahasa": data.gaya_bahasa.strip(),
+        "platform": data.platform.strip(),
+    }
+    try:
+        api_key = await resolve_llm_api_key(db)
+        provider = get_llm_provider(api_key=api_key)
+        hasil = await provider.narrate("copywriting", konteks)
+    except (RuntimeError, ValueError) as exc:
+        raise HTTPException(
+            status_code=status.HTTP_502_BAD_GATEWAY, detail=str(exc)
+        )
+    return CopywritingOut(hasil=hasil, framework=LABEL_FRAMEWORK[fw], platform=data.platform.strip())
