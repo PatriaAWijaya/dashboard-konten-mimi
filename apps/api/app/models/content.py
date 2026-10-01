@@ -6,7 +6,7 @@ Semua tabel tenant punya organization_id agar tercakup policy RLS tenant.
 import uuid
 from datetime import date, datetime
 
-from sqlalchemy import Boolean, Date, DateTime, Float, ForeignKey, Integer, String, Text, UniqueConstraint
+from sqlalchemy import Boolean, Date, DateTime, Float, ForeignKey, Index, Integer, String, Text, UniqueConstraint
 from sqlalchemy.dialects.postgresql import JSONB, UUID as PG_UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
@@ -90,6 +90,7 @@ class Content(BaseModel):
     __tablename__ = "contents"
     __table_args__ = (
         UniqueConstraint("brand_id", "platform", "post_id", name="uq_content_brand_platform_post"),
+        Index("ix_contents_brand_posted", "brand_id", "posted_at"),
     )
 
     organization_id: Mapped[uuid.UUID] = mapped_column(
@@ -188,6 +189,7 @@ class ContentScore(BaseModel):
             "content_id", "scoring_config_id", "period_start", "period_end",
             name="uq_score_content_config_period",
         ),
+        Index("ix_scores_content_period", "content_id", "period_end"),
     )
 
     organization_id: Mapped[uuid.UUID] = mapped_column(

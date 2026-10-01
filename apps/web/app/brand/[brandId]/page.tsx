@@ -3,21 +3,18 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
-import {
-  CartesianGrid,
-  Legend,
-  Line,
-  LineChart,
-  ResponsiveContainer,
-  Tooltip,
-  XAxis,
-  YAxis,
-} from "recharts";
+import dynamic from "next/dynamic";
 import { RequireAuth } from "@/lib/auth";
 import { api, ApiError } from "@/lib/api";
 import { apiOrDemo, demoDashboard } from "@/lib/content";
 import type { BrandDashboard, KartuPlatform, Platform, ScoreResult } from "@/lib/types";
 import { formatTanggal } from "@/lib/format";
+
+// Chart di-load lazy agar bundle awal ringan (recharts ~100kB).
+const TrenChart = dynamic(() => import("@/components/TrenChart"), {
+  ssr: false,
+  loading: () => <p className="text-sm text-slate-500">Memuat grafik…</p>,
+});
 import { Alert, Button, Card, EmptyBox, PageHeader, Spinner } from "@/components/ui";
 import { StatusKontenBadge } from "@/components/badges";
 import BrandNav from "@/components/BrandNav";
@@ -334,34 +331,9 @@ function DasborBrandIsi() {
           {/* Grafik tren */}
           <Card className="mt-4">
             <h3 className="mb-4 text-base font-semibold text-slate-900">
-              Tren mingguan — rata-rata skor & weighted ER
+              Tren mingguan — rata-rata skor & ER
             </h3>
-            {data.tren.length === 0 ? (
-              <p className="text-sm text-slate-500">Belum ada data tren.</p>
-            ) : (
-              <div className="h-72 w-full">
-                <ResponsiveContainer width="100%" height="100%">
-                  <LineChart data={data.tren} margin={{ top: 8, right: 16, left: 0, bottom: 0 }}>
-                    <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
-                    <XAxis dataKey="label" tick={{ fontSize: 12 }} stroke="#64748b" />
-                    <YAxis tick={{ fontSize: 12 }} stroke="#64748b" />
-                    <Tooltip
-                      formatter={(value, name) => {
-                        const v = typeof value === "number" ? value : null;
-                        const n = String(name ?? "");
-                        return [
-                          `${fmtPersen(v)}`,
-                          n === "rata_er" ? "Rata-rata ER" : "Rata-rata skor",
-                        ];
-                      }}
-                    />
-                    <Legend />
-                    <Line type="monotone" dataKey="rata_skor" name="Rata-rata skor" stroke="#4f46e5" strokeWidth={2} dot={false} />
-                    <Line type="monotone" dataKey="rata_er" name="Rata-rata ER (%)" stroke="#f59e0b" strokeWidth={2} dot={false} />
-                  </LineChart>
-                </ResponsiveContainer>
-              </div>
-            )}
+            <TrenChart data={data.tren} />
           </Card>
 
           {/* Tabel konten */}

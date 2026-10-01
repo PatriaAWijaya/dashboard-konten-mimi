@@ -2,17 +2,15 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { useParams, useSearchParams } from "next/navigation";
-import {
-  Bar,
-  BarChart,
-  CartesianGrid,
-  ResponsiveContainer,
-  Tooltip,
-  XAxis,
-  YAxis,
-} from "recharts";
+import dynamic from "next/dynamic";
 import { RequireAuth } from "@/lib/auth";
 import { api, ApiError } from "@/lib/api";
+
+// Chart di-load lazy agar bundle awal ringan (recharts ~100kB).
+const BandingChart = dynamic(() => import("@/components/BandingChart"), {
+  ssr: false,
+  loading: () => <p className="text-sm text-slate-500">Memuat grafik…</p>,
+});
 import { apiOrDemo, demoAnalisa, demoPerbandingan } from "@/lib/content";
 import type {
   AnalisaKesesuaian,
@@ -23,7 +21,10 @@ import type {
 import { Alert, Card, EmptyBox, PageHeader, Select, Spinner } from "@/components/ui";
 import { StatusKontenBadge, statusKontenTone, statusKontenLabel, verdictTone } from "@/components/badges";
 import BrandNav from "@/components/BrandNav";
-import AnalisaLanjutan from "@/components/AnalisaLanjutan";
+const AnalisaLanjutan = dynamic(() => import("@/components/AnalisaLanjutan"), {
+  ssr: false,
+  loading: () => <p className="text-sm text-slate-500">Memuat analisa lanjutan…</p>,
+});
 import DemoBadge from "@/components/DemoBadge";
 import ExportPdfButton from "@/components/ExportPdfButton";
 import PeriodPicker, { type PilihanPeriode } from "@/components/PeriodPicker";
@@ -289,25 +290,7 @@ function AnalisaIsi() {
             <h3 className="mb-3 text-base font-semibold text-slate-900">
               Tren {labelMetrik} per bulan
             </h3>
-            <div className="mb-6 h-72 w-full">
-              <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={grafikBanding} margin={{ top: 8, right: 16, left: 0, bottom: 0 }}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
-                  <XAxis dataKey="label" tick={{ fontSize: 12 }} stroke="#64748b" />
-                  <YAxis tick={{ fontSize: 12 }} stroke="#64748b" />
-                  <Tooltip
-                    formatter={(value, _name, item) => {
-                      const p = item?.payload as { mom?: number | null; yoy?: number | null } | undefined;
-                      const ket: string[] = [];
-                      if (p?.mom !== null && p?.mom !== undefined) ket.push(`MoM ${p.mom > 0 ? "+" : ""}${p.mom}%`);
-                      if (p?.yoy !== null && p?.yoy !== undefined) ket.push(`YoY ${p.yoy > 0 ? "+" : ""}${p.yoy}%`);
-                      return [fmtAngka(typeof value === "number" ? value : null), ket.join(" · ") || labelMetrik];
-                    }}
-                  />
-                  <Bar dataKey="Nilai" fill={warnaMetrik} radius={[6, 6, 0, 0]} name={labelMetrik} />
-                </BarChart>
-              </ResponsiveContainer>
-            </div>
+            <BandingChart data={grafikBanding} warna={warnaMetrik} label={labelMetrik} />
 
             <h3 className="mb-3 text-base font-semibold text-slate-900">
               Detail MoM / YoY — {labelMetrik}
