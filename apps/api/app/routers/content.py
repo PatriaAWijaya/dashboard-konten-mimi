@@ -990,6 +990,34 @@ async def mulai_wawancara(
     )
 
 
+@router.post(
+    "/content/niche/interviews",
+    response_model=InterviewStartOut,
+    status_code=status.HTTP_201_CREATED,
+)
+async def mulai_wawancara_tanpa_brand(
+    org_id: Annotated[uuid.UUID, Depends(parse_org_header)],
+    user: Annotated[User, Depends(get_current_user)],
+    db: Annotated[AsyncSession, Depends(get_db)],
+):
+    """Mulai (atau lanjutkan) kuesioner niche 11 kartu TANPA brand.
+
+    Untuk user yang belum menginput brand: wawancara disimpan dengan
+    brand_id NULL (satu sesi berjalan per user per organisasi).
+    """
+    ctx = await get_org_context(db, user, org_id, min_role=ROLE_EDITOR)
+    interview = await start_interview(
+        db, brand=None, organization_id=ctx.organization.id, user_id=user.id
+    )
+    berikut = QUESTIONS[interview.current_step] if interview.current_step < len(QUESTIONS) else None
+    return InterviewStartOut(
+        id=interview.id,
+        status=interview.status,
+        current_step=interview.current_step,
+        pertanyaan_berikut=berikut,
+    )
+
+
 @router.get("/content/niche/interviews/{iid}", response_model=InterviewDetailOut)
 async def detail_wawancara(
     iid: Annotated[uuid.UUID, Path()],
@@ -1063,7 +1091,11 @@ async def laporan_wawancara(
     """Hasilkan laporan strategi niche 13 bagian + skor kekuatan niche."""
     ctx = await get_org_context(db, user, org_id, min_role=ROLE_EDITOR)
     interview = await _get_interview(db, iid, ctx.organization.id)
-    brand = await _get_brand(db, interview.brand_id, ctx.organization.id)
+    brand = (
+        await _get_brand(db, interview.brand_id, ctx.organization.id)
+        if interview.brand_id is not None
+        else None
+    )
     try:
         laporan = await generate_laporan(
             db, interview=interview, brand=brand, organization_id=ctx.organization.id

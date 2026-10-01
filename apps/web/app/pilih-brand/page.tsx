@@ -59,7 +59,7 @@ function PilihBrandIsi() {
     <div className="mx-auto max-w-3xl px-4 py-8 sm:px-6">
       <PageHeader
         title="Pilih brand"
-        subtitle="Analitik, rekomendasi, dan Niche Finder bekerja per brand."
+        subtitle="Analitik dan rekomendasi bekerja per brand. Niche Finder juga bisa dipakai tanpa brand."
         action={<DemoBadge tampil={demo} />}
       />
       {loading && <Spinner label="Memuat daftar brand…" />}

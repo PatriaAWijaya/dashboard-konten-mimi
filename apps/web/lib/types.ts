@@ -328,7 +328,7 @@ export interface InterviewQuestion {
 
 export interface Interview {
   id: string;
-  brand_id: string;
+  brand_id: string | null;
   current_step: number;
   answers: Record<string, unknown>;
   skipped: string[];

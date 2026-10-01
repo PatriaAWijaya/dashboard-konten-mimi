@@ -84,6 +84,7 @@ export default function Navbar() {
   const analisaHref = brandId ? `/brand/${brandId}/analisa` : "/pilih-brand?next=analisa";
   const navLinks: { href: string; label: string; match?: string; matchIncludes?: string }[] = [
     { href: analisaHref, label: "Analisa", matchIncludes: "/analisa" },
+    { href: "/niche", label: "Niche Finder", matchIncludes: "/niche" },
     { href: "/upload", label: "Upload" },
     { href: "/tagihan", label: "Tagihan" },
   ];

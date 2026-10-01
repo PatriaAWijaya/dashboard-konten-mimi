@@ -248,15 +248,18 @@ class Recommendation(BaseModel):
 
 
 class NicheInterview(BaseModel):
-    """State wawancara niche per brand & user (multi-langkah)."""
+    """State wawancara niche per brand & user (multi-langkah).
+
+    brand_id boleh NULL: Niche Finder bisa dipakai tanpa memilih brand.
+    """
 
     __tablename__ = "niche_interviews"
 
     organization_id: Mapped[uuid.UUID] = mapped_column(
         PG_UUID(as_uuid=True), ForeignKey("organizations.id", ondelete="CASCADE"), nullable=False, index=True
     )
-    brand_id: Mapped[uuid.UUID] = mapped_column(
-        PG_UUID(as_uuid=True), ForeignKey("brands.id", ondelete="CASCADE"), nullable=False, index=True
+    brand_id: Mapped[uuid.UUID | None] = mapped_column(
+        PG_UUID(as_uuid=True), ForeignKey("brands.id", ondelete="CASCADE"), nullable=True, index=True
     )
     user_id: Mapped[uuid.UUID | None] = mapped_column(
         PG_UUID(as_uuid=True), ForeignKey("users.id", ondelete="SET NULL"), nullable=True, index=True

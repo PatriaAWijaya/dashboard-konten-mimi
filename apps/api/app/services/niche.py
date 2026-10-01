@@ -438,15 +438,31 @@ def _teks_untuk_followup(kartu: dict, jawaban: Any) -> str:
 async def start_interview(
     db: AsyncSession, *, brand, organization_id: uuid.UUID, user_id: uuid.UUID
 ) -> NicheInterview:
-    """Mulai wawancara baru, atau lanjutkan yang masih 'berjalan' bila ada."""
-    existing = (
-        await db.execute(
-            select(NicheInterview).where(
-                NicheInterview.brand_id == brand.id,
-                NicheInterview.status == InterviewStatus.BERJALAN,
+    """Mulai wawancara baru, atau lanjutkan yang masih 'berjalan' bila ada.
+
+    brand boleh None: wawancara tanpa brand dicari/dibuat dengan brand_id NULL
+    (satu per user per organisasi).
+    """
+    if brand is None:
+        existing = (
+            await db.execute(
+                select(NicheInterview).where(
+                    NicheInterview.organization_id == organization_id,
+                    NicheInterview.user_id == user_id,
+                    NicheInterview.brand_id.is_(None),
+                    NicheInterview.status == InterviewStatus.BERJALAN,
+                )
             )
-        )
-    ).scalar_one_or_none()
+        ).scalar_one_or_none()
+    else:
+        existing = (
+            await db.execute(
+                select(NicheInterview).where(
+                    NicheInterview.brand_id == brand.id,
+                    NicheInterview.status == InterviewStatus.BERJALAN,
+                )
+            )
+        ).scalar_one_or_none()
     if existing is not None:
         if _is_legacy_schema(existing.answers):
             # Interview lama masih memakai format 8 pertanyaan DNA yang sudah
@@ -455,7 +471,7 @@ async def start_interview(
         return existing
     interview = NicheInterview(
         organization_id=organization_id,
-        brand_id=brand.id,
+        brand_id=brand.id if brand is not None else None,
         user_id=user_id,
         status=InterviewStatus.BERJALAN,
         current_step=0,
@@ -1207,9 +1223,10 @@ async def generate_laporan(
     )
 
     skor = skor_kekuatan_niche(answers)
+    # Data performa nyata hanya tersedia bila wawancara terikat ke brand.
     performa = (
         await _ringkasan_performa(db, brand.id)
-        if tujuan in ("pivot", "tajamkan")
+        if (brand is not None and tujuan in ("pivot", "tajamkan"))
         else None
     )
 
