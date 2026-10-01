@@ -104,7 +104,9 @@ const BANK_TEMA: Record<KunciTema, RekomendasiTema[]> = {
       momentum: "Ramadhan 1448 H (8 Feb – 9 Mar 2027)",
       tren: "Bahasa santai khas Gen-Z terbukti menaikkan kedekatan di campaign Ramadhan 1447 H; video pendek masih format perhatian #1 dan TikTok menjadi medsos terbanyak dipakai di Indonesia 2026.",
       polaAcuan:
-        "Dompet Dhuafa — “Berzakat Itu Kalcer” (Ramadhan 1447 H) dan Rumah Zakat — “Road to Ramadhan #BikinBahagia”: satu frasa pendek berbahasa audiens, dipakai konsisten di semua konten selama campaign.",
+        "Dompet Dhuafa — “Berzakat Itu Kalcer” (Ramadhan 1447 H) dan Rumah Zakat — “Road to Ramadhan #BikinBahagia”: satu frasa pendek berbahasa audiens, dipakai konsisten di semua konten selama campaign. " +
+        "Riset: caption berfungsi sebagai landing page mini (median 550–650 karakter) dengan struktur hook 1–2 baris → cerita → dalil → CTA → hashtag; " +
+        "angka spesifik dipakai sebagai bahasa kepercayaan (“1.447 unit motor”, “750 ribu penerima manfaat”).",
       penjelasan:
         "Frasa “Ramadhan Baik” mudah diingat, mudah dijadikan hashtag, dan menempel natural di semua jenis konten — dari video edukasi sampai ajakan donasi.",
       angle: {
@@ -197,7 +199,9 @@ const BANK_TEMA: Record<KunciTema, RekomendasiTema[]> = {
       momentum: "Idul Adha / Qurban 1448 H (16 Mei 2027)",
       tren: "Carousel edukasi mendominasi 48% konten Qurban 2026; angka spesifik (harga, bobot, jumlah penerima) menjadi bahasa kepercayaan.",
       polaAcuan:
-        "Dompet Dhuafa — “Kurbanaval 2026: Siapkan Kendaraan Terbaik Versimu!” (Qurban 1447 H) dan Rumah Zakat — “Superqurban + Desaku Berqurban”: produk kurban diberi nama khas, bukan sekadar “kurban”.",
+        "Dompet Dhuafa — “Kurbanaval 2026: Siapkan Kendaraan Terbaik Versimu!” (Qurban 1447 H) dan Rumah Zakat — “Superqurban + Desaku Berqurban”: produk kurban diberi nama khas, bukan sekadar “kurban”. " +
+        "Riset: urgency dimainkan di sosmed (flash sale, “STOCK MENIPIS”, “H-1”), website tetap informatif; " +
+        "formula BOFU — satu CTA besar + penghilang risiko + social proof nominal (“KURBAN SEKARANG!” + “laporan transparan & update pemotongan” + nama/nominal donatur).",
       penjelasan:
         "Metafora “kendaraan terbaik” mengubah kurban dari kewajiban menjadi aspirasi — audiens memilih yang terbaik, bukan yang termurah.",
       angle: {
@@ -305,7 +309,7 @@ const BANK_TEMA: Record<KunciTema, RekomendasiTema[]> = {
       bigIdea:
         "Sedikit tapi istiqamah: donasi otomatis tiap bulan tanpa terasa berat.",
       momentum: "Sepanjang tahun",
-      tren: "Donasi berlangganan tumbuh 2026; donatur menyukai nominal kecil yang terjadwal.",
+      tren: "Pola industri 2026: nominal kecil terjadwal menurunkan friksi berdonasi; riset menunjukkan angka spesifik mengalahkan klaim umum.",
       polaAcuan:
         "Dompet Dhuafa — arsitektur digital berlapis: edukasi di web utama, konversi di halaman khusus yang simpel.",
       penjelasan:
