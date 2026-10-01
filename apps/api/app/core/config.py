@@ -55,6 +55,11 @@ class Settings(BaseSettings):
     # --- Seed superadmin ---
     SEED_ADMIN_EMAIL: str = "admin@example.com"
     SEED_ADMIN_PASSWORD: str = "Admin123!"
+    # Bila true, seed me-reset password superadmin yang sudah ada mengikuti
+    # SEED_ADMIN_PASSWORD (untuk keadaan darurat/lupa password). Matikan
+    # kembali (false) setelah reset berhasil agar password tidak tertimpa
+    # setiap deploy.
+    SEED_ADMIN_RESET_PASSWORD: bool = False
 
     # --- Token email ---
     EMAIL_VERIFICATION_EXPIRE_MINUTES: int = 15

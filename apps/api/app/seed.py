@@ -47,7 +47,15 @@ async def main() -> None:
             await session.flush()
             print(f"Superadmin dibuat: {admin.email}")
         else:
-            print(f"Superadmin sudah ada: {admin.email} (dilewati)")
+            if settings.SEED_ADMIN_RESET_PASSWORD:
+                admin.password_hash = hash_password(settings.SEED_ADMIN_PASSWORD)
+                admin.is_active = True
+                admin.is_superadmin = True
+                admin.email_verified = True
+                await session.flush()
+                print(f"Password superadmin direset: {admin.email}")
+            else:
+                print(f"Superadmin sudah ada: {admin.email} (dilewati)")
 
         # --- Paket ---
         result = await session.execute(select(MembershipPlan).where(MembershipPlan.name == PLAN_NAME))
