@@ -456,7 +456,7 @@ class GeminiProvider(LLMProvider):
         self.api_key = (api_key or settings.LLM_API_KEY or "").strip()
         if not self.api_key:
             raise RuntimeError("LLM_API_KEY belum dikonfigurasi untuk provider Gemini.")
-        self.model = (settings.LLM_MODEL or "gemini-2.5-flash").strip()
+        self.model = (settings.LLM_MODEL or "gemini-flash-latest").strip()
 
     async def narrate(self, kind: str, context: dict) -> str:
         if kind not in NARRATE_KINDS:
