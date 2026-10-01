@@ -15,3 +15,34 @@ body {
 ::selection {
   background-color: #e0e7ff;
 }
+
+/* ---- Export PDF (print) ---- */
+@media print {
+  /* Sembunyikan elemen navigasi & interaktif */
+  nav,
+  header.sticky,
+  footer,
+  .print\:hidden {
+    display: none !important;
+  }
+
+  body {
+    background-color: #fff;
+  }
+
+  /* Kartu tidak terpotong antar halaman */
+  .break-inside-avoid,
+  [class*="rounded-"] {
+    break-inside: avoid;
+  }
+
+  /* Paksa warna tercetak (chart, badge) */
+  * {
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+
+  @page {
+    margin: 12mm;
+  }
+}

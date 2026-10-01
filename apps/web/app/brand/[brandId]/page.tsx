@@ -22,6 +22,7 @@ import { Alert, Button, Card, EmptyBox, PageHeader, Spinner } from "@/components
 import { StatusKontenBadge } from "@/components/badges";
 import BrandNav from "@/components/BrandNav";
 import DemoBadge from "@/components/DemoBadge";
+import ExportPdfButton from "@/components/ExportPdfButton";
 // import OnboardingBanner from "@/components/OnboardingBanner"; // disembunyikan sementara
 import PeriodPicker, { type PilihanPeriode } from "@/components/PeriodPicker";
 
@@ -271,6 +272,7 @@ function DasborBrandIsi() {
         action={
           <div className="flex flex-wrap items-center gap-2">
             <DemoBadge tampil={demo} />
+            <ExportPdfButton />
             <Button onClick={hitungUlangSkor} disabled={scoring} variant="secondary">
               {scoring ? "Menghitung…" : "Hitung Ulang Skor"}
             </Button>

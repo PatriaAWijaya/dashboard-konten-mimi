@@ -16,6 +16,7 @@ import type {
 import { Alert, Button, Card, EmptyBox, PageHeader, Spinner } from "@/components/ui";
 import BrandNav from "@/components/BrandNav";
 import DemoBadge from "@/components/DemoBadge";
+import ExportPdfButton from "@/components/ExportPdfButton";
 import PeriodPicker, { type PilihanPeriode } from "@/components/PeriodPicker";
 
 const TIPE_META: Record<TipeRekomendasi, { label: string; tone: string; ikon: string }> = {
@@ -315,7 +316,12 @@ function RekomendasiIsi() {
       <PageHeader
         title="Rekomendasi AI"
         subtitle="Saran berbasis pola performa konten Anda."
-        action={<DemoBadge tampil={demo} />}
+        action={
+          <div className="flex flex-wrap items-center gap-2">
+            <DemoBadge tampil={demo} />
+            <ExportPdfButton />
+          </div>
+        }
       />
       <BrandNav brandId={brandId} />
 

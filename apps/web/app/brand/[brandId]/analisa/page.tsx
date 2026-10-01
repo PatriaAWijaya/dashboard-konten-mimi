@@ -25,6 +25,7 @@ import { StatusKontenBadge, statusKontenTone, statusKontenLabel, verdictTone } f
 import BrandNav from "@/components/BrandNav";
 import AnalisaLanjutan from "@/components/AnalisaLanjutan";
 import DemoBadge from "@/components/DemoBadge";
+import ExportPdfButton from "@/components/ExportPdfButton";
 import PeriodPicker, { type PilihanPeriode } from "@/components/PeriodPicker";
 
 type MetrikBanding =
@@ -215,7 +216,12 @@ function AnalisaIsi() {
       <PageHeader
         title="Analisa Kesesuaian"
         subtitle="Apakah tiap format konten sudah cocok dengan tujuannya?"
-        action={<DemoBadge tampil={demo} />}
+        action={
+          <div className="flex flex-wrap items-center gap-2">
+            <DemoBadge tampil={demo} />
+            <ExportPdfButton />
+          </div>
+        }
       />
       <BrandNav brandId={brandId} />
 

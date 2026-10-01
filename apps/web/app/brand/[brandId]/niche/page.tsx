@@ -14,6 +14,7 @@ import type {
 import { Alert, Button, Card, PageHeader, Spinner, TextArea, Input } from "@/components/ui";
 import BrandNav from "@/components/BrandNav";
 import DemoBadge from "@/components/DemoBadge";
+import ExportPdfButton from "@/components/ExportPdfButton";
 
 type Fase = "kartu" | "selesai" | "laporan";
 
@@ -389,7 +390,12 @@ function NicheIsi() {
       <PageHeader
         title="Niche Finder"
         subtitle="Jawab 11 kartu, dapatkan laporan strategi niche 13 bagian + skor kekuatan niche."
-        action={<DemoBadge tampil={demo} />}
+        action={
+          <div className="flex flex-wrap items-center gap-2">
+            <DemoBadge tampil={demo} />
+            <ExportPdfButton />
+          </div>
+        }
       />
       <BrandNav brandId={brandId} />
       {error && (

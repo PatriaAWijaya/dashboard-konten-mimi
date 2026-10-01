@@ -25,7 +25,7 @@ export default function BrandNav({ brandId }: { brandId: string }) {
   }
 
   return (
-    <div className="mb-6 flex flex-col gap-4">
+    <div className="mb-6 flex flex-col gap-4 print:hidden">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
         <BrandSelector
           value={brandId}
