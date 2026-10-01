@@ -1096,7 +1096,7 @@ async def generate_copywriting(
         )
 
     konteks = {
-        "brand": brand.nama,
+        "brand": brand.name,
         "framework": LABEL_FRAMEWORK[fw],
         "what": data.what.strip(),
         "who": data.who.strip(),
