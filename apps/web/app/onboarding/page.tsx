@@ -27,6 +27,7 @@ interface StatusOnboarding {
 interface TemplateThreshold {
   tiktok_er: number;
   instagram_er: number;
+  facebook_er: number;
   skor_menang: number;
   skor_cukup: number;
 }
@@ -37,17 +38,18 @@ interface PreviewKemenangan {
   per_platform: {
     tiktok: { menang: number; total: number };
     instagram: { menang: number; total: number };
+    facebook: { menang: number; total: number };
   };
 }
 
 interface AkunKoneksi {
   id: string;
-  platform: "tiktok" | "instagram";
+  platform: "tiktok" | "instagram" | "facebook";
   account_name: string;
   status: string;
 }
 
-type Platform = "tiktok" | "instagram";
+type Platform = "tiktok" | "instagram" | "facebook";
 
 const KATEGORI = [
   { value: "ngo/filantropi", label: "NGO / Filantropi" },
@@ -69,6 +71,7 @@ const NAMA_LANGKAH = [
 const PLATFORM_META: Record<Platform, { label: string; ikon: string }> = {
   tiktok: { label: "TikTok", ikon: "🎵" },
   instagram: { label: "Instagram", ikon: "📸" },
+  facebook: { label: "Facebook", ikon: "📘" },
 };
 
 // ---------- Helper fetch defensif ----------
@@ -306,7 +309,7 @@ function LangkahKoneksi({ brandId }: { brandId: string }) {
         </div>
       )}
       <div className="grid gap-4 md:grid-cols-2">
-        {(["tiktok", "instagram"] as Platform[]).map((p) => (
+        {(["tiktok", "instagram", "facebook"] as Platform[]).map((p) => (
           <Card key={p}>
             <p className="flex items-center gap-2 text-base font-semibold text-slate-900">
               <span aria-hidden>{PLATFORM_META[p].ikon}</span>
@@ -378,6 +381,7 @@ function LangkahKemenangan({
 }) {
   const [tiktokWer, setTiktokWer] = useState(8); // persen, tampilan UI
   const [igWer, setIgWer] = useState(5); // persen, tampilan UI
+  const [fbWer, setFbWer] = useState(4); // persen, tampilan UI
   const [skorMenang, setSkorMenang] = useState<number | null>(null);
   const [skorCukup, setSkorCukup] = useState<number | null>(null);
   const [memuat, setMemuat] = useState(true);
@@ -419,7 +423,7 @@ function LangkahKemenangan({
     const r = await panggilDefensif(() =>
       api.post<PreviewKemenangan>("/onboarding/preview-kemenangan", {
         brand_id: brandId,
-        draft: { tiktok_er: tiktokWer / 100, instagram_er: igWer / 100 },
+        draft: { tiktok_er: tiktokWer / 100, instagram_er: igWer / 100, facebook_er: fbWer / 100 },
       })
     );
     if (r.ok) {
@@ -500,6 +504,29 @@ function LangkahKemenangan({
               step={0.5}
               value={igWer}
               onChange={(e) => setIgWer(Number(e.target.value))}
+              className="w-full accent-orange-600"
+            />
+          </div>
+          <div>
+            <div className="mb-2 flex items-center justify-between">
+              <label
+                htmlFor="er-fb"
+                className="text-sm font-medium text-slate-700"
+              >
+                📘 Ambang ER Facebook
+              </label>
+              <span className="rounded-lg bg-orange-50 px-3 py-1 text-sm font-bold text-orange-700">
+                {fbWer.toLocaleString("id-ID")}%
+              </span>
+            </div>
+            <input
+              id="er-fb"
+              type="range"
+              min={0}
+              max={20}
+              step={0.5}
+              value={fbWer}
+              onChange={(e) => setFbWer(Number(e.target.value))}
               className="w-full accent-orange-600"
             />
           </div>

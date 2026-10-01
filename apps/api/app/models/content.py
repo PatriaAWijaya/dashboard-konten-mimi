@@ -16,8 +16,9 @@ from app.db.base import BaseModel
 class ContentPlatform:
     TIKTOK = "tiktok"
     INSTAGRAM = "instagram"
+    FACEBOOK = "facebook"
 
-    ALL = (TIKTOK, INSTAGRAM)
+    ALL = (TIKTOK, INSTAGRAM, FACEBOOK)
 
 
 class ContentFormat:

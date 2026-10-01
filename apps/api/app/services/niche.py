@@ -226,6 +226,11 @@ QUESTIONS: list[dict] = [
                 "judul": "TikTok",
                 "deskripsi": "Short video, hooks, trends.",
             },
+            {
+                "value": "facebook",
+                "judul": "Facebook",
+                "deskripsi": "Komunitas, grup, video.",
+            },
         ],
     },
     {
@@ -744,7 +749,7 @@ def _side_topics(answers: dict) -> list[str]:
 
 def _platforms(answers: dict) -> list[str]:
     p = answers.get("platform") if isinstance(answers.get("platform"), dict) else {}
-    label = {"instagram": "Instagram", "tiktok": "TikTok"}
+    label = {"instagram": "Instagram", "tiktok": "TikTok", "facebook": "Facebook"}
     return [label[x] for x in (p.get("terpilih") or []) if x in label]
 
 

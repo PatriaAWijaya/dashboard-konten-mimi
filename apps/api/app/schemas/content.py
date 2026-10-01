@@ -85,7 +85,7 @@ class DashboardKontenItem(BaseModel):
 
 
 class DashboardOut(BaseModel):
-    kartu: dict[str, DashboardKartu] = Field(description="Agregat per platform: tiktok, instagram.")
+    kartu: dict[str, DashboardKartu] = Field(description="Agregat per platform: tiktok, instagram, facebook.")
     tren: list[DashboardTren] = Field(description="Agregasi mingguan skor & ER.")
     konten: list[DashboardKontenItem] = Field(description="Daftar konten terperinci.")
 

@@ -38,6 +38,7 @@ DEFAULT_THRESHOLDS = {
     "min_views": 1000,
     "tiktok_min_er": 0.08,
     "instagram_min_er": 0.05,
+    "facebook_min_er": 0.04,
     "relative_multiplier": 1.5,
     "menang_score": 0.7,
     "cukup_score": 0.4,

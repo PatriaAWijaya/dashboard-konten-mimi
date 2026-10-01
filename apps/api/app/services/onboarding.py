@@ -2,7 +2,7 @@
 dan pratinjau kemenangan (tanpa menyimpan config).
 
 Template threshold didefinisikan di kode (mudah diubah): tiap kategori
-industri memetakan ke {tiktok_er, instagram_er, skor_menang, skor_cukup}.
+industri memetakan ke {tiktok_er, instagram_er, facebook_er, skor_menang, skor_cukup}.
 Kategori "lainnya" memakai nilai default yang berlaku sekarang
 (TikTok 8%, IG 5%, menang 0.7, cukup 0.4 — lihat scoring.DEFAULT_THRESHOLDS).
 """
@@ -41,18 +41,19 @@ KATEGORI_INDUSTRI = (
 
 KATEGORI_DEFAULT = "lainnya"
 
-# Kunci: tiktok_er & instagram_er = ambang weighted ER minimum per platform
+# Kunci: tiktok_er & instagram_er & facebook_er = ambang weighted ER minimum per platform
 # (fraksi, mis. 0.08 = 8%); skor_menang / skor_cukup = ambang skor 0..1.
 TEMPLATE_THRESHOLD_PER_KATEGORI: dict[str, dict[str, float]] = {
-    "ngo/filantropi": {"tiktok_er": 0.06, "instagram_er": 0.04, "skor_menang": 0.60, "skor_cukup": 0.35},
-    "kuliner": {"tiktok_er": 0.09, "instagram_er": 0.055, "skor_menang": 0.70, "skor_cukup": 0.40},
-    "fashion": {"tiktok_er": 0.09, "instagram_er": 0.06, "skor_menang": 0.70, "skor_cukup": 0.40},
-    "edukasi": {"tiktok_er": 0.07, "instagram_er": 0.045, "skor_menang": 0.65, "skor_cukup": 0.35},
-    "kesehatan": {"tiktok_er": 0.07, "instagram_er": 0.045, "skor_menang": 0.65, "skor_cukup": 0.35},
-    "jasa": {"tiktok_er": 0.08, "instagram_er": 0.05, "skor_menang": 0.70, "skor_cukup": 0.40},
+    "ngo/filantropi": {"tiktok_er": 0.06, "instagram_er": 0.04, "facebook_er": 0.035, "skor_menang": 0.60, "skor_cukup": 0.35},
+    "kuliner": {"tiktok_er": 0.09, "instagram_er": 0.055, "facebook_er": 0.05, "skor_menang": 0.70, "skor_cukup": 0.40},
+    "fashion": {"tiktok_er": 0.09, "instagram_er": 0.06, "facebook_er": 0.055, "skor_menang": 0.70, "skor_cukup": 0.40},
+    "edukasi": {"tiktok_er": 0.07, "instagram_er": 0.045, "facebook_er": 0.04, "skor_menang": 0.65, "skor_cukup": 0.35},
+    "kesehatan": {"tiktok_er": 0.07, "instagram_er": 0.045, "facebook_er": 0.04, "skor_menang": 0.65, "skor_cukup": 0.35},
+    "jasa": {"tiktok_er": 0.08, "instagram_er": 0.05, "facebook_er": 0.045, "skor_menang": 0.70, "skor_cukup": 0.40},
     "lainnya": {
         "tiktok_er": float(DEFAULT_THRESHOLDS["tiktok_min_er"]),
         "instagram_er": float(DEFAULT_THRESHOLDS["instagram_min_er"]),
+        "facebook_er": float(DEFAULT_THRESHOLDS["facebook_min_er"]),
         "skor_menang": float(DEFAULT_THRESHOLDS["menang_score"]),
         "skor_cukup": float(DEFAULT_THRESHOLDS["cukup_score"]),
     },
@@ -154,11 +155,12 @@ async def preview_kemenangan(
 
     Menggunakan fungsi scoring murni score_content() — config brand TIDAK
     diubah sama sekali (tidak ada tulis ke scoring_configs).
-    draft: {tiktok_er, instagram_er, [skor_menang], [skor_cukup]}.
+    draft: {tiktok_er, instagram_er, facebook_er, [skor_menang], [skor_cukup]}.
     """
     thresholds = dict(DEFAULT_THRESHOLDS)
     thresholds["tiktok_min_er"] = float(draft["tiktok_er"])
     thresholds["instagram_min_er"] = float(draft["instagram_er"])
+    thresholds["facebook_min_er"] = float(draft["facebook_er"])
     if draft.get("skor_menang") is not None:
         thresholds["menang_score"] = float(draft["skor_menang"])
     if draft.get("skor_cukup") is not None:

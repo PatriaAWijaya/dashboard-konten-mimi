@@ -466,9 +466,9 @@ async def brand_dashboard(
             skor_terbaru[s.content_id] = s
 
     kartu_data: dict[str, dict] = {}
-    # Kontrak API: kartu selalu memuat kunci tiktok & instagram (nol bila belum
-    # ada konten), agar frontend tidak perlu menebak keberadaan kunci.
-    for plat in ("tiktok", "instagram"):
+    # Kontrak API: kartu selalu memuat kunci tiktok, instagram & facebook (nol
+    # bila belum ada konten), agar frontend tidak perlu menebak keberadaan kunci.
+    for plat in ("tiktok", "instagram", "facebook"):
         kartu_data.setdefault(
             plat, {"n": 0, "skor": 0.0, "er": 0.0, "menang": 0, "cukup": 0, "kurang": 0}
         )

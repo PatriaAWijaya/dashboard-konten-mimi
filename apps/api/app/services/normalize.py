@@ -83,7 +83,7 @@ def _parse_date(raw) -> tuple:
 def normalize_content_row(platform: str, row: dict) -> dict:
     """Normalisasi satu baris mentah menjadi dict siap insert ke Content+metrics.
 
-    platform: platform efektif ('tiktok'/'instagram') — sudah ditentukan
+    platform: platform efektif ('tiktok'/'instagram'/'facebook') — sudah ditentukan
         pemanggil (dari argumen upload atau kolom platform mode auto).
     row: dict kolom mentah (key = nama kolom CSV Fase 1, value = string).
 

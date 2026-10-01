@@ -324,6 +324,9 @@ function DasborBrandIsi() {
             {data.kartu?.instagram && (
               <KartuRingkasan judul="Instagram" data={data.kartu.instagram} />
             )}
+            {data.kartu?.facebook && (
+              <KartuRingkasan judul="Facebook" data={data.kartu.facebook} />
+            )}
           </div>
 
           <KartuRingkasanPekan brandId={brandId} />

@@ -111,7 +111,7 @@ export interface AuditLog {
 // Tipe API modul Konten AI (kontrak backend Fase 1).
 // ============================================================
 
-export type Platform = "tiktok" | "instagram";
+export type Platform = "tiktok" | "instagram" | "facebook";
 export type PresetPeriode = "7d" | "30d" | "bulan_ini" | "custom";
 
 export interface CsvColumnInfo {
@@ -216,7 +216,7 @@ export interface KontenRow {
 }
 
 export interface BrandDashboard {
-  kartu: { tiktok: KartuPlatform; instagram: KartuPlatform };
+  kartu: { tiktok: KartuPlatform; instagram: KartuPlatform; facebook: KartuPlatform };
   tren: { label: string; rata_skor: number | null; rata_er: number | null }[];
   konten: KontenRow[];
 }

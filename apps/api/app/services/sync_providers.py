@@ -516,4 +516,7 @@ def get_provider(platform: str, settings_getter: SettingsGetter) -> SyncProvider
         if app_id and secret:
             return InstagramSyncProvider(app_id=app_id, app_secret=secret)
         return MockSyncProvider("instagram")
-    raise ValueError(f"Platform tidak dikenal: '{platform}'. Pilihan: tiktok, instagram.")
+    if platform == "facebook":
+        # Belum ada provider OAuth Facebook; pakai mock seperti platform lain tanpa kredensial.
+        return MockSyncProvider("facebook")
+    raise ValueError(f"Platform tidak dikenal: '{platform}'. Pilihan: tiktok, instagram, facebook.")

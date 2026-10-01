@@ -28,6 +28,7 @@ class TutupRequest(BaseModel):
 class PreviewDraft(BaseModel):
     tiktok_er: float = Field(gt=0, lt=1)
     instagram_er: float = Field(gt=0, lt=1)
+    facebook_er: float = Field(gt=0, lt=1)
     skor_menang: float | None = Field(default=None, gt=0, lt=1)
     skor_cukup: float | None = Field(default=None, gt=0, lt=1)
 
@@ -52,6 +53,7 @@ class TemplateThresholdOut(BaseModel):
     kategori: str
     tiktok_er: float
     instagram_er: float
+    facebook_er: float
     skor_menang: float
     skor_cukup: float
 

@@ -95,7 +95,7 @@ async def ensure_account_capacity(db: AsyncSession, brand: Brand, platform: str)
     batas = await get_max_accounts_per_platform(db)
     terpakai = await count_accounts(db, brand.id, platform)
     if terpakai >= batas:
-        nama = {"tiktok": "TikTok", "instagram": "Instagram"}.get(platform, platform)
+        nama = {"tiktok": "TikTok", "instagram": "Instagram", "facebook": "Facebook"}.get(platform, platform)
         raise AccountLimitExceeded(
             f"Batas {batas} akun {nama} per brand tercapai. "
             "Hapus salah satu akun yang terhubung untuk menambah akun baru."
@@ -145,7 +145,7 @@ def _provider_nyata(
     """Provider nyata atau raise CredentialsNotConfigured (→ 501)."""
     provider = get_provider(platform, _getter(creds))
     if isinstance(provider, MockSyncProvider):
-        nama = {"tiktok": "TikTok", "instagram": "Instagram"}.get(platform, platform)
+        nama = {"tiktok": "TikTok", "instagram": "Instagram", "facebook": "Facebook"}.get(platform, platform)
         raise CredentialsNotConfigured(
             f"Kredensial {nama} belum dikonfigurasi oleh admin. "
             "Minta admin mengisi pengaturan (tiktok_client_key/secret atau "
@@ -172,7 +172,7 @@ def _code_challenge(verifier: str) -> str:
 def _validate_platform(platform: str) -> str:
     platform = (platform or "").strip().lower()
     if platform not in ContentPlatform.ALL:
-        raise ValueError(f"Platform tidak dikenal: '{platform}'. Pilihan: tiktok, instagram.")
+        raise ValueError(f"Platform tidak dikenal: '{platform}'. Pilihan: tiktok, instagram, facebook.")
     return platform
 
 

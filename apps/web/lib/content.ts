@@ -76,7 +76,7 @@ export const demoBrands: Brand[] = [
 ];
 
 export const demoCsvColumns: CsvColumnInfo[] = [
-  { nama: "platform", deskripsi: "Platform: tiktok | instagram", wajib: true },
+  { nama: "platform", deskripsi: "Platform: tiktok | instagram | facebook", wajib: true },
   { nama: "post_id", deskripsi: "ID unik postingan", wajib: true },
   { nama: "post_url", deskripsi: "URL postingan", wajib: false },
   { nama: "tanggal_posting", deskripsi: "Tanggal posting, format YYYY-MM-DD", wajib: true },
@@ -113,6 +113,14 @@ export const demoDashboard: BrandDashboard = {
       menang: 5,
       cukup: 18,
       kurang: 12,
+    },
+    facebook: {
+      jumlah_konten: 28,
+      rata_skor: 0.598,
+      rata_er: 0.021,
+      menang: 4,
+      cukup: 14,
+      kurang: 10,
     },
   },
   tren: [
