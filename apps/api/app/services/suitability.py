@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import uuid
-from datetime import date
+from datetime import date, datetime, timezone
 from statistics import mean
 
 from sqlalchemy import func, select
@@ -338,12 +338,18 @@ async def analisa_report(
     period_end: date,
 ) -> dict:
     """Laporan kesesuaian pola: ringkasan per (format,tujuan), konten bermasalah, pola rekomendasi."""
+    # Filter posted_at sesuai periode agar tidak memuat seluruh konten brand.
+    # (ix_contents_brand_posted sudah mengindeks (brand_id, posted_at).)
+    mulai_dt = datetime.combine(period_start, datetime.min.time(), tzinfo=timezone.utc)
+    akhir_dt = datetime.combine(period_end, datetime.max.time(), tzinfo=timezone.utc)
     contents = list(
         (
             await db.execute(
                 select(Content).where(
                     Content.brand_id == brand.id,
                     Content.organization_id == organization_id,
+                    Content.posted_at >= mulai_dt,
+                    Content.posted_at <= akhir_dt,
                 )
             )
         )

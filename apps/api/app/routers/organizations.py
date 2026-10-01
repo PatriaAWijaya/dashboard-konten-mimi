@@ -211,35 +211,37 @@ async def ringkasan_data(
         )
     ).scalars().all()
 
+    # Agregat periode per brand dalam 1 query (hindari N+1).
+    agg_rows = (
+        await db.execute(
+            select(
+                Content.brand_id.label("brand_id"),
+                func.extract("year", Content.posted_at).label("tahun"),
+                func.extract("month", Content.posted_at).label("bulan"),
+                func.count().label("jumlah"),
+            )
+            .where(
+                Content.organization_id == org_id,
+                Content.posted_at.is_not(None),
+            )
+            .group_by("brand_id", "tahun", "bulan")
+            .order_by("tahun", "bulan")
+        )
+    ).all()
+    periode_per_brand: dict = {}
+    for r in agg_rows:
+        tahun, bulan, jumlah = int(r.tahun), int(r.bulan), int(r.jumlah)
+        periode_per_brand.setdefault(str(r.brand_id), []).append({
+            "tahun": tahun,
+            "bulan": bulan,
+            "label": f"{_NAMA_BULAN[bulan - 1]} {tahun}",
+            "jumlah_konten": jumlah,
+        })
+
     hasil = []
     for b in brands:
-        rows = (
-            await db.execute(
-                select(
-                    func.extract("year", Content.posted_at).label("tahun"),
-                    func.extract("month", Content.posted_at).label("bulan"),
-                    func.count().label("jumlah"),
-                )
-                .where(
-                    Content.brand_id == b.id,
-                    Content.organization_id == org_id,
-                    Content.posted_at.is_not(None),
-                )
-                .group_by("tahun", "bulan")
-                .order_by("tahun", "bulan")
-            )
-        ).all()
-        periode = []
-        total = 0
-        for r in rows:
-            tahun, bulan, jumlah = int(r.tahun), int(r.bulan), int(r.jumlah)
-            total += jumlah
-            periode.append({
-                "tahun": tahun,
-                "bulan": bulan,
-                "label": f"{_NAMA_BULAN[bulan - 1]} {tahun}",
-                "jumlah_konten": jumlah,
-            })
+        periode = periode_per_brand.get(str(b.id), [])
+        total = sum(p["jumlah_konten"] for p in periode)
         hasil.append({
             "id": str(b.id),
             "name": b.name,

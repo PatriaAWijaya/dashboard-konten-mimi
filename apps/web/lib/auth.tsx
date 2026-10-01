@@ -80,9 +80,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const refreshUser = useCallback(async () => {
     try {
-      const me = await api.get<User>("/auth/me");
+      // /auth/me dan /organizations independen — jalan paralel, bukan waterfall.
+      const [me] = await Promise.all([
+        api.get<User>("/auth/me"),
+        refreshOrgs(),
+      ]);
       setUser(me);
-      await refreshOrgs();
     } catch {
       setUser(null);
       setOrganizations([]);

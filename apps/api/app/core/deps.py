@@ -27,6 +27,18 @@ async def _set_config(db: AsyncSession, key: str, value: str) -> None:
     await db.execute(text("SELECT set_config(:k, :v, false)"), {"k": key, "v": value})
 
 
+async def _set_configs(db: AsyncSession, configs: dict[str, str]) -> None:
+    """Set beberapa GUC dalam 1 roundtrip."""
+    if not configs:
+        return
+    selects = ", ".join(f"set_config(:k{i}, :v{i}, false)" for i in range(len(configs)))
+    params: dict = {}
+    for i, (k, v) in enumerate(configs.items()):
+        params[f"k{i}"] = k
+        params[f"v{i}"] = v
+    await db.execute(text(f"SELECT {selects}"), params)
+
+
 async def get_db(request: Request) -> AsyncIterator[AsyncSession]:
     """Satu sesi per request. Set app.user_id / app.is_superadmin / app.tenant_id
     untuk Row Level Security, RESET semuanya di finally."""
@@ -43,13 +55,19 @@ async def get_db(request: Request) -> AsyncIterator[AsyncSession]:
 
     session_factory = get_session_factory()
     async with session_factory() as session:
-        await _set_config(session, "app.user_id", jwt_user_id or "")
-        await _set_config(session, "app.is_superadmin", jwt_is_sa)
-        await _set_config(session, "app.tenant_id", "")
+        await _set_configs(session, {
+            "app.user_id": jwt_user_id or "",
+            "app.is_superadmin": jwt_is_sa,
+            "app.tenant_id": "",
+        })
         request.state.jwt_user_id = jwt_user_id
         try:
             yield session
-            await session.commit()
+            # Commit hanya bila ada perubahan; request read-only tidak perlu roundtrip.
+            if session.dirty or session.new or session.deleted:
+                await session.commit()
+            else:
+                await session.rollback()
         except Exception:
             await session.rollback()
             raise
@@ -57,8 +75,8 @@ async def get_db(request: Request) -> AsyncIterator[AsyncSession]:
             # RESET harus di-commit: tanpa commit, RESET berjalan dalam
             # transaksi implisit yang di-rollback saat sesi ditutup sehingga
             # GUC bocor ke connection pool dan mencemari sesi berikutnya.
-            for key in ("app.tenant_id", "app.user_id", "app.is_superadmin"):
-                await session.execute(text(f"RESET {key}"))
+            # Digabung dalam 1 roundtrip.
+            await session.execute(text("SELECT set_config('app.tenant_id', '', false), set_config('app.user_id', '', false), set_config('app.is_superadmin', 'off', false)"))
             await session.commit()
 
 

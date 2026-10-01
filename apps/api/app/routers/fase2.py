@@ -844,9 +844,15 @@ async def daftar_pengaturan(
     db: Annotated[AsyncSession, Depends(get_db)],
 ):
     """Daftar kunci pengaturan + status terisi (superadmin). Nilai tidak dikembalikan."""
+    # Ambil semua dalam 1 query (hindari N+1).
+    keys = [k for k, _ in PENGATURAN_KEYS]
+    rows = (
+        await db.execute(select(AppSetting).where(AppSetting.key.in_(keys)))
+    ).scalars().all()
+    by_key = {r.key: r for r in rows}
     items = []
     for key, label in PENGATURAN_KEYS:
-        row = await db.get(AppSetting, key)
+        row = by_key.get(key)
         items.append(
             PengaturanItem(
                 key=key,

@@ -19,7 +19,7 @@ from fastapi import (
     UploadFile,
     status,
 )
-from sqlalchemy import select
+from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.config import get_settings
@@ -426,6 +426,7 @@ async def brand_dashboard(
     preset: Annotated[str | None, Query(description="Preset: 7d, 30d, bulan_ini, custom.")] = "30d",
     start: Annotated[date | None, Query(description="Tanggal mulai (custom).")] = None,
     end: Annotated[date | None, Query(description="Tanggal selesai (custom).")] = None,
+    limit: Annotated[int, Query(description="Batas jumlah konten di daftar (kartu/tren tetap full periode).", ge=1, le=500)] = 100,
 ):
     """Dashboard agregat: kartu per platform, tren mingguan, daftar konten."""
     ctx = await get_org_context(db, user, org_id, min_role=ROLE_VIEWER)
@@ -543,7 +544,7 @@ async def brand_dashboard(
         )
         for idx, v in sorted(tren_data.items())
     ]
-    return DashboardOut(kartu=kartu, tren=tren, konten=konten)
+    return DashboardOut(kartu=kartu, tren=tren, konten=konten[:limit])
 
 
 # ---------------------------------------------------------------------------
@@ -685,26 +686,37 @@ async def brand_perbandingan(
     contents = (await db.execute(q.order_by(Content.posted_at))).scalars().all()
     cids = [c.id for c in contents]
 
-    # Agregat metrik per konten (jumlahkan seluruh baris harian).
+    # Agregat metrik per konten via SQL GROUP BY (filter tanggal, bukan di Python).
     metrik_per_konten: dict = {}
     if cids:
         rows = (
             await db.execute(
-                select(ContentMetricsDaily).where(ContentMetricsDaily.content_id.in_(cids))
+                select(
+                    ContentMetricsDaily.content_id,
+                    func.sum(ContentMetricsDaily.views).label("views"),
+                    func.sum(ContentMetricsDaily.likes).label("likes"),
+                    func.sum(ContentMetricsDaily.comments).label("comments"),
+                    func.sum(ContentMetricsDaily.shares).label("shares"),
+                    func.sum(ContentMetricsDaily.saves).label("saves"),
+                    func.sum(ContentMetricsDaily.follows).label("follows"),
+                    func.sum(ContentMetricsDaily.reach).label("reach"),
+                ).where(
+                    ContentMetricsDaily.content_id.in_(cids),
+                    ContentMetricsDaily.date >= awal_ambil,
+                    ContentMetricsDaily.date <= akhir,
+                ).group_by(ContentMetricsDaily.content_id)
             )
-        ).scalars().all()
+        ).all()
         for r in rows:
-            m = metrik_per_konten.setdefault(
-                r.content_id,
-                {"views": 0, "likes": 0, "comments": 0, "shares": 0, "saves": 0, "follows": 0, "reach": 0},
-            )
-            m["views"] += r.views or 0
-            m["likes"] += r.likes or 0
-            m["comments"] += r.comments or 0
-            m["shares"] += r.shares or 0
-            m["saves"] += r.saves or 0
-            m["follows"] += r.follows or 0
-            m["reach"] += r.reach or 0
+            metrik_per_konten[r.content_id] = {
+                "views": int(r.views or 0),
+                "likes": int(r.likes or 0),
+                "comments": int(r.comments or 0),
+                "shares": int(r.shares or 0),
+                "saves": int(r.saves or 0),
+                "follows": int(r.follows or 0),
+                "reach": int(r.reach or 0),
+            }
 
     # Skor terbaru per konten (seperti dashboard).
     skor_terbaru: dict = {}
