@@ -21,3 +21,4 @@ redisdata/
 # Sistem operasi
 .DS_Store
 Thumbs.db
+tsconfig.tsbuildinfo
