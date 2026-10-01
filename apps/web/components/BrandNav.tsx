@@ -17,7 +17,9 @@ export default function BrandNav({ brandId }: { brandId: string }) {
     { href: `/brand/${brandId}/niche`, label: "Niche Finder", exact: false },
     { href: `/brand/${brandId}/copywriting`, label: "Copywriting", exact: false },
     { href: `/brand/${brandId}/planner`, label: "Planner", exact: false },
-    { href: `/brand/${brandId}/koneksi`, label: "Koneksi", exact: false },
+    // Tab "Koneksi" disembunyikan sementara — fiturnya belum ada (Coming Soon).
+    // Kembalikan baris di bawah ini saat sinkronisasi akun sudah jalan:
+    // { href: `/brand/${brandId}/koneksi`, label: "Koneksi", exact: false },
   ];
 
   function aktif(t: { href: string; exact: boolean }) {

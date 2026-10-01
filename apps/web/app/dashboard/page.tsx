@@ -240,38 +240,8 @@ function DasborIsi() {
         </p>
       </div>
       <div className="grid gap-5 md:grid-cols-2">
-        <Card className="relative flex flex-col overflow-hidden">
-          {/* Latar gradien lembut — eye-catching tapi minimalis */}
-          <div
-            aria-hidden
-            className="pointer-events-none absolute inset-0"
-            style={{
-              background:
-                "radial-gradient(420px 220px at 15% 0%, rgba(255,129,38,0.16), transparent 60%), radial-gradient(360px 220px at 90% 100%, rgba(255,213,31,0.18), transparent 60%)",
-            }}
-          />
-          <div className="relative flex flex-1 flex-col">
-            <div className="mb-4 flex h-14 w-14 items-center justify-center rounded-2xl bg-white/80 text-2xl shadow-sm">
-              🔗
-            </div>
-            <h3 className="text-base font-bold text-slate-900">Coming Soon</h3>
-            <p className="mt-2 flex-1 text-sm text-slate-500">
-              Analisa realtime performa sosial media — sinkronisasi otomatis
-              dari akun TikTok dan Instagram brand Anda.
-            </p>
-            <div className="mt-4 flex items-center gap-2.5">
-              <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-slate-900 text-base text-white shadow-sm">
-                🎵
-              </span>
-              <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-tr from-orange-500 via-amber-400 to-yellow-400 text-base text-white shadow-sm">
-                📸
-              </span>
-              <span className="text-xs font-medium text-slate-400">
-                TikTok & Instagram
-              </span>
-            </div>
-          </div>
-        </Card>
+        {/* Kartu "Coming Soon" (sinkronisasi TikTok/Instagram) disembunyikan
+            sementara — fiturnya belum ada. Kembalikan saat sudah jalan. */}
         <Card className="flex flex-col">
           <div className="mb-4 flex h-14 w-14 items-center justify-center rounded-2xl bg-slate-100 text-2xl">
             📤
