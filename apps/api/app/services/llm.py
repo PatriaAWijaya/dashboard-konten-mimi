@@ -441,11 +441,74 @@ class AnthropicProvider(LLMProvider):
 
 
 # ---------------------------------------------------------------------------
+# Provider Gemini (generateContent API via httpx)
+# ---------------------------------------------------------------------------
+
+class GeminiProvider(LLMProvider):
+    """Provider Google Gemini via generateContent API.
+
+    Butuh LLM_API_KEY (gratis dari Google AI Studio) + LLM_MODEL opsional.
+    Key dikirim sebagai query param ?key= sesuai API Gemini.
+    """
+
+    def __init__(self, api_key: str | None = None) -> None:
+        settings = get_settings()
+        self.api_key = (api_key or settings.LLM_API_KEY or "").strip()
+        if not self.api_key:
+            raise RuntimeError("LLM_API_KEY belum dikonfigurasi untuk provider Gemini.")
+        self.model = (settings.LLM_MODEL or "gemini-2.5-flash").strip()
+
+    async def narrate(self, kind: str, context: dict) -> str:
+        if kind not in NARRATE_KINDS:
+            raise ValueError(f"Jenis narasi tidak dikenal: '{kind}'.")
+        system, user = _build_prompt(kind, context)
+        url = (
+            f"https://generativelanguage.googleapis.com/v1beta/models/"
+            f"{self.model}:generateContent"
+        )
+        try:
+            async with httpx.AsyncClient(timeout=60.0) as client:
+                resp = await client.post(
+                    url,
+                    params={"key": self.api_key},
+                    json={
+                        "systemInstruction": {"parts": [{"text": system}]},
+                        "contents": [{"role": "user", "parts": [{"text": user}]}],
+                        "generationConfig": {
+                            "temperature": 0.7,
+                            "maxOutputTokens": 1200,
+                        },
+                    },
+                )
+        except httpx.HTTPError as exc:
+            raise RuntimeError(f"Panggilan LLM Gemini gagal: {exc}.") from exc
+        if resp.status_code != 200:
+            raise RuntimeError(
+                f"LLM Gemini mengembalikan HTTP {resp.status_code}. Periksa LLM_API_KEY/LLM_MODEL."
+            )
+        try:
+            data = resp.json()
+            if data.get("promptFeedback", {}).get("blockReason"):
+                raise RuntimeError(
+                    f"Prompt diblokir Gemini: {data['promptFeedback']['blockReason']}."
+                )
+            cand = data["candidates"][0]
+            if cand.get("finishReason") not in (None, "STOP"):
+                raise RuntimeError(
+                    f"Gemini berhenti dengan alasan: {cand.get('finishReason')}."
+                )
+            parts = cand["content"]["parts"]
+            return "".join(p.get("text", "") for p in parts).strip()
+        except (KeyError, IndexError, TypeError, AttributeError) as exc:
+            raise RuntimeError("Respons LLM Gemini tidak dapat dibaca.") from exc
+
+
+# ---------------------------------------------------------------------------
 # Factory
 # ---------------------------------------------------------------------------
 
 def get_llm_provider(api_key: str | None = None) -> LLMProvider:
-    """Pilih provider dari env LLM_PROVIDER ('mock' default, 'openai', 'anthropic').
+    """Pilih provider dari env LLM_PROVIDER ('mock' default, 'openai', 'anthropic', 'gemini').
 
     api_key: override eksplisit (dipakai resolver app_settings bila tersedia).
     """
@@ -456,8 +519,10 @@ def get_llm_provider(api_key: str | None = None) -> LLMProvider:
         return OpenAIProvider(api_key=api_key)
     if nama == "anthropic":
         return AnthropicProvider(api_key=api_key)
+    if nama == "gemini":
+        return GeminiProvider(api_key=api_key)
     raise ValueError(
-        f"LLM_PROVIDER tidak dikenal: '{nama}'. Pilihan: mock, openai, anthropic."
+        f"LLM_PROVIDER tidak dikenal: '{nama}'. Pilihan: mock, openai, anthropic, gemini."
     )
 
 
