@@ -51,6 +51,7 @@ class AdminUserOut(BaseModel):
     name: str
     email: str
     is_active: bool
+    is_superadmin: bool
     email_verified: bool
     created_at: datetime
 

@@ -101,6 +101,7 @@ function LoginInner() {
               placeholder="••••••••"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
+              togglePassword
             />
             <Input
               label="Kode kupon (opsional)"
