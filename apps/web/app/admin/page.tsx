@@ -41,7 +41,7 @@ function unduhBukti(paymentId: string, fileName: string, setError: (s: string) =
     );
 }
 
-// ---------- Tab Antrean ----------
+// ---------- Tab Pembayaran ----------
 function TabAntrean() {
   const [items, setItems] = useState<QueuedPayment[]>([]);
   const [loading, setLoading] = useState(true);
@@ -58,7 +58,7 @@ function TabAntrean() {
       setItems(data);
     } catch (err) {
       setError(
-        err instanceof ApiError ? err.message : "Gagal memuat antrean."
+        err instanceof ApiError ? err.message : "Gagal memuat pembayaran."
       );
     } finally {
       setLoading(false);
@@ -104,7 +104,7 @@ function TabAntrean() {
     }
   }
 
-  if (loading) return <Spinner label="Memuat antrean…" />;
+  if (loading) return <Spinner label="Memuat pembayaran…" />;
 
   return (
     <div className="space-y-4">
@@ -113,7 +113,7 @@ function TabAntrean() {
       {items.length === 0 && (
         <Card>
           <p className="text-sm text-slate-500">
-            Antrean kosong. Tidak ada pembayaran menunggu verifikasi.
+            Tidak ada pembayaran menunggu verifikasi.
           </p>
         </Card>
       )}
@@ -455,7 +455,7 @@ function TabAudit() {
 
 // ---------- Halaman ----------
 const TABS: { id: Tab; label: string }[] = [
-  { id: "antrean", label: "Antrean" },
+  { id: "antrean", label: "Pembayaran" },
   { id: "riwayat", label: "Riwayat" },
   { id: "member", label: "Member" },
   { id: "audit", label: "Audit Log" },
