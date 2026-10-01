@@ -252,6 +252,7 @@ function AnalisaIsi() {
             <option value="semua">Semua platform</option>
             <option value="tiktok">TikTok</option>
             <option value="instagram">Instagram</option>
+            <option value="facebook">Facebook</option>
           </Select>
           <Select
             label="Rentang"

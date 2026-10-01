@@ -79,7 +79,7 @@ from app.services.suitability import analisa_report
 
 router = APIRouter(tags=["content"])
 
-PLATFORM_VALID = ("tiktok", "instagram")
+PLATFORM_VALID = ("tiktok", "instagram", "facebook")
 
 
 # ---------------------------------------------------------------------------
@@ -140,7 +140,7 @@ def _periode_dari_query(
 # ---------------------------------------------------------------------------
 
 _COLUMN_DOCS: dict[str, tuple[str, bool]] = {
-    "platform": ("Nama platform: tiktok atau instagram.", True),
+    "platform": ("Nama platform: tiktok, instagram, atau facebook.", True),
     "post_id": ("ID unik postingan dari platform (mis. ID video TikTok).", False),
     "post_url": ("URL publik postingan.", False),
     "tanggal_posting": ("Tanggal publikasi (YYYY-MM-DD).", True),
@@ -187,7 +187,7 @@ async def csv_format():
 async def upload_csv(
     org_id: Annotated[uuid.UUID, Depends(parse_org_header)],
     brand_id: Annotated[str, Form(description="ID brand tujuan.")],
-    platform: Annotated[str, Form(description="Platform: tiktok atau instagram.")],
+    platform: Annotated[str, Form(description="Platform: tiktok, instagram, atau facebook.")],
     file: Annotated[UploadFile, File(description="File CSV data konten.")],
     user: Annotated[User, Depends(get_current_user)],
     db: Annotated[AsyncSession, Depends(get_db)],
@@ -237,7 +237,7 @@ async def upload_csv(
     return CsvUploadOut(**hasil, kolom=kolom)
 
 
-BATCH_PLATFORM_VALID = ("tiktok", "instagram", AUTO_PLATFORM)
+BATCH_PLATFORM_VALID = ("tiktok", "instagram", "facebook", AUTO_PLATFORM)
 MAX_BATCH_FILES = 10
 
 
@@ -245,7 +245,7 @@ MAX_BATCH_FILES = 10
 async def upload_csv_batch(
     org_id: Annotated[uuid.UUID, Depends(parse_org_header)],
     brand_id: Annotated[str, Form(description="ID brand tujuan.")],
-    platform: Annotated[str, Form(description="Platform: tiktok, instagram, atau auto (dari kolom platform).")],
+    platform: Annotated[str, Form(description="Platform: tiktok, instagram, facebook, atau auto (dari kolom platform).")],
     files: Annotated[list[UploadFile], File(description="File-file CSV data konten (maks 10).")],
     user: Annotated[User, Depends(get_current_user)],
     db: Annotated[AsyncSession, Depends(get_db)],
@@ -636,7 +636,7 @@ async def brand_perbandingan(
     org_id: Annotated[uuid.UUID, Depends(parse_org_header)],
     user: Annotated[User, Depends(get_current_user)],
     db: Annotated[AsyncSession, Depends(get_db)],
-    platform: Annotated[str, Query(description="Filter platform: semua, tiktok, instagram.")] = "semua",
+    platform: Annotated[str, Query(description="Filter platform: semua, tiktok, instagram, facebook.")] = "semua",
     start: Annotated[date | None, Query(description="Tanggal mulai tampilan.")] = None,
     end: Annotated[date | None, Query(description="Tanggal selesai tampilan.")] = None,
 ):
@@ -650,10 +650,10 @@ async def brand_perbandingan(
     brand = await _get_brand(db, brand_id, ctx.organization.id)
 
     platform_norm = (platform or "semua").strip().lower()
-    if platform_norm not in ("semua", "tiktok", "instagram"):
+    if platform_norm not in ("semua", "tiktok", "instagram", "facebook"):
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Platform tidak valid. Pilihan: semua, tiktok, instagram.",
+            detail="Platform tidak valid. Pilihan: semua, tiktok, instagram, facebook.",
         )
 
     hari_ini = datetime.now(timezone.utc).date()

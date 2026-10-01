@@ -106,13 +106,16 @@ def _meta_platform_dan_format(post_type: str) -> tuple[str | None, str | None]:
     """Deteksi (platform, format) dari kolom 'Post type' export Meta.
 
     Contoh: 'IG carousel' -> ('instagram', 'carousel'),
-    'IG reel' -> ('instagram', 'reels'), 'TT video' -> ('tiktok', 'reels').
+    'IG reel' -> ('instagram', 'reels'), 'TT video' -> ('tiktok', 'reels'),
+    'FB post' -> ('facebook', 'foto').
     """
     t = (post_type or "").strip().lower()
     if t.startswith("ig "):
         platform: str | None = "instagram"
     elif t.startswith("tt "):
         platform = "tiktok"
+    elif t.startswith("fb "):
+        platform = "facebook"
     else:
         return None, None
     jenis = t.split(" ", 1)[1].strip() if " " in t else ""
@@ -170,7 +173,7 @@ async def import_csv(
 ) -> dict:
     """Impor satu file CSV metrik konten untuk sebuah brand.
 
-    platform: 'tiktok'/'instagram', atau 'auto' (ambil dari kolom platform).
+    platform: 'tiktok'/'instagram'/'facebook', atau 'auto' (ambil dari kolom platform).
     tujuan_default: dipakai bila baris tidak punya kolom tujuan
         (mis. file export native Meta yang memang tidak punya kolom ini).
     Upsert Content (brand+platform+post_id) lalu upsert ContentMetricsDaily

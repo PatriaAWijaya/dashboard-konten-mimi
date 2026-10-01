@@ -27,7 +27,7 @@ import {
 import BrandSelector from "@/components/BrandSelector";
 import DemoBadge from "@/components/DemoBadge";
 
-type PlatformPilih = "tiktok" | "instagram" | "auto";
+type PlatformPilih = "tiktok" | "instagram" | "facebook" | "auto";
 // Tujuan semua konten sosmed: account growth & engagement rate —
 // tidak perlu dipilih manual, dikirim tetap ke backend.
 const TUJUAN_DEFAULT = "account_growth";
@@ -160,6 +160,7 @@ function UploadIsi() {
               <option value="auto">Otomatis (dari file)</option>
               <option value="tiktok">TikTok</option>
               <option value="instagram">Instagram</option>
+              <option value="facebook">Facebook</option>
             </Select>
           </div>
           <label className="block">
