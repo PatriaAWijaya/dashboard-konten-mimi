@@ -21,6 +21,7 @@ import {
   buatTimelineTerintegrasi,
   type KanalTimeline,
 } from "@/lib/timeline";
+import { exportTimelinePdf } from "@/lib/export-timeline-pdf";
 
 const SEMUA_PLATFORM: PlatformFunnel[] = ["instagram", "tiktok", "facebook"];
 const BARIS_PER_HALAMAN = 20;
@@ -317,10 +318,21 @@ export default function GeneratePlanner() {
             <h2 className="text-base font-semibold text-slate-900">
               Timeline Campaign Terintegrasi
             </h2>
-            <p className="text-xs text-slate-500">
-              {rencana.totalHari} hari · {rencana.totalKonten} konten ·{" "}
-              {timeline.length - rencana.totalKonten} aktivitas pendukung
-            </p>
+            <div className="flex flex-wrap items-center gap-3">
+              <p className="text-xs text-slate-500">
+                {rencana.totalHari} hari · {rencana.totalKonten} konten ·{" "}
+                {timeline.length - rencana.totalKonten} aktivitas pendukung
+              </p>
+              <Button
+                variant="secondary"
+                onClick={() =>
+                  brief && exportTimelinePdf(brief, rencana, timeline, filterKanal)
+                }
+                className="px-3! py-1.5! text-xs"
+              >
+                Export PDF
+              </Button>
+            </div>
           </div>
           <p className="mb-4 text-sm text-slate-500">
             Usulan menyeluruh {formatTanggalPanjang(rencana.tanggalMulai)} —{" "}
