@@ -1,16 +1,19 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { Alert, Button, Card, Input, Paginasi, Select } from "@/components/ui";
+import { Alert, Button, Card, Input, Paginasi, Select, TextArea } from "@/components/ui";
 import {
   DURASI_MAX_HARI,
   DURASI_MIN_HARI,
   INFO_FASE,
   LABEL_PLATFORM,
+  LABEL_TUJUAN,
   buatRencanaFunnel,
+  type BriefCampaign,
   type FaseFunnel,
   type PlatformFunnel,
   type RencanaFunnel,
+  type TujuanCampaign,
 } from "@/lib/funnel";
 
 const SEMUA_PLATFORM: PlatformFunnel[] = ["instagram", "tiktok", "facebook"];
@@ -41,6 +44,13 @@ function formatTanggalPanjang(iso: string): string {
 }
 
 export default function GeneratePlanner() {
+  // 5W1H event campaign — dasar pelaksanaan campaign
+  const [apa, setApa] = useState("");
+  const [mengapa, setMengapa] = useState<TujuanCampaign>("jualan");
+  const [siapa, setSiapa] = useState("");
+  const [dimana, setDimana] = useState("");
+  const [bagaimana, setBagaimana] = useState("");
+  // Pengaturan jadwal
   const [tanggalMulai, setTanggalMulai] = useState(isoHariIni);
   const [tanggalTarget, setTanggalTarget] = useState(() =>
     isoTambah(isoHariIni(), 30)
@@ -48,6 +58,7 @@ export default function GeneratePlanner() {
   const [frekuensi, setFrekuensi] = useState("3");
   const [platform, setPlatform] = useState<PlatformFunnel[]>(["instagram"]);
   const [rencana, setRencana] = useState<RencanaFunnel | null>(null);
+  const [brief, setBrief] = useState<BriefCampaign | null>(null);
   const [error, setError] = useState("");
   const [halaman, setHalaman] = useState(1);
 
@@ -59,17 +70,26 @@ export default function GeneratePlanner() {
 
   function buat() {
     setError("");
+    if (!apa.trim()) {
+      setRencana(null);
+      setBrief(null);
+      setError("Isi dulu nama event/campaign pada bagian 5W1H.");
+      return;
+    }
     try {
       const hasil = buatRencanaFunnel({
         tanggalMulai,
         tanggalTarget,
         frekuensi: Number(frekuensi),
         platform,
+        tujuan: mengapa,
       });
       setRencana(hasil);
+      setBrief({ apa: apa.trim(), mengapa, siapa: siapa.trim(), dimana: dimana.trim(), bagaimana: bagaimana.trim() });
       setHalaman(1);
     } catch (e) {
       setRencana(null);
+      setBrief(null);
       setError(e instanceof Error ? e.message : "Gagal membuat rencana.");
     }
   }
@@ -118,10 +138,67 @@ export default function GeneratePlanner() {
         </div>
       </Card>
 
+      {/* 5W1H — dasar pelaksanaan campaign */}
+      <Card>
+        <h2 className="text-base font-semibold text-slate-900">
+          5W1H Event Campaign
+        </h2>
+        <p className="mt-1 text-sm text-slate-500">
+          Dasar pelaksanaan campaign — jawaban di sini menjadi brief yang
+          menjiwai seluruh jadwal konten, termasuk ajakan di fase BOFU.
+        </p>
+        <div className="mt-4 grid gap-4 md:grid-cols-2">
+          <Input
+            label="Apa — nama event/campaign"
+            value={apa}
+            onChange={(e) => setApa(e.target.value)}
+            placeholder="Contoh: Webinar Fundraising Qurban 2026"
+          />
+          <Select
+            label="Mengapa — tujuan campaign"
+            value={mengapa}
+            onChange={(e) => setMengapa(e.target.value as TujuanCampaign)}
+          >
+            {(Object.keys(LABEL_TUJUAN) as TujuanCampaign[]).map((t) => (
+              <option key={t} value={t}>
+                {LABEL_TUJUAN[t]}
+              </option>
+            ))}
+          </Select>
+          <Input
+            label="Siapa — target audiens"
+            value={siapa}
+            onChange={(e) => setSiapa(e.target.value)}
+            placeholder="Contoh: Donatur usia 25–40 tahun"
+          />
+          <Input
+            label="Kapan — tanggal target / mulai event"
+            type="date"
+            value={tanggalTarget}
+            onChange={(e) => setTanggalTarget(e.target.value)}
+          />
+          <Input
+            label="Di mana — lokasi / platform event"
+            value={dimana}
+            onChange={(e) => setDimana(e.target.value)}
+            placeholder="Contoh: Online via Zoom"
+          />
+        </div>
+        <div className="mt-4">
+          <TextArea
+            label="Bagaimana — mekanisme pelaksanaan"
+            value={bagaimana}
+            onChange={(e) => setBagaimana(e.target.value)}
+            rows={3}
+            placeholder="Contoh: Peserta daftar via link, donasi via QRIS, pengumuman di Instagram Live…"
+          />
+        </div>
+      </Card>
+
       {/* Formulir */}
       <Card>
         <h2 className="mb-4 text-base font-semibold text-slate-900">
-          Pengaturan rencana
+          Pengaturan jadwal
         </h2>
         {error && (
           <div className="mb-4">
@@ -135,12 +212,6 @@ export default function GeneratePlanner() {
             value={tanggalMulai}
             onChange={(e) => setTanggalMulai(e.target.value)}
           />
-          <Input
-            label="Tanggal target konversi / mulai event"
-            type="date"
-            value={tanggalTarget}
-            onChange={(e) => setTanggalTarget(e.target.value)}
-          />
           <Select
             label="Seberapa sering posting dalam 1 minggu"
             value={frekuensi}
@@ -152,7 +223,7 @@ export default function GeneratePlanner() {
               </option>
             ))}
           </Select>
-          <div>
+          <div className="md:col-span-2">
             <span className="mb-1.5 block text-sm font-medium text-slate-700">
               Jenis platform
             </span>
@@ -187,7 +258,30 @@ export default function GeneratePlanner() {
       </Card>
 
       {/* Hasil */}
-      {rencana && (
+      {rencana && brief && (
+        <>
+        <Card>
+          <h2 className="mb-3 text-base font-semibold text-slate-900">
+            Brief Campaign — {brief.apa}
+          </h2>
+          <dl className="grid gap-3 md:grid-cols-2">
+            {[
+              { t: "Apa", v: brief.apa },
+              { t: "Mengapa", v: LABEL_TUJUAN[brief.mengapa] },
+              { t: "Siapa", v: brief.siapa || "—" },
+              { t: "Kapan", v: formatTanggalPanjang(rencana.tanggalTarget) },
+              { t: "Di mana", v: brief.dimana || "—" },
+              { t: "Bagaimana", v: brief.bagaimana || "—" },
+            ].map((b) => (
+              <div key={b.t} className="rounded-xl bg-slate-50 px-4 py-3">
+                <dt className="text-xs font-semibold uppercase text-slate-400">
+                  {b.t}
+                </dt>
+                <dd className="mt-1 text-sm font-medium text-slate-800">{b.v}</dd>
+              </div>
+            ))}
+          </dl>
+        </Card>
         <Card>
           <div className="mb-4 flex flex-wrap items-center justify-between gap-2">
             <h2 className="text-base font-semibold text-slate-900">
@@ -259,6 +353,7 @@ export default function GeneratePlanner() {
             onPindah={setHalaman}
           />
         </Card>
+        </>
       )}
     </div>
   );

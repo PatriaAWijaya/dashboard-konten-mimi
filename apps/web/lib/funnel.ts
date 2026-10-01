@@ -146,6 +146,33 @@ const BANK_KONTEN: Record<FaseFunnel, JenisKonten[]> = {
 export const DURASI_MIN_HARI = 14; // 2 minggu
 export const DURASI_MAX_HARI = 90; // 3 bulan
 
+// Tujuan campaign (dari 5W1H "Mengapa") — dipakai menyesuaikan rekomendasi
+// konten BOFU agar CTA-nya relevan dengan campaign yang dijalankan.
+export type TujuanCampaign = "jualan" | "donasi" | "pendaftaran" | "awareness";
+
+export const LABEL_TUJUAN: Record<TujuanCampaign, string> = {
+  jualan: "Penjualan produk",
+  donasi: "Donasi / fundraising",
+  pendaftaran: "Pendaftaran event",
+  awareness: "Brand awareness",
+};
+
+const ADAPTASI_BOFU: Record<TujuanCampaign, { penawaran: string; cta: string }> = {
+  jualan: { penawaran: "Penawaran khusus / diskon", cta: "Ajakan beli (CTA)" },
+  donasi: { penawaran: "Program donasi spesial", cta: "Ajakan berdonasi (CTA)" },
+  pendaftaran: { penawaran: "Early bird / promo tiket", cta: "Ajakan daftar event (CTA)" },
+  awareness: { penawaran: "Konten unggulan brand", cta: "Ajakan follow & share (CTA)" },
+};
+
+/** 5W1H event campaign — dasar pelaksanaan campaign. */
+export interface BriefCampaign {
+  apa: string; // nama event/campaign
+  mengapa: TujuanCampaign; // tujuan campaign
+  siapa: string; // target audiens
+  dimana: string; // lokasi / platform event
+  bagaimana: string; // mekanisme pelaksanaan
+}
+
 export interface ItemJadwal {
   tanggal: string; // ISO yyyy-mm-dd
   fase: FaseFunnel;
@@ -168,6 +195,18 @@ export interface OpsiFunnel {
   tanggalTarget: string;
   frekuensi: number; // posting per minggu, 1–7
   platform: PlatformFunnel[];
+  tujuan?: TujuanCampaign; // default "jualan"
+}
+
+/** Bank konten per fase; BOFU disesuaikan dengan tujuan campaign. */
+function bankFase(fase: FaseFunnel, tujuan: TujuanCampaign): JenisKonten[] {
+  if (fase !== "BOFU") return BANK_KONTEN[fase];
+  const adapt = ADAPTASI_BOFU[tujuan];
+  return BANK_KONTEN.BOFU.map((j) => {
+    if (j.nama === "Penawaran khusus / diskon") return { ...j, nama: adapt.penawaran };
+    if (j.nama === "Ajakan daftar / beli (CTA)") return { ...j, nama: adapt.cta };
+    return j;
+  });
 }
 
 function parseLokal(iso: string): Date | null {
@@ -199,6 +238,7 @@ function sebarHari(frekuensi: number): number[] {
 
 export function buatRencanaFunnel(opsi: OpsiFunnel): RencanaFunnel {
   const { tanggalMulai, tanggalTarget, frekuensi, platform } = opsi;
+  const tujuan: TujuanCampaign = opsi.tujuan ?? "jualan";
 
   if (!Number.isInteger(frekuensi) || frekuensi < 1 || frekuensi > 7) {
     throw new Error("Frekuensi posting harus 1–7 kali seminggu.");
@@ -247,7 +287,7 @@ export function buatRencanaFunnel(opsi: OpsiFunnel): RencanaFunnel {
       const offset = m * 7 + p;
       if (offset >= totalHari) continue;
       const slot = batas.find((b) => offset < b.sampaiOffset) ?? batas[2];
-      const bank = BANK_KONTEN[slot.fase];
+      const bank = bankFase(slot.fase, tujuan);
       const jenis = bank[hitungFase[slot.fase] % bank.length];
       hitungFase[slot.fase] += 1;
       const formatUnik = Array.from(
