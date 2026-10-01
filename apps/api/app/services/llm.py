@@ -7,9 +7,9 @@ bukti dari context dan tidak mengarang angka baru.
 
 from __future__ import annotations
 
+import asyncio
 import json
 from abc import ABC, abstractmethod
-
 import httpx
 
 from app.core.config import get_settings
@@ -456,7 +456,7 @@ class GeminiProvider(LLMProvider):
         self.api_key = (api_key or settings.LLM_API_KEY or "").strip()
         if not self.api_key:
             raise RuntimeError("LLM_API_KEY belum dikonfigurasi untuk provider Gemini.")
-        self.model = (settings.LLM_MODEL or "gemini-flash-latest").strip()
+        self.model = (settings.LLM_MODEL or "gemini-3.5-flash-lite").strip()
 
     async def narrate(self, kind: str, context: dict) -> str:
         if kind not in NARRATE_KINDS:
@@ -466,22 +466,28 @@ class GeminiProvider(LLMProvider):
             f"https://generativelanguage.googleapis.com/v1beta/models/"
             f"{self.model}:generateContent"
         )
-        try:
-            async with httpx.AsyncClient(timeout=60.0) as client:
-                resp = await client.post(
-                    url,
-                    params={"key": self.api_key},
-                    json={
-                        "systemInstruction": {"parts": [{"text": system}]},
-                        "contents": [{"role": "user", "parts": [{"text": user}]}],
-                        "generationConfig": {
-                            "temperature": 0.7,
-                            "maxOutputTokens": 1200,
-                        },
-                    },
-                )
-        except httpx.HTTPError as exc:
-            raise RuntimeError(f"Panggilan LLM Gemini gagal: {exc}.") from exc
+        payload = {
+            "systemInstruction": {"parts": [{"text": system}]},
+            "contents": [{"role": "user", "parts": [{"text": user}]}],
+            "generationConfig": {
+                "temperature": 0.7,
+                "maxOutputTokens": 1200,
+            },
+        }
+        # Retry 1x untuk error transient (429/503) dengan jeda singkat.
+        resp = None
+        for attempt in range(2):
+            try:
+                async with httpx.AsyncClient(timeout=60.0) as client:
+                    resp = await client.post(
+                        url, params={"key": self.api_key}, json=payload
+                    )
+            except httpx.HTTPError as exc:
+                raise RuntimeError(f"Panggilan LLM Gemini gagal: {exc}.") from exc
+            if resp.status_code not in (429, 503) or attempt == 1:
+                break
+            await asyncio.sleep(3)
+        assert resp is not None
         if resp.status_code != 200:
             raise RuntimeError(
                 f"LLM Gemini mengembalikan HTTP {resp.status_code}. Periksa LLM_API_KEY/LLM_MODEL."
