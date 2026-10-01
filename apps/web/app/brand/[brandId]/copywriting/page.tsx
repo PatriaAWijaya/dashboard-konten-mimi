@@ -4,7 +4,8 @@ import { useState } from "react";
 import { useBrandId } from "@/lib/brand";
 import { RequireAuth } from "@/lib/auth";
 import { api, ApiError } from "@/lib/api";
-import { Alert, Button, Card, Input, Select, TextArea } from "@/components/ui";
+import { Alert, Button, Card, Input, PageHeader, Select, TextArea } from "@/components/ui";
+import BrandNav from "@/components/BrandNav";
 
 const GOALS = ["Awareness", "Edukasi", "Hiburan", "Konversi"];
 const CTAS = ["Save", "Share", "Comment", "Click link konversi", "Follow"];
@@ -68,11 +69,14 @@ export default function CopywritingPage() {
 
   return (
     <RequireAuth>
-      <div className="mx-auto max-w-3xl px-4 py-6">
-        <h1 className="text-xl font-bold text-slate-900">Copywriting Generator</h1>
-        <p className="mt-1 text-sm text-slate-500">
-          Isi brief 5W1H, pilih framework storytelling, dan dapatkan draf copywriting siap posting.
-        </p>
+      <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6">
+        <PageHeader
+          title="Copywriting"
+          subtitle="Isi brief 5W1H, pilih framework storytelling, dan dapatkan draf copywriting siap posting."
+        />
+        <BrandNav brandId={brandId} />
+
+        <div className="mx-auto max-w-3xl">
 
         <Card className="mt-5">
           <h2 className="mb-3 text-sm font-semibold text-slate-900">5W1H</h2>
@@ -141,6 +145,7 @@ export default function CopywritingPage() {
             </Button>
           </Card>
         )}
+        </div>
       </div>
     </RequireAuth>
   );

@@ -215,3 +215,40 @@ export function EmptyBox({
     </div>
   );
 }
+
+export function Paginasi({
+  halaman,
+  totalHalaman,
+  onPindah,
+}: {
+  halaman: number;
+  totalHalaman: number;
+  onPindah: (halaman: number) => void;
+}) {
+  if (totalHalaman <= 1) return null;
+  return (
+    <div className="flex flex-wrap items-center justify-between gap-2 px-5 py-3">
+      <p className="text-xs text-slate-500">
+        Halaman {halaman} dari {totalHalaman}
+      </p>
+      <div className="flex gap-2">
+        <Button
+          variant="secondary"
+          onClick={() => onPindah(halaman - 1)}
+          disabled={halaman <= 1}
+          className="px-3! py-1.5! text-xs"
+        >
+          ← Sebelumnya
+        </Button>
+        <Button
+          variant="secondary"
+          onClick={() => onPindah(halaman + 1)}
+          disabled={halaman >= totalHalaman}
+          className="px-3! py-1.5! text-xs"
+        >
+          Berikutnya →
+        </Button>
+      </div>
+    </div>
+  );
+}

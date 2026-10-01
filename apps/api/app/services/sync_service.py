@@ -36,7 +36,7 @@ from app.models.user import User
 from app.services.normalize import (
     NormalizationError,
     normalize_content_row,
-    upsert_content_row,
+    upsert_content_rows,
 )
 from app.services.settings import get_setting
 from app.services.sync_providers import MockSyncProvider, SyncProvider, get_provider
@@ -333,23 +333,23 @@ async def sync_account(db: AsyncSession, account: ConnectedAccount) -> dict:
 
     try:
         rows = await provider.fetch_posts(account, since)
-        baru = diupdate = 0
+        batch_items: list[tuple[str, dict]] = []
         for row in rows:
             try:
                 normalized = normalize_content_row(account.platform, row)
             except NormalizationError:
                 # Baris tak valid dari API dilewati (dicatat diam-diam).
                 continue
-            _, is_new = await upsert_content_row(
-                db,
-                brand_id=brand.id,
-                organization_id=brand.organization_id,
-                normalized=normalized,
-            )
-            if is_new:
-                baru += 1
-            else:
-                diupdate += 1
+            batch_items.append((account.platform, normalized))
+        # Upsert batch: 3 roundtrip DB berapa pun jumlah baris
+        # (semantik identik dengan loop per-baris: posted_at tidak
+        # di-overwrite, baris duplikat dihitung sebagai update).
+        baru, diupdate = await upsert_content_rows(
+            db,
+            brand_id=brand.id,
+            organization_id=brand.organization_id,
+            items=batch_items,
+        )
         account.status = ConnectedAccountStatus.AKTIF
         account.last_sync_at = _now()
         await db.flush()

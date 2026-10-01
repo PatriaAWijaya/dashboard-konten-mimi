@@ -16,11 +16,33 @@ import {
   Card,
   Input,
   PageHeader,
+  Paginasi,
   Spinner,
 } from "@/components/ui";
 import { paymentStatusLabel } from "@/components/badges";
 
 type Tab = "pembayaran" | "riwayat" | "member" | "audit";
+
+const BARIS_PER_HALAMAN = 20;
+
+// Paginasi sisi klien: tampilkan 20 baris per halaman agar render tetap ringan
+// walau daftar member/pembayaran membesar.
+function usePaginasi<T>(items: T[]) {
+  const [halaman, setHalaman] = useState(1);
+  const totalHalaman = Math.max(1, Math.ceil(items.length / BARIS_PER_HALAMAN));
+  const halamanAktif = Math.min(halaman, totalHalaman);
+  const potong = items.slice(
+    (halamanAktif - 1) * BARIS_PER_HALAMAN,
+    halamanAktif * BARIS_PER_HALAMAN
+  );
+  return {
+    halaman: halamanAktif,
+    totalHalaman,
+    potong,
+    keAwal: () => setHalaman(1),
+    pindah: setHalaman,
+  };
+}
 
 function unduhBukti(paymentId: string, fileName: string, setError: (s: string) => void) {
   apiDownload(`/billing/payments/${paymentId}/file`)
@@ -49,6 +71,7 @@ function TabPembayaran() {
   const [sukses, setSukses] = useState("");
   const [prosesId, setProsesId] = useState<string | null>(null);
   const [alasan, setAlasan] = useState<Record<string, string>>({});
+  const pg = usePaginasi(items);
 
   const muat = useCallback(async () => {
     setLoading(true);
@@ -56,6 +79,7 @@ function TabPembayaran() {
     try {
       const data = await api.get<QueuedPayment[]>("/admin/payments/queue");
       setItems(data);
+      pg.keAwal();
     } catch (err) {
       setError(
         err instanceof ApiError ? err.message : "Gagal memuat pembayaran."
@@ -117,7 +141,7 @@ function TabPembayaran() {
           </p>
         </Card>
       )}
-      {items.map((item) => (
+      {pg.potong.map((item) => (
         <Card key={item.payment.id}>
           <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
             <div className="space-y-1 text-sm">
@@ -184,6 +208,15 @@ function TabPembayaran() {
           </div>
         </Card>
       ))}
+      {pg.totalHalaman > 1 && (
+        <Card className="p-0">
+          <Paginasi
+            halaman={pg.halaman}
+            totalHalaman={pg.totalHalaman}
+            onPindah={pg.pindah}
+          />
+        </Card>
+      )}
     </div>
   );
 }
@@ -193,11 +226,15 @@ function TabRiwayat() {
   const [items, setItems] = useState<QueuedPayment[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const pg = usePaginasi(items);
 
   useEffect(() => {
     api
       .get<QueuedPayment[]>("/admin/payments/history")
-      .then(setItems)
+      .then((data) => {
+        setItems(data);
+        pg.keAwal();
+      })
       .catch((err) =>
         setError(err instanceof ApiError ? err.message : "Gagal memuat riwayat.")
       )
@@ -223,7 +260,7 @@ function TabRiwayat() {
             </tr>
           </thead>
           <tbody>
-            {items.map((item) => (
+            {pg.potong.map((item) => (
               <tr key={item.payment.id} className="border-b border-slate-100 last:border-0">
                 <td className="px-5 py-3 text-slate-600">
                   {formatTanggal(item.payment.uploaded_at, true)}
@@ -243,6 +280,15 @@ function TabRiwayat() {
           </tbody>
         </table>
       )}
+      {pg.totalHalaman > 1 && (
+        <div className="border-t border-slate-200">
+          <Paginasi
+            halaman={pg.halaman}
+            totalHalaman={pg.totalHalaman}
+            onPindah={pg.pindah}
+          />
+        </div>
+      )}
     </Card>
   );
 }
@@ -254,6 +300,7 @@ function TabMember() {
   const [error, setError] = useState("");
   const [sukses, setSukses] = useState("");
   const [prosesId, setProsesId] = useState<string | null>(null);
+  const pg = usePaginasi(users);
 
   const muat = useCallback(async () => {
     setLoading(true);
@@ -261,6 +308,7 @@ function TabMember() {
     try {
       const data = await api.get<AdminUserRow[]>("/admin/users");
       setUsers(data);
+      pg.keAwal();
     } catch (err) {
       setError(
         err instanceof ApiError ? err.message : "Gagal memuat daftar user."
@@ -331,7 +379,7 @@ function TabMember() {
             </tr>
           </thead>
           <tbody>
-            {users.map((u) => (
+            {pg.potong.map((u) => (
               <tr key={u.id} className="border-b border-slate-100 last:border-0">
                 <td className="px-5 py-3 font-medium text-slate-900">{u.name}</td>
                 <td className="px-5 py-3 text-slate-600">{u.email}</td>
@@ -393,6 +441,15 @@ function TabMember() {
             ))}
           </tbody>
         </table>
+        {pg.totalHalaman > 1 && (
+          <div className="border-t border-slate-200">
+            <Paginasi
+              halaman={pg.halaman}
+              totalHalaman={pg.totalHalaman}
+              onPindah={pg.pindah}
+            />
+          </div>
+        )}
       </Card>
     </div>
   );
