@@ -133,12 +133,29 @@ async def verify_email(
         select(EmailVerificationToken).where(EmailVerificationToken.token_hash == hash_token(data.token))
     )
     token_row = result.scalar_one_or_none()
-    if token_row is None or token_row.used_at is not None or token_row.expires_at < _now():
+    if token_row is None:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Token verifikasi tidak valid atau kedaluwarsa.",
         )
     user = await _become(db, token_row.user_id)
+    if token_row.used_at is not None or token_row.expires_at < _now():
+        # Tautan sudah dipakai atau kedaluwarsa. Bila email user ternyata
+        # sudah terverifikasi (mis. tautan diklik dua kali, dibuka di dua
+        # tab, atau "diklik" duluan oleh pemindai keamanan email), anggap
+        # sukses agar user tidak bingung melihat halaman gagal.
+        if user.email_verified:
+            return MessageResponse(message="Email Anda sudah terverifikasi.")
+        if token_row.used_at is not None:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Tautan ini sudah tidak berlaku. Silakan gunakan tautan dari email verifikasi terbaru kami.",
+            )
+        menit = get_settings().EMAIL_VERIFICATION_EXPIRE_MINUTES
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"Tautan verifikasi sudah kedaluwarsa (berlaku {menit} menit). Minta tautan baru di bawah ini.",
+        )
     user.email_verified = True
     token_row.used_at = _now()
     await db.flush()
@@ -183,9 +200,9 @@ async def resend_verification(
     if unused and (_now() - unused[0].created_at).total_seconds() < _RESEND_COOLDOWN_SECONDS:
         # Token terakhir masih segar (< 60 dtk); email sebelumnya pasti baru saja dikirim.
         return MessageResponse(message=pesan_umum)
-    # Batalkan token lama yang belum dipakai agar hanya token terbaru yang valid.
-    for lama in unused:
-        lama.used_at = _now()
+    # Token lama yang belum dipakai TIDAK dibatalkan: setiap tautan tetap
+    # berlaku sampai masa berlakunya habis, sehingga tautan dari email
+    # verifikasi sebelumnya tidak tiba-tiba mati setelah kirim ulang.
 
     token = generate_token()
     db.add(

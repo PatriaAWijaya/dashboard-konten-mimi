@@ -1,6 +1,6 @@
 "use client";
 
-import { Suspense, useEffect, useState } from "react";
+import { Suspense, useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { api, ApiError } from "@/lib/api";
@@ -15,6 +15,10 @@ function VerifyEmailInner() {
   );
   const [pesan, setPesan] = useState("");
   const [emailKirimUlang, setEmailKirimUlang] = useState("");
+  // Cegah POST ganda untuk token yang sama (mis. remount komponen):
+  // tanpa ini, panggilan kedua selalu 400 "sudah dipakai" dan menimpa
+  // status sukses dengan halaman gagal.
+  const terkirimRef = useRef<string | null>(null);
 
   useEffect(() => {
     if (!token) {
@@ -22,6 +26,8 @@ function VerifyEmailInner() {
       setPesan("Token verifikasi tidak ditemukan di tautan.");
       return;
     }
+    if (terkirimRef.current === token) return;
+    terkirimRef.current = token;
     api
       .post("/auth/verify-email", { token })
       .then(() => {
