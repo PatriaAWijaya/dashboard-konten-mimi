@@ -430,11 +430,6 @@ export default function GeneratePlanner() {
                 );
               })}
             </div>
-            <p className="mt-3 text-xs text-slate-400">
-              Pola acuan diambil dari riset benchmark campaign Ramadhan &amp;
-              Qurban 2026 (Rumah Zakat vs Dompet Dhuafa) dan tren sosial–keagamaan
-              April–September 2026.
-            </p>
           </Card>
         )}
 
