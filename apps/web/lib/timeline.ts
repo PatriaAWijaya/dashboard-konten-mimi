@@ -4,6 +4,7 @@ import {
   type RencanaFunnel,
   type TujuanCampaign,
 } from "./funnel";
+import { buatJadwalWA } from "./wa-marketing";
 
 /**
  * Timeline campaign terintegrasi: konten organik + placement ads +
@@ -16,7 +17,8 @@ export type KanalTimeline =
   | "ads"
   | "kolaborasi"
   | "web"
-  | "galangdana";
+  | "galangdana"
+  | "wa";
 
 export const LABEL_KANAL: Record<KanalTimeline, string> = {
   konten: "Konten Organik",
@@ -24,6 +26,7 @@ export const LABEL_KANAL: Record<KanalTimeline, string> = {
   kolaborasi: "Kolaborasi",
   web: "Web Internal",
   galangdana: "Galang Dana",
+  wa: "WhatsApp Marketing",
 };
 
 export const TONE_KANAL: Record<KanalTimeline, string> = {
@@ -32,6 +35,7 @@ export const TONE_KANAL: Record<KanalTimeline, string> = {
   kolaborasi: "bg-purple-100 text-purple-700",
   web: "bg-emerald-100 text-emerald-700",
   galangdana: "bg-amber-100 text-amber-700",
+  wa: "bg-green-100 text-green-700",
 };
 
 export interface ItemTimeline {
@@ -213,12 +217,24 @@ export function buatTimelineTerintegrasi(
     "Tekankan dampak donasi dan sisa waktu."
   );
 
+  // ---- WhatsApp Marketing (tersinkron per fase) ----
+  for (const w of buatJadwalWA(rencana, brief)) {
+    dorong(
+      w.tanggal,
+      w.fase,
+      "wa",
+      w.kegiatan,
+      `Segmen: ${w.segmen}. ${w.detail}`
+    );
+  }
+
   const urutanKanal: KanalTimeline[] = [
     "konten",
     "ads",
     "kolaborasi",
     "web",
     "galangdana",
+    "wa",
   ];
   items.sort(
     (a, b) =>

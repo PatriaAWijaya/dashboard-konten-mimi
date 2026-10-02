@@ -13,6 +13,12 @@ import {
 } from "./timeline";
 import type { RekomendasiTema } from "./tema";
 import type { Kompetitor } from "./kompetitor";
+import {
+  PRINSIP_SINKRONISASI_WA,
+  SEKUENS_PASCA_WA,
+  STRATEGI_WA_KOMPETITOR,
+  buatJadwalWA,
+} from "./wa-marketing";
 
 export interface InfoKompetitorPdf {
   nicheLabel?: string;
@@ -153,6 +159,104 @@ export function exportTimelinePdf(
     y = (doc as unknown as { lastAutoTable: { finalY: number } })
       .lastAutoTable.finalY + 8;
   }
+
+  // Sinkronisasi WA Marketing
+  const jadwalWA = buatJadwalWA(rencana, brief);
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(12);
+  doc.text("Sinkronisasi WA Marketing", 14, y);
+  y += 6;
+
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(10);
+  doc.text("Strategi WA 5 kompetitor se-niche", 14, y);
+  y += 5;
+  autoTable(doc, {
+    startY: y,
+    head: [["Kompetitor", "Ringkasan strategi"]],
+    body: STRATEGI_WA_KOMPETITOR.map((s) => [
+      s.handle ? `${s.nama} (@${s.handle})` : s.nama,
+      `${s.ringkasan} Pola: ${s.pola.join(" • ")}`,
+    ]),
+    theme: "grid",
+    headStyles: { fillColor: [22, 163, 74], fontSize: 9 },
+    bodyStyles: { fontSize: 8 },
+    columnStyles: { 0: { cellWidth: 44, fontStyle: "bold" } },
+    margin: { left: 14, right: 14 },
+  });
+  y = (doc as unknown as { lastAutoTable: { finalY: number } }).lastAutoTable
+    .finalY + 6;
+
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(10);
+  doc.text("Jadwal broadcast tersinkron", 14, y);
+  y += 5;
+  autoTable(doc, {
+    startY: y,
+    head: [["Tanggal", "Fase", "Kegiatan", "Segmen", "Detail"]],
+    body: jadwalWA.map((w) => [
+      formatTanggalPanjang(w.tanggal),
+      w.fase,
+      w.kegiatan,
+      w.segmen,
+      w.detail,
+    ]),
+    theme: "striped",
+    headStyles: { fillColor: [22, 163, 74], fontSize: 8 },
+    bodyStyles: { fontSize: 8 },
+    columnStyles: {
+      0: { cellWidth: 26 },
+      1: { cellWidth: 13 },
+      3: { cellWidth: 30 },
+    },
+    margin: { left: 14, right: 14 },
+  });
+  y = (doc as unknown as { lastAutoTable: { finalY: number } }).lastAutoTable
+    .finalY + 6;
+
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(10);
+  doc.text("4 prinsip sinkronisasi", 14, y);
+  y += 5;
+  autoTable(doc, {
+    startY: y,
+    head: [["No", "Prinsip", "Isi"]],
+    body: PRINSIP_SINKRONISASI_WA.map((p, i) => [
+      String(i + 1),
+      p.judul,
+      p.isi,
+    ]),
+    theme: "grid",
+    headStyles: { fillColor: [22, 163, 74], fontSize: 9 },
+    bodyStyles: { fontSize: 8 },
+    columnStyles: {
+      0: { cellWidth: 10 },
+      1: { cellWidth: 42, fontStyle: "bold" },
+    },
+    margin: { left: 14, right: 14 },
+  });
+  y = (doc as unknown as { lastAutoTable: { finalY: number } }).lastAutoTable
+    .finalY + 6;
+
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(10);
+  doc.text("Template sekuens pasca-event", 14, y);
+  y += 5;
+  autoTable(doc, {
+    startY: y,
+    head: [["Momen", "Kegiatan", "Detail"]],
+    body: SEKUENS_PASCA_WA.map((s) => [s.momen, s.kegiatan, s.detail]),
+    theme: "grid",
+    headStyles: { fillColor: [22, 163, 74], fontSize: 9 },
+    bodyStyles: { fontSize: 8 },
+    columnStyles: {
+      0: { cellWidth: 16, fontStyle: "bold" },
+      1: { cellWidth: 52 },
+    },
+    margin: { left: 14, right: 14 },
+  });
+  y = (doc as unknown as { lastAutoTable: { finalY: number } }).lastAutoTable
+    .finalY + 8;
 
   // Ringkasan fase
   doc.setFont("helvetica", "bold");

@@ -32,6 +32,12 @@ import {
   dapatkanNiche,
   type Kompetitor,
 } from "@/lib/kompetitor";
+import {
+  PRINSIP_SINKRONISASI_WA,
+  SEKUENS_PASCA_WA,
+  STRATEGI_WA_KOMPETITOR,
+  buatJadwalWA,
+} from "@/lib/wa-marketing";
 
 const SEMUA_PLATFORM: PlatformFunnel[] = ["instagram", "tiktok", "facebook"];
 const BARIS_PER_HALAMAN = 20;
@@ -230,6 +236,10 @@ export default function GeneratePlanner() {
 
   const timeline = useMemo(
     () => (rencana && brief ? buatTimelineTerintegrasi(rencana, brief) : []),
+    [rencana, brief]
+  );
+  const jadwalWA = useMemo(
+    () => (rencana && brief ? buatJadwalWA(rencana, brief) : []),
     [rencana, brief]
   );
   const kanalTersedia = useMemo(
@@ -614,6 +624,149 @@ export default function GeneratePlanner() {
             </div>
           </Card>
         )}
+
+        {/* Sinkronisasi WA Marketing */}
+        <Card>
+          <h2 className="text-base font-semibold text-slate-900">
+            Sinkronisasi WA Marketing
+          </h2>
+          <p className="mt-1 text-sm text-slate-500">
+            Jadwal broadcast WA yang selaras dengan fase campaign — meniru pola
+            kompetitor se-niche. Prinsipnya: satu pesan dua kecepatan (IG =
+            jangkauan, WA = nurturing).
+          </p>
+
+          <h3 className="mt-5 text-sm font-bold text-slate-800">
+            Strategi WA 5 kompetitor se-niche
+          </h3>
+          <div className="mt-2 grid gap-3 md:grid-cols-2">
+            {STRATEGI_WA_KOMPETITOR.map((s) => (
+              <div
+                key={s.kompetitorId}
+                className="rounded-xl border border-slate-200 bg-white p-4"
+              >
+                <p className="flex flex-wrap items-center gap-2 text-sm font-bold text-slate-900">
+                  {s.nama}
+                  {s.handle && (
+                    <span className="text-xs font-normal text-slate-400">
+                      @{s.handle}
+                    </span>
+                  )}
+                  <span
+                    className={`rounded-full px-2 py-0.5 text-[10px] font-bold ${
+                      s.sumberPola === "riset"
+                        ? "bg-green-100 text-green-700"
+                        : "bg-slate-100 text-slate-500"
+                    }`}
+                  >
+                    {s.sumberPola === "riset"
+                      ? "Riset benchmark"
+                      : "Pola umum"}
+                  </span>
+                </p>
+                <p className="mt-1 text-xs text-slate-500">{s.ringkasan}</p>
+                <ul className="mt-2 list-disc space-y-1 pl-4 text-xs text-slate-500">
+                  {s.pola.map((p, i) => (
+                    <li key={i}>{p}</li>
+                  ))}
+                </ul>
+              </div>
+            ))}
+          </div>
+
+          <h3 className="mt-5 text-sm font-bold text-slate-800">
+            Jadwal broadcast tersinkron ({jadwalWA.length} kiriman)
+          </h3>
+          <div className="mt-2 overflow-x-auto">
+            <table className="w-full text-left text-sm">
+              <thead>
+                <tr className="border-b border-slate-200 text-xs uppercase text-slate-400">
+                  <th className="px-3 py-2 font-semibold">Tanggal</th>
+                  <th className="px-3 py-2 font-semibold">Fase</th>
+                  <th className="px-3 py-2 font-semibold">Kegiatan</th>
+                  <th className="px-3 py-2 font-semibold">Segmen</th>
+                  <th className="px-3 py-2 font-semibold">Detail</th>
+                </tr>
+              </thead>
+              <tbody>
+                {jadwalWA.map((w, i) => (
+                  <tr
+                    key={`${w.tanggal}-${i}`}
+                    className="border-b border-slate-100 last:border-0"
+                  >
+                    <td className="whitespace-nowrap px-3 py-2.5 font-medium text-slate-900">
+                      {formatTanggalPanjang(w.tanggal)}
+                    </td>
+                    <td className="px-3 py-2.5">
+                      <span
+                        className={`inline-block rounded-full px-2.5 py-0.5 text-xs font-bold ${INFO_FASE[w.fase].tone}`}
+                      >
+                        {w.fase}
+                      </span>
+                    </td>
+                    <td className="px-3 py-2.5 font-medium text-slate-700">
+                      {w.kegiatan}
+                    </td>
+                    <td className="px-3 py-2.5 text-slate-500">{w.segmen}</td>
+                    <td className="px-3 py-2.5 text-slate-500">{w.detail}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+
+          <h3 className="mt-5 text-sm font-bold text-slate-800">
+            4 prinsip sinkronisasi
+          </h3>
+          <ol className="mt-2 grid gap-2 md:grid-cols-2">
+            {PRINSIP_SINKRONISASI_WA.map((p, i) => (
+              <li
+                key={i}
+                className="rounded-xl bg-slate-50 px-4 py-3 text-xs text-slate-600"
+              >
+                <span className="font-bold text-slate-800">
+                  {i + 1}. {p.judul} —{" "}
+                </span>
+                {p.isi}
+              </li>
+            ))}
+          </ol>
+
+          <h3 className="mt-5 text-sm font-bold text-slate-800">
+            Template sekuens pasca-event
+          </h3>
+          <div className="mt-2 overflow-x-auto">
+            <table className="w-full text-left text-sm">
+              <thead>
+                <tr className="border-b border-slate-200 text-xs uppercase text-slate-400">
+                  <th className="px-3 py-2 font-semibold">Momen</th>
+                  <th className="px-3 py-2 font-semibold">Kegiatan</th>
+                  <th className="px-3 py-2 font-semibold">Detail</th>
+                </tr>
+              </thead>
+              <tbody>
+                {SEKUENS_PASCA_WA.map((s) => (
+                  <tr
+                    key={s.momen}
+                    className="border-b border-slate-100 last:border-0"
+                  >
+                    <td className="whitespace-nowrap px-3 py-2.5 font-bold text-slate-900">
+                      {s.momen}
+                    </td>
+                    <td className="px-3 py-2.5 font-medium text-slate-700">
+                      {s.kegiatan}
+                    </td>
+                    <td className="px-3 py-2.5 text-slate-500">{s.detail}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+          <p className="mt-3 text-xs text-slate-400">
+            Catatan: isi pesan broadcast aktual bersifat privat — yang
+            direkonstruksi dari riset adalah jenis konten dan momen kirimnya.
+          </p>
+        </Card>
 
         <Card>
           <div className="mb-4 flex flex-wrap items-center justify-between gap-2">
