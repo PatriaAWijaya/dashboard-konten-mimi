@@ -12,6 +12,12 @@ import {
   type KanalTimeline,
 } from "./timeline";
 import type { RekomendasiTema } from "./tema";
+import type { Kompetitor } from "./kompetitor";
+
+export interface InfoKompetitorPdf {
+  nicheLabel?: string;
+  kompetitor: Kompetitor[];
+}
 
 function formatTanggalPanjang(iso: string): string {
   const [y, m, d] = iso.split("-").map(Number);
@@ -40,7 +46,8 @@ export function exportTimelinePdf(
   rencana: RencanaFunnel,
   timeline: ItemTimeline[],
   filterKanal: KanalTimeline | "semua" = "semua",
-  tema: RekomendasiTema | null = null
+  tema: RekomendasiTema | null = null,
+  infoKompetitor: InfoKompetitorPdf | null = null
 ) {
   const doc = new jsPDF({ unit: "mm", format: "a4" });
   const lebar = doc.internal.pageSize.getWidth();
@@ -118,6 +125,35 @@ export function exportTimelinePdf(
       .lastAutoTable.finalY + 8;
   }
 
+  // Kompetitor se-niche
+  if (infoKompetitor && infoKompetitor.kompetitor.length > 0) {
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(12);
+    doc.text(
+      infoKompetitor.nicheLabel
+        ? `Kompetitor Se-Niche — ${infoKompetitor.nicheLabel}`
+        : "Kompetitor Se-Niche",
+      14,
+      y
+    );
+    y += 6;
+    autoTable(doc, {
+      startY: y,
+      head: [["Kompetitor", "Pola andalan untuk ditiru"]],
+      body: infoKompetitor.kompetitor.map((k) => [
+        k.handle ? `${k.nama} (@${k.handle})` : k.nama,
+        k.polaAndalan.length > 0 ? k.polaAndalan.join(" • ") : "—",
+      ]),
+      theme: "grid",
+      headStyles: { fillColor: [249, 115, 22], fontSize: 9 },
+      bodyStyles: { fontSize: 9 },
+      columnStyles: { 0: { cellWidth: 48, fontStyle: "bold" } },
+      margin: { left: 14, right: 14 },
+    });
+    y = (doc as unknown as { lastAutoTable: { finalY: number } })
+      .lastAutoTable.finalY + 8;
+  }
+
   // Ringkasan fase
   doc.setFont("helvetica", "bold");
   doc.setFontSize(12);
@@ -163,7 +199,9 @@ export function exportTimelinePdf(
       it.fase,
       LABEL_KANAL[it.kanal],
       it.kegiatan,
-      it.detail,
+      it.referensiKompetitor
+        ? `${it.detail}\n${it.referensiKompetitor}`
+        : it.detail,
     ]),
     theme: "striped",
     headStyles: { fillColor: [249, 115, 22], fontSize: 8 },

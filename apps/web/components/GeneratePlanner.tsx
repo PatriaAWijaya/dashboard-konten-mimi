@@ -26,6 +26,12 @@ import {
   rekomendasiTema,
   type RekomendasiTema,
 } from "@/lib/tema";
+import {
+  BANK_NICHE_KOMPETITOR,
+  NICHE_DEFAULT,
+  dapatkanNiche,
+  type Kompetitor,
+} from "@/lib/kompetitor";
 
 const SEMUA_PLATFORM: PlatformFunnel[] = ["instagram", "tiktok", "facebook"];
 const BARIS_PER_HALAMAN = 20;
@@ -77,6 +83,17 @@ export default function GeneratePlanner() {
   const [temaOpsi, setTemaOpsi] = useState<RekomendasiTema[]>([]);
   const [temaId, setTemaId] = useState<string | null>(null);
   const [namaMomentum, setNamaMomentum] = useState<string | null>(null);
+  // Kompetitor se-niche untuk ide konten (bisa diganti/tambah/hapus)
+  const [nicheId, setNicheId] = useState<string>(NICHE_DEFAULT);
+  const [daftarKompetitor, setDaftarKompetitor] = useState<Kompetitor[]>(() =>
+    (dapatkanNiche(NICHE_DEFAULT)?.kompetitor ?? []).map((k) => ({
+      ...k,
+      polaAndalan: [...k.polaAndalan],
+    }))
+  );
+  const [namaKomp, setNamaKomp] = useState("");
+  const [handleKomp, setHandleKomp] = useState("");
+  const [polaKomp, setPolaKomp] = useState("");
   const [snap, setSnap] = useState<{
     tanggalMulai: string;
     tanggalTarget: string;
@@ -112,6 +129,7 @@ export default function GeneratePlanner() {
         tema: temaPertama
           ? { namaTema: temaPertama.namaTema, angle: temaPertama.angle }
           : undefined,
+        kompetitor: daftarKompetitor,
       });
       setRencana(hasil);
       setBrief({ apa: apa.trim(), mengapa, siapa: siapa.trim(), dimana: dimana.trim(), bagaimana: bagaimana.trim() });
@@ -133,22 +151,82 @@ export default function GeneratePlanner() {
     [temaOpsi, temaId]
   );
 
+  /** Hitung ulang rencana dengan tema & daftar kompetitor terbaru. */
+  function hitungUlangRencana(
+    tema: RekomendasiTema | null,
+    komp: Kompetitor[]
+  ) {
+    if (!snap) return;
+    try {
+      const hasil = buatRencanaFunnel({
+        ...snap,
+        tema: tema ? { namaTema: tema.namaTema, angle: tema.angle } : undefined,
+        kompetitor: komp,
+      });
+      setRencana(hasil);
+      setHalaman(1);
+    } catch (e) {
+      setError(
+        e instanceof Error ? e.message : "Gagal menghitung ulang rencana."
+      );
+    }
+  }
+
   /** Ganti tema → rencana dihitung ulang dengan tema baru. */
   function pilihTema(id: string) {
     const t = temaOpsi.find((x) => x.id === id);
     if (!t || !snap) return;
-    try {
-      const hasil = buatRencanaFunnel({
-        ...snap,
-        tema: { namaTema: t.namaTema, angle: t.angle },
-      });
-      setTemaId(id);
-      setRencana(hasil);
-      setHalaman(1);
-    } catch (e) {
-      setError(e instanceof Error ? e.message : "Gagal menerapkan tema.");
-    }
+    setTemaId(id);
+    hitungUlangRencana(t, daftarKompetitor);
   }
+
+  /** Ganti niche → daftar kompetitor diisi dari bank, rencana dihitung ulang. */
+  function gantiNiche(id: string) {
+    setNicheId(id);
+    const daftar = (dapatkanNiche(id)?.kompetitor ?? []).map((k) => ({
+      ...k,
+      polaAndalan: [...k.polaAndalan],
+    }));
+    setDaftarKompetitor(daftar);
+    hitungUlangRencana(temaTerpilih, daftar);
+  }
+
+  /** Tambah kompetitor manual (untuk niche apa pun). */
+  function tambahKompetitor() {
+    if (!namaKomp.trim()) {
+      setError("Isi dulu nama kompetitor yang ingin ditambahkan.");
+      return;
+    }
+    setError("");
+    const baru: Kompetitor = {
+      id: `kustom-${Date.now()}`,
+      nama: namaKomp.trim(),
+      handle: handleKomp.trim().replace(/^@/, ""),
+      polaAndalan: polaKomp
+        .split(/[,\n]/)
+        .map((s) => s.trim())
+        .filter(Boolean),
+      sumberPola: "umum",
+    };
+    const daftar = [...daftarKompetitor, baru];
+    setDaftarKompetitor(daftar);
+    setNamaKomp("");
+    setHandleKomp("");
+    setPolaKomp("");
+    hitungUlangRencana(temaTerpilih, daftar);
+  }
+
+  /** Hapus kompetitor dari daftar. */
+  function hapusKompetitor(id: string) {
+    const daftar = daftarKompetitor.filter((k) => k.id !== id);
+    setDaftarKompetitor(daftar);
+    hitungUlangRencana(temaTerpilih, daftar);
+  }
+
+  const nicheAktif = useMemo(
+    () => dapatkanNiche(nicheId),
+    [nicheId]
+  );
 
   const timeline = useMemo(
     () => (rencana && brief ? buatTimelineTerintegrasi(rencana, brief) : []),
@@ -330,6 +408,110 @@ export default function GeneratePlanner() {
             </p>
           </div>
         </div>
+        {/* Kompetitor Se-Niche */}
+        <Card>
+          <h2 className="text-base font-semibold text-slate-900">
+            Kompetitor Se-Niche
+          </h2>
+          <p className="mt-1 text-sm text-slate-500">
+            Untuk ide konten, kenali minimal 5 kompetitor dengan niche yang
+            sama. Tiap jadwal konten menyertakan satu pola andalan mereka
+            sebagai referensi untuk ditiru dan diadaptasi.
+          </p>
+          <div className="mt-4">
+            <Select
+              label="Niche"
+              value={nicheId}
+              onChange={(e) => gantiNiche(e.target.value)}
+            >
+              {BANK_NICHE_KOMPETITOR.map((n) => (
+                <option key={n.id} value={n.id}>
+                  {n.label}
+                </option>
+              ))}
+            </Select>
+            {nicheAktif && (
+              <p className="mt-1.5 text-xs text-slate-400">
+                {nicheAktif.deskripsi}
+              </p>
+            )}
+          </div>
+          <div className="mt-4 grid gap-3 md:grid-cols-2">
+            {daftarKompetitor.map((k) => (
+              <div
+                key={k.id}
+                className="rounded-xl border border-slate-200 bg-white p-4"
+              >
+                <div className="flex items-start justify-between gap-2">
+                  <div>
+                    <p className="text-sm font-bold text-slate-900">{k.nama}</p>
+                    {k.handle && (
+                      <p className="text-xs text-slate-400">@{k.handle}</p>
+                    )}
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => hapusKompetitor(k.id)}
+                    aria-label={`Hapus ${k.nama}`}
+                    className="rounded-lg px-2 py-1 text-xs font-semibold text-slate-400 hover:bg-slate-100 hover:text-red-600"
+                  >
+                    Hapus
+                  </button>
+                </div>
+                {k.polaAndalan.length > 0 ? (
+                  <ul className="mt-2 list-disc space-y-1 pl-4 text-xs text-slate-500">
+                    {k.polaAndalan.map((p, i) => (
+                      <li key={i}>{p}</li>
+                    ))}
+                  </ul>
+                ) : (
+                  <p className="mt-2 text-xs text-slate-400">
+                    Belum ada pola andalan — amati akunnya lalu adaptasi.
+                  </p>
+                )}
+              </div>
+            ))}
+          </div>
+          {daftarKompetitor.length < 5 && (
+            <p className="mt-3 text-xs font-medium text-amber-600">
+              Disarankan minimal 5 kompetitor — saat ini {daftarKompetitor.length}.
+            </p>
+          )}
+          <div className="mt-4 rounded-xl bg-slate-50 p-4">
+            <p className="text-sm font-semibold text-slate-700">
+              Tambah kompetitor manual
+            </p>
+            <div className="mt-3 grid gap-3 md:grid-cols-3">
+              <Input
+                label="Nama"
+                value={namaKomp}
+                onChange={(e) => setNamaKomp(e.target.value)}
+                placeholder="cth. Yayasan ABC"
+              />
+              <Input
+                label="Handle Instagram"
+                value={handleKomp}
+                onChange={(e) => setHandleKomp(e.target.value)}
+                placeholder="cth. yayasanabc"
+              />
+              <Input
+                label="Pola andalan (pisah koma)"
+                value={polaKomp}
+                onChange={(e) => setPolaKomp(e.target.value)}
+                placeholder="cth. Reels storytelling, CTA tunggal"
+              />
+            </div>
+            <Button
+              type="button"
+              variant="secondary"
+              onClick={tambahKompetitor}
+              className="mt-3 px-3! py-1.5! text-xs"
+            >
+              + Tambah kompetitor
+            </Button>
+          </div>
+        </Card>
+
         <div className="mt-5">
           <Button onClick={buat}>Buat Rencana</Button>
         </div>
@@ -452,7 +634,8 @@ export default function GeneratePlanner() {
                     rencana,
                     timeline,
                     filterKanal,
-                    temaTerpilih
+                    temaTerpilih,
+                    { nicheLabel: nicheAktif?.label, kompetitor: daftarKompetitor }
                   )
                 }
                 className="px-3! py-1.5! text-xs"
@@ -554,7 +737,14 @@ export default function GeneratePlanner() {
                     <td className="px-3 py-2.5 font-medium text-slate-700">
                       {it.kegiatan}
                     </td>
-                    <td className="px-3 py-2.5 text-slate-500">{it.detail}</td>
+                    <td className="px-3 py-2.5 text-slate-500">
+                      {it.detail}
+                      {it.referensiKompetitor && (
+                        <span className="mt-1 block text-xs text-slate-400">
+                          {it.referensiKompetitor}
+                        </span>
+                      )}
+                    </td>
                   </tr>
                 ))}
               </tbody>

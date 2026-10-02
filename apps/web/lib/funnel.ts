@@ -9,6 +9,9 @@
 // - Pembagian fase mengikuti funnel standar: TOFU 50% – MOFU 30% – BOFU 20%.
 // - Hari posting disebar merata dalam tiap rentang 7 hari.
 
+import { referensiPolaKompetitor } from "./kompetitor";
+import type { Kompetitor } from "./kompetitor";
+
 export type FaseFunnel = "TOFU" | "MOFU" | "BOFU";
 export type PlatformFunnel = "instagram" | "tiktok" | "facebook";
 
@@ -186,6 +189,7 @@ export interface ItemJadwal {
   tujuan: string;
   temaNama?: string;
   penjelasanTema?: string;
+  referensiKompetitor?: string;
 }
 
 export interface RencanaFunnel {
@@ -204,6 +208,7 @@ export interface OpsiFunnel {
   platform: PlatformFunnel[];
   tujuan?: TujuanCampaign; // default "jualan"
   tema?: TemaKonten; // tema campaign terpilih (opsional)
+  kompetitor?: Kompetitor[]; // kompetitor se-niche terpilih (opsional)
 }
 
 /** Bank konten per fase; BOFU disesuaikan dengan tujuan campaign. */
@@ -301,6 +306,10 @@ export function buatRencanaFunnel(opsi: OpsiFunnel): RencanaFunnel {
       const formatUnik = Array.from(
         new Set(platform.map((pl) => jenis.format[pl]))
       ).join(" • ");
+      const refKompetitor =
+        opsi.kompetitor && opsi.kompetitor.length > 0
+          ? referensiPolaKompetitor(opsi.kompetitor, items.length)
+          : undefined;
       items.push({
         tanggal: keIso(tambahHari(mulai, offset)),
         fase: slot.fase,
@@ -313,6 +322,7 @@ export function buatRencanaFunnel(opsi: OpsiFunnel): RencanaFunnel {
               penjelasanTema: opsi.tema.angle[slot.fase],
             }
           : {}),
+        ...(refKompetitor ? { referensiKompetitor: refKompetitor } : {}),
       });
     }
   }

@@ -40,6 +40,7 @@ export interface ItemTimeline {
   kanal: KanalTimeline;
   kegiatan: string;
   detail: string;
+  referensiKompetitor?: string;
 }
 
 function tambahHari(iso: string, hari: number): string {
@@ -78,6 +79,7 @@ export function buatTimelineTerintegrasi(
     detail: it.penjelasanTema
       ? `${it.penjelasanTema} · Format: ${it.formatSaran}`
       : it.formatSaran,
+    referensiKompetitor: it.referensiKompetitor,
   }));
 
   const t0 = rencana.tanggalMulai;
