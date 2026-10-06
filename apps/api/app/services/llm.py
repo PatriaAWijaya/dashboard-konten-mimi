@@ -395,6 +395,34 @@ class MockLLMProvider(LLMProvider):
                 f"OFFER (penawaran): {cta}.\n\n"
                 f"RESPONSE (ajakan merespons sekarang): {cta}."
             )
+        elif fw == "listicle":
+            isi = (
+                f"JUDUL (janji isi daftar): {what} — {why}.\n\n"
+                f"1. {who}: {how}.\n\n"
+                f"2. {pov}.\n\n"
+                f"3. Untuk {audiens}.\n\n"
+                f"PENUTUP + AJAKAN: {cta}."
+            )
+        elif fw == "myth_vs_truth":
+            isi = (
+                f"MITOS: {who} percaya bahwa {why}.\n\n"
+                f"FAKTA: {what} — {how}.\n\n"
+                f"KESIMPULAN ({pov}): {cta}."
+            )
+        elif fw == "old_vs_new":
+            isi = (
+                f"CARA LAMA: {who} — {what} ({why}).\n\n"
+                f"CARA BARU: {how}.\n\n"
+                f"HASIL ({pov}): {cta}."
+            )
+        elif fw == "framework_matrix":
+            isi = (
+                f"TOPIK: {what} — {why}.\n\n"
+                f"MATRIKS SUDUT PANDANG:\n"
+                f"• {who}: {how}.\n"
+                f"• {audiens}: {pov}.\n\n"
+                f"KESIMPULAN + AJAKAN: {cta}."
+            )
         else:
             isi = f"{what}\n\n{pov}\n\nAJAKAN: {cta}."
         return f"{pembuka}\n\n{isi}\n\n(Catatan: ini draf template. Aktifkan provider LLM (OpenAI/Anthropic) untuk copywriting yang lebih natural.)"
