@@ -6,7 +6,7 @@ import { api, ApiError } from "@/lib/api";
 import { apiOrDemo, demoAnalisaLanjutan } from "@/lib/content";
 import { formatAngka, formatPersen } from "@/lib/format";
 import type { AnalisaLanjutan, DiagnosisItem } from "@/lib/types";
-import { Alert, Card, Select, Spinner } from "@/components/ui";
+import { Alert, Card, Select, Spinner, Tabel } from "@/components/ui";
 
 const WARNA_ENGAGEMENT: { kunci: string; label: string; warna: string }[] = [
   { kunci: "likes", label: "Likes", warna: "#e11d48" },
@@ -283,47 +283,64 @@ export default function AnalisaLanjutan({
           Jumlah konten dan akumulasi engagement tiap format pada periode yang dipilih.
         </p>
         <div className="overflow-x-auto">
-          <table className="w-full min-w-[760px] text-left text-sm">
-            <thead>
-              <tr className="border-b border-slate-200 text-xs uppercase text-slate-500">
-                <th className="py-2 pr-3">Jenis post</th>
-                <th className="py-2 pr-3 text-right">Konten</th>
-                <th className="py-2 pr-3 text-right">Views</th>
-                <th className="py-2 pr-3 text-right">Likes</th>
-                <th className="py-2 pr-3 text-right">Comments</th>
-                <th className="py-2 pr-3 text-right">Saves</th>
-                <th className="py-2 pr-3 text-right">Shares</th>
-                <th className="py-2 pr-3 text-right">Follows</th>
-                <th className="py-2 pr-3 text-right">Total eng.</th>
-                <th className="py-2 text-right">Rata-rata ER</th>
-              </tr>
-            </thead>
-            <tbody>
-              {data.per_format.map((f) => (
-                <tr
-                  key={f.format}
-                  className="border-b border-slate-100 last:border-0 hover:bg-slate-50"
-                >
-                  <td className="py-2.5 pr-3 font-medium text-slate-900">
-                    {labelFormat(f.format)}
-                  </td>
-                  <td className="py-2.5 pr-3 text-right tabular-nums">{formatAngka(f.jumlah)}</td>
-                  <td className="py-2.5 pr-3 text-right tabular-nums">{formatAngka(f.views)}</td>
-                  <td className="py-2.5 pr-3 text-right tabular-nums">{formatAngka(f.likes)}</td>
-                  <td className="py-2.5 pr-3 text-right tabular-nums">{formatAngka(f.comments)}</td>
-                  <td className="py-2.5 pr-3 text-right tabular-nums">{formatAngka(f.saves)}</td>
-                  <td className="py-2.5 pr-3 text-right tabular-nums">{formatAngka(f.shares)}</td>
-                  <td className="py-2.5 pr-3 text-right tabular-nums">{formatAngka(f.follows)}</td>
-                  <td className="py-2.5 pr-3 text-right font-semibold tabular-nums text-slate-900">
-                    {formatAngka(f.total_engagement)}
-                  </td>
-                  <td className="py-2.5 text-right tabular-nums">
-                    {formatPersen(f.rata_er, 1, false)}
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+          <Tabel
+            kolom={[
+              "Jenis post",
+              "Konten",
+              "Views",
+              "Likes",
+              "Comments",
+              "Saves",
+              "Shares",
+              "Follows",
+              "Total eng.",
+              "Rata-rata ER",
+            ]}
+            rata={[
+              "left",
+              "right",
+              "right",
+              "right",
+              "right",
+              "right",
+              "right",
+              "right",
+              "right",
+              "right",
+            ]}
+            baris={data.per_format.map((f) => [
+              <span key="j" className="font-medium text-slate-900">
+                {labelFormat(f.format)}
+              </span>,
+              <span key="k" className="tabular-nums">
+                {formatAngka(f.jumlah)}
+              </span>,
+              <span key="v" className="tabular-nums">
+                {formatAngka(f.views)}
+              </span>,
+              <span key="l" className="tabular-nums">
+                {formatAngka(f.likes)}
+              </span>,
+              <span key="c" className="tabular-nums">
+                {formatAngka(f.comments)}
+              </span>,
+              <span key="sv" className="tabular-nums">
+                {formatAngka(f.saves)}
+              </span>,
+              <span key="sh" className="tabular-nums">
+                {formatAngka(f.shares)}
+              </span>,
+              <span key="fo" className="tabular-nums">
+                {formatAngka(f.follows)}
+              </span>,
+              <span key="t" className="font-semibold tabular-nums text-slate-900">
+                {formatAngka(f.total_engagement)}
+              </span>,
+              <span key="e" className="tabular-nums">
+                {formatPersen(f.rata_er, 1, false)}
+              </span>,
+            ])}
+          />
         </div>
       </Card>
 
@@ -383,79 +400,83 @@ export default function AnalisaLanjutan({
           </p>
         ) : (
           <div className="overflow-x-auto">
-            <table className="w-full min-w-[900px] text-left text-sm">
-              <thead>
-                <tr className="border-b border-slate-200 text-xs uppercase text-slate-500">
-                  <th className="py-2 pr-3">Tanggal</th>
-                  <th className="py-2 pr-3">Jenis post</th>
-                  <th className="py-2 pr-3">Caption</th>
-                  <th className="py-2 pr-3 text-right">Views</th>
-                  <th className="py-2 pr-3 text-right">Engagement</th>
-                  <th className="py-2 pr-3">Tipe CTA</th>
-                  <th className="py-2">Kategori</th>
-                </tr>
-              </thead>
-              <tbody>
-                {data.detail_bulanan.map((d) => {
-                  const { pendek, perlu } = potongCaption(d.caption);
-                  const terbuka = captionTerbuka.has(d.content_id);
-                  return (
-                    <tr
-                      key={d.content_id}
-                      className="border-b border-slate-100 align-top last:border-0 hover:bg-slate-50"
-                    >
-                      <td className="whitespace-nowrap py-2.5 pr-3 text-slate-600">
-                        {d.tanggal}
-                      </td>
-                      <td className="py-2.5 pr-3 font-medium text-slate-900">
-                        {labelFormat(d.format)}
-                      </td>
-                      <td className="max-w-[280px] py-2.5 pr-3 text-slate-600">
-                        <p className="break-words text-[13px] leading-snug">
-                          {terbuka ? d.caption.replace(/\s+/g, " ").trim() : pendek}
-                        </p>
-                        {perlu && (
-                          <button
-                            type="button"
-                            onClick={() => toggleCaption(d.content_id)}
-                            className="mt-1 text-xs font-medium text-orange-600 hover:underline"
-                          >
-                            {terbuka ? "Tutup" : "Lihat lengkap"}
-                          </button>
-                        )}
-                      </td>
-                      <td className="py-2.5 pr-3 text-right tabular-nums">{formatAngka(d.views)}</td>
-                      <td className="py-2.5 pr-3 text-right">
-                        <p className="font-semibold tabular-nums text-slate-900">
-                          {formatAngka(d.total_engagement)}
-                        </p>
-                        <p className="text-[11px] tabular-nums text-slate-400">
-                          L {formatAngka(d.likes)} · K {formatAngka(d.comments)} · S {formatAngka(d.saves)} ·
-                          Sh {formatAngka(d.shares)} · F {formatAngka(d.follows)}
-                        </p>
-                      </td>
-                      <td className="py-2.5 pr-3">
-                        <div className="flex max-w-[160px] flex-wrap gap-1">
-                          {d.cta_label.map((c) => (
-                            <span
-                              key={c}
-                              className="inline-block rounded-full bg-orange-100 px-2 py-0.5 text-[11px] font-medium text-orange-700"
-                            >
-                              {c}
-                            </span>
-                          ))}
-                        </div>
-                      </td>
-                      <td className="py-2.5">
-                        <span className="inline-block rounded-full bg-slate-100 px-2 py-0.5 text-[11px] font-medium text-slate-600">
-                          {d.kategori_label}
-                        </span>
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
+            <Tabel
+              kolom={[
+                "Tanggal",
+                "Jenis post",
+                "Caption",
+                "Views",
+                "Engagement",
+                "Tipe CTA",
+                "Kategori",
+              ]}
+              rata={[
+                "left",
+                "left",
+                "left",
+                "right",
+                "right",
+                "left",
+                "left",
+              ]}
+              baris={data.detail_bulanan.map((d) => {
+                const { pendek, perlu } = potongCaption(d.caption);
+                const terbuka = captionTerbuka.has(d.content_id);
+                return [
+                  <span key="t" className="whitespace-nowrap text-slate-600">
+                    {d.tanggal}
+                  </span>,
+                  <span key="j" className="font-medium text-slate-900">
+                    {labelFormat(d.format)}
+                  </span>,
+                  <span key="c" className="block max-w-[280px] text-slate-600">
+                    <span className="break-words text-[13px] leading-snug">
+                      {terbuka
+                        ? d.caption.replace(/\s+/g, " ").trim()
+                        : pendek}
+                    </span>
+                    {perlu && (
+                      <button
+                        type="button"
+                        onClick={() => toggleCaption(d.content_id)}
+                        className="mt-1 block text-xs font-medium text-orange-600 hover:underline"
+                      >
+                        {terbuka ? "Tutup" : "Lihat lengkap"}
+                      </button>
+                    )}
+                  </span>,
+                  <span key="v" className="tabular-nums">
+                    {formatAngka(d.views)}
+                  </span>,
+                  <span key="e">
+                    <span className="block font-semibold tabular-nums text-slate-900">
+                      {formatAngka(d.total_engagement)}
+                    </span>
+                    <span className="block text-[11px] tabular-nums text-slate-400">
+                      L {formatAngka(d.likes)} · K {formatAngka(d.comments)} · S{" "}
+                      {formatAngka(d.saves)} · Sh {formatAngka(d.shares)} · F{" "}
+                      {formatAngka(d.follows)}
+                    </span>
+                  </span>,
+                  <span key="cta" className="flex max-w-[160px] flex-wrap gap-1">
+                    {d.cta_label.map((c) => (
+                      <span
+                        key={c}
+                        className="inline-block rounded-full bg-orange-100 px-2 py-0.5 text-[11px] font-medium text-orange-700"
+                      >
+                        {c}
+                      </span>
+                    ))}
+                  </span>,
+                  <span
+                    key="k"
+                    className="inline-block rounded-full bg-slate-100 px-2 py-0.5 text-[11px] font-medium text-slate-600"
+                  >
+                    {d.kategori_label}
+                  </span>,
+                ];
+              })}
+            />
           </div>
         )}
       </Card>

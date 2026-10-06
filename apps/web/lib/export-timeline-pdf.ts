@@ -1,5 +1,3 @@
-import { jsPDF } from "jspdf";
-import autoTable from "jspdf-autotable";
 import {
   INFO_FASE,
   LABEL_TUJUAN,
@@ -46,8 +44,11 @@ function namaFileAman(nama: string): string {
 /**
  * Membuat dan mengunduh PDF berisi brief 5W1H + ringkasan fase +
  * timeline campaign terintegrasi.
+ *
+ * jspdf diimpor dinamis agar tidak membebani bundle halaman Planner
+ * (diunduh hanya saat pengguna menekan Export PDF).
  */
-export function exportTimelinePdf(
+export async function exportTimelinePdf(
   brief: BriefCampaign,
   rencana: RencanaFunnel,
   timeline: ItemTimeline[],
@@ -55,6 +56,10 @@ export function exportTimelinePdf(
   tema: RekomendasiTema | null = null,
   infoKompetitor: InfoKompetitorPdf | null = null
 ) {
+  const [{ jsPDF }, { default: autoTable }] = await Promise.all([
+    import("jspdf"),
+    import("jspdf-autotable"),
+  ]);
   const doc = new jsPDF({ unit: "mm", format: "a4" });
   const lebar = doc.internal.pageSize.getWidth();
   let y = 16;

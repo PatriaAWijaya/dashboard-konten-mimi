@@ -4,7 +4,7 @@ import uuid
 from datetime import datetime, timezone
 from typing import Annotated
 
-from fastapi import APIRouter, Depends, File, HTTPException, Path, Query, UploadFile, status
+from fastapi import APIRouter, Depends, File, HTTPException, Path, UploadFile, status
 from fastapi.responses import FileResponse
 from sqlalchemy import desc, select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -36,7 +36,6 @@ from app.schemas.billing import (
 from app.services.audit import log_audit
 from app.services.invoice import create_invoice as _create_invoice
 from app.services.maintenance import run_maintenance
-from app.services.payments import get_payment_provider
 from app.services.storage import get_storage_service
 
 router = APIRouter(tags=["billing"])
@@ -131,16 +130,10 @@ async def create_invoice_endpoint(
 
 @router.get("/billing/invoices", response_model=list[InvoiceListItem])
 async def list_invoices(
-    organization_id: Annotated[uuid.UUID, Query()],
     user: Annotated[User, Depends(get_current_user)],
     db: Annotated[AsyncSession, Depends(get_db)],
-    header_org_id: Annotated[uuid.UUID, Depends(parse_org_header)],
+    organization_id: Annotated[uuid.UUID, Depends(parse_org_header)],
 ):
-    if header_org_id != organization_id:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Header X-Organization-Id tidak cocok dengan organization_id pada query.",
-        )
     await get_org_context(db, user, organization_id)
     await run_maintenance(db)
 
@@ -324,16 +317,10 @@ async def download_payment_file(
 
 @router.get("/billing/memberships", response_model=MembershipOut | None)
 async def get_membership_info(
-    organization_id: Annotated[uuid.UUID, Query()],
     user: Annotated[User, Depends(get_current_user)],
     db: Annotated[AsyncSession, Depends(get_db)],
-    header_org_id: Annotated[uuid.UUID, Depends(parse_org_header)],
+    organization_id: Annotated[uuid.UUID, Depends(parse_org_header)],
 ):
-    if header_org_id != organization_id:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Header X-Organization-Id tidak cocok dengan organization_id pada query.",
-        )
     await get_org_context(db, user, organization_id)
     membership = await get_org_membership(db, organization_id)
     if membership is None:

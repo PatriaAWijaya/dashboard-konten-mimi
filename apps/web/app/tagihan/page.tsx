@@ -11,8 +11,10 @@ import {
   Alert,
   Button,
   Card,
+  EmptyBox,
   PageHeader,
   Spinner,
+  Tabel,
 } from "@/components/ui";
 import { MembershipBadge, invoiceStatusLabel } from "@/components/badges";
 
@@ -37,10 +39,8 @@ function TagihanIsi() {
     setError("");
     Promise.all([
       api.get<Plan[]>("/plans"),
-      api.get<Invoice[]>(`/billing/invoices?organization_id=${selectedOrgId}`),
-      api.get<Membership | null>(
-        `/billing/memberships?organization_id=${selectedOrgId}`
-      ),
+      api.get<Invoice[]>("/billing/invoices"),
+      api.get<Membership | null>("/billing/memberships"),
     ])
       .then(([p, inv, m]) => {
         setPlans(p);
@@ -143,53 +143,44 @@ function TagihanIsi() {
         Riwayat invoice
       </h2>
       {invoices.length === 0 ? (
-        <Card>
-          <p className="text-sm text-slate-500">
-            Belum ada invoice. Pilih paket di atas untuk membuat invoice
-            pertama Anda.
-          </p>
-        </Card>
+        <EmptyBox
+          title="Belum ada invoice"
+          description="Pilih paket di atas untuk membuat invoice pertama Anda."
+          icon={
+            <svg className="h-7 w-7" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M9 12h6m-6 4h6M9 8h6M5 3h14a1 1 0 0 1 1 1v16a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1Z" />
+            </svg>
+          }
+        />
       ) : (
         <Card className="overflow-x-auto p-0">
-          <table className="w-full min-w-[640px] text-left text-sm">
-            <thead>
-              <tr className="border-b border-slate-200 text-xs uppercase tracking-wide text-slate-500">
-                <th className="px-5 py-3 font-semibold">Kode</th>
-                <th className="px-5 py-3 font-semibold">Paket</th>
-                <th className="px-5 py-3 font-semibold">Total</th>
-                <th className="px-5 py-3 font-semibold">Status</th>
-                <th className="px-5 py-3 font-semibold">Kedaluwarsa</th>
-                <th className="px-5 py-3 font-semibold"></th>
-              </tr>
-            </thead>
-            <tbody>
-              {invoices.map((inv) => (
-                <tr key={inv.id} className="border-b border-slate-100 last:border-0">
-                  <td className="px-5 py-3 font-mono text-xs text-slate-700">
-                    {inv.code}
-                  </td>
-                  <td className="px-5 py-3 text-slate-900">{inv.plan_name}</td>
-                  <td className="px-5 py-3 font-semibold text-slate-900">
-                    {formatRupiah(inv.amount_total)}
-                  </td>
-                  <td className="px-5 py-3 text-slate-600">
-                    {invoiceStatusLabel(inv.status)}
-                  </td>
-                  <td className="px-5 py-3 text-slate-600">
-                    {formatTanggal(inv.expires_at, true)}
-                  </td>
-                  <td className="px-5 py-3 text-right">
-                    <Link
-                      href={`/tagihan/${inv.id}`}
-                      className="font-semibold text-orange-600 hover:text-orange-700"
-                    >
-                      Detail
-                    </Link>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+          <Tabel
+            kolom={["Kode", "Paket", "Total", "Status", "Kedaluwarsa", ""]}
+            baris={invoices.map((inv) => [
+              <span key="k" className="font-mono text-xs text-slate-700">
+                {inv.code}
+              </span>,
+              <span key="p" className="text-slate-900">
+                {inv.plan_name}
+              </span>,
+              <span key="t" className="font-semibold text-slate-900">
+                {formatRupiah(inv.amount_total)}
+              </span>,
+              <span key="s" className="text-slate-600">
+                {invoiceStatusLabel(inv.status)}
+              </span>,
+              <span key="e" className="text-slate-600">
+                {formatTanggal(inv.expires_at, true)}
+              </span>,
+              <Link
+                key="d"
+                href={`/tagihan/${inv.id}`}
+                className="font-semibold text-orange-600 hover:text-orange-700"
+              >
+                Detail
+              </Link>,
+            ])}
+          />
         </Card>
       )}
     </div>

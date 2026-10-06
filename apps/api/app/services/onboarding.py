@@ -73,12 +73,6 @@ def get_template_threshold(kategori: str) -> dict[str, float]:
     return dict(TEMPLATE_THRESHOLD_PER_KATEGORI[kategori])
 
 
-def template_untuk_brand(brand: Brand) -> dict[str, float]:
-    """Template berdasarkan kategori brand; fallback ke 'lainnya'."""
-    kategori = (brand.industry_category or "").strip() or KATEGORI_DEFAULT
-    return dict(TEMPLATE_THRESHOLD_PER_KATEGORI.get(kategori, TEMPLATE_THRESHOLD_PER_KATEGORI[KATEGORI_DEFAULT]))
-
-
 # ---------------------------------------------------------------------------
 # Progres onboarding
 # ---------------------------------------------------------------------------

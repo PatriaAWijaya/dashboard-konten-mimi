@@ -50,7 +50,3 @@ async def set_setting(db: AsyncSession, key: str, value: str | None) -> None:
     else:
         existing.value_encrypted = encrypted
     await db.flush()
-
-
-async def is_setting_configured(db: AsyncSession, key: str) -> bool:
-    return bool(await get_setting(db, key))

@@ -253,12 +253,26 @@ async def run_scoring(
     """
     config = await get_or_create_active_config(db, brand.id, organization_id)
 
+    # Hanya konten yang punya metrik di periode ini (semi-join) — bukan
+    # seluruh konten brand sepanjang masa. Perilaku identik: agregasi metrik
+    # di bawah memakai inner join periode yang sama, sehingga konten tanpa
+    # metrik memang tidak pernah menghasilkan skor.
+    ids_bermetrik = (
+        select(ContentMetricsDaily.content_id)
+        .where(
+            ContentMetricsDaily.organization_id == organization_id,
+            ContentMetricsDaily.date >= period_start,
+            ContentMetricsDaily.date <= period_end,
+        )
+        .distinct()
+    )
     contents = list(
         (
             await db.execute(
                 select(Content).where(
                     Content.brand_id == brand.id,
                     Content.organization_id == organization_id,
+                    Content.id.in_(ids_bermetrik),
                 )
             )
         )

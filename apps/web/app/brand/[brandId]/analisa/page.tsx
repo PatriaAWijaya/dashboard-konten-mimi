@@ -20,7 +20,7 @@ import type {
   PerbandinganData,
   PerbandinganDelta,
 } from "@/lib/types";
-import { Alert, Card, EmptyBox, PageHeader, Select, Spinner } from "@/components/ui";
+import { Alert, Card, EmptyBox, PageHeader, Select, Spinner, Tabel } from "@/components/ui";
 import { statusKontenTone, statusKontenLabel } from "@/components/badges";
 import BrandNav from "@/components/BrandNav";
 const AnalisaLanjutan = dynamic(() => import("@/components/AnalisaLanjutan"), {
@@ -293,32 +293,30 @@ function AnalisaIsi() {
               Detail MoM / YoY — {labelMetrik}
             </h3>
             <div className="overflow-x-auto">
-              <table className="w-full min-w-[480px] text-left text-sm">
-                <thead>
-                  <tr className="border-b border-slate-200 text-xs uppercase text-slate-500">
-                    <th className="py-2 pr-3">Bulan</th>
-                    <th className="py-2 pr-3 text-right">{labelMetrik}</th>
-                    <th className="py-2 pr-3">MoM</th>
-                    <th className="py-2">YoY</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {banding.bulan
-                    .filter((b) => (b[bandingMetrik] ?? 0) > 0)
-                    .map((b) => (
-                    <tr key={b.bulan} className="border-b border-slate-100 last:border-0 hover:bg-slate-50">
-                      <td className="py-2.5 pr-3 font-medium text-slate-900">{b.label}</td>
-                      <td className="py-2.5 pr-3 text-right tabular-nums">{formatAngka(b[bandingMetrik])}</td>
-                      <td className="py-2.5 pr-3">
-                        <DeltaBadge nilai={deltaUntuk(b, "mom", bandingMetrik)} jenis={`MoM ${labelMetrik}`} />
-                      </td>
-                      <td className="py-2.5">
-                        <DeltaBadge nilai={deltaUntuk(b, "yoy", bandingMetrik)} jenis={`YoY ${labelMetrik}`} />
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
+              <Tabel
+                kolom={["Bulan", labelMetrik, "MoM", "YoY"]}
+                rata={["left", "right", "left", "left"]}
+                baris={banding.bulan
+                  .filter((b) => (b[bandingMetrik] ?? 0) > 0)
+                  .map((b) => [
+                    <span key="b" className="font-medium text-slate-900">
+                      {b.label}
+                    </span>,
+                    <span key="m" className="tabular-nums">
+                      {formatAngka(b[bandingMetrik])}
+                    </span>,
+                    <DeltaBadge
+                      key="mom"
+                      nilai={deltaUntuk(b, "mom", bandingMetrik)}
+                      jenis={`MoM ${labelMetrik}`}
+                    />,
+                    <DeltaBadge
+                      key="yoy"
+                      nilai={deltaUntuk(b, "yoy", bandingMetrik)}
+                      jenis={`YoY ${labelMetrik}`}
+                    />,
+                  ])}
+              />
             </div>
             <p className="mt-3 text-xs text-slate-500">
               Engagement = likes + komentar + share + simpanan. Karena export

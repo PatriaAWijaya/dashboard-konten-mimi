@@ -18,6 +18,7 @@ import {
   PageHeader,
   Paginasi,
   Spinner,
+  Tabel,
 } from "@/components/ui";
 import { paymentStatusLabel } from "@/components/badges";
 
@@ -249,36 +250,20 @@ function TabRiwayat() {
       {items.length === 0 ? (
         <p className="p-5 text-sm text-slate-500">Belum ada riwayat pembayaran.</p>
       ) : (
-        <table className="w-full min-w-[720px] text-left text-sm">
-          <thead>
-            <tr className="border-b border-slate-200 text-xs uppercase tracking-wide text-slate-500">
-              <th className="px-5 py-3 font-semibold">Tanggal</th>
-              <th className="px-5 py-3 font-semibold">User</th>
-              <th className="px-5 py-3 font-semibold">Organisasi</th>
-              <th className="px-5 py-3 font-semibold">Nominal</th>
-              <th className="px-5 py-3 font-semibold">Status</th>
-            </tr>
-          </thead>
-          <tbody>
-            {pg.potong.map((item) => (
-              <tr key={item.payment.id} className="border-b border-slate-100 last:border-0">
-                <td className="px-5 py-3 text-slate-600">
-                  {formatTanggal(item.payment.uploaded_at, true)}
-                </td>
-                <td className="px-5 py-3 text-slate-900">{item.user.name}</td>
-                <td className="px-5 py-3 text-slate-600">
-                  {item.organization.name}
-                </td>
-                <td className="px-5 py-3 font-semibold text-slate-900">
-                  {formatRupiah(item.invoice.amount_total)}
-                </td>
-                <td className="px-5 py-3 text-slate-600">
-                  {paymentStatusLabel(item.payment.status)}
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
+        <Tabel
+          kolom={["Tanggal", "User", "Organisasi", "Nominal", "Status"]}
+          baris={pg.potong.map((item) => [
+            formatTanggal(item.payment.uploaded_at, true),
+            <span key="u" className="text-slate-900">
+              {item.user.name}
+            </span>,
+            item.organization.name,
+            <span key="n" className="font-semibold text-slate-900">
+              {formatRupiah(item.invoice.amount_total)}
+            </span>,
+            paymentStatusLabel(item.payment.status),
+          ])}
+        />
       )}
       {pg.totalHalaman > 1 && (
         <div className="border-t border-slate-200">
@@ -366,81 +351,75 @@ function TabMember() {
       {error && <Alert kind="error">{error}</Alert>}
       {sukses && <Alert kind="success">{sukses}</Alert>}
       <Card className="overflow-x-auto p-0">
-        <table className="w-full min-w-[880px] text-left text-sm">
-          <thead>
-            <tr className="border-b border-slate-200 text-xs uppercase tracking-wide text-slate-500">
-              <th className="px-5 py-3 font-semibold">Nama</th>
-              <th className="px-5 py-3 font-semibold">Email</th>
-              <th className="px-5 py-3 font-semibold">Terverifikasi</th>
-              <th className="px-5 py-3 font-semibold">Terdaftar</th>
-              <th className="px-5 py-3 font-semibold">Status</th>
-              <th className="px-5 py-3 font-semibold">Admin</th>
-              <th className="px-5 py-3 font-semibold"></th>
-            </tr>
-          </thead>
-          <tbody>
-            {pg.potong.map((u) => (
-              <tr key={u.id} className="border-b border-slate-100 last:border-0">
-                <td className="px-5 py-3 font-medium text-slate-900">{u.name}</td>
-                <td className="px-5 py-3 text-slate-600">{u.email}</td>
-                <td className="px-5 py-3">
-                  <span
-                    className={`inline-flex rounded-full px-2.5 py-0.5 text-xs font-medium ${
-                      u.email_verified
-                        ? "bg-emerald-100 text-emerald-800"
-                        : "bg-amber-100 text-amber-800"
-                    }`}
-                  >
-                    {u.email_verified ? "Ya" : "Belum"}
-                  </span>
-                </td>
-                <td className="px-5 py-3 whitespace-nowrap text-slate-600">
-                  {u.created_at ? formatTanggal(u.created_at) : "-"}
-                </td>
-                <td className="px-5 py-3">
-                  <span
-                    className={`inline-flex rounded-full px-2.5 py-0.5 text-xs font-medium ${
-                      u.is_active
-                        ? "bg-emerald-100 text-emerald-800"
-                        : "bg-red-100 text-red-800"
-                    }`}
-                  >
-                    {u.is_active ? "Aktif" : "Ditangguhkan"}
-                  </span>
-                </td>
-                <td className="px-5 py-3 text-slate-600">
-                  {u.is_superadmin ? "Ya" : "-"}
-                </td>
-                <td className="px-5 py-3">
-                  <div className="flex justify-end gap-2">
-                    {!u.email_verified && (
-                      <Button
-                        variant="secondary"
-                        onClick={() => verifikasiManual(u.id)}
-                        disabled={prosesId === u.id}
-                        className="px-3! py-1.5! text-xs"
-                      >
-                        {prosesId === u.id ? "Memproses…" : "Verifikasi"}
-                      </Button>
-                    )}
-                    <Button
-                      variant="secondary"
-                      onClick={() => ubahStatus(u.id, !u.is_active)}
-                      disabled={prosesId === u.id}
-                      className="px-3! py-1.5! text-xs"
-                    >
-                      {prosesId === u.id
-                        ? "Memproses…"
-                        : u.is_active
-                          ? "Tangguhkan"
-                          : "Aktifkan"}
-                    </Button>
-                  </div>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
+        <Tabel
+          kolom={[
+            "Nama",
+            "Email",
+            "Terverifikasi",
+            "Terdaftar",
+            "Status",
+            "Admin",
+            "",
+          ]}
+          baris={pg.potong.map((u) => [
+            <span key="n" className="font-medium text-slate-900">
+              {u.name}
+            </span>,
+            <span key="e" className="text-slate-600">
+              {u.email}
+            </span>,
+            <span
+              key="v"
+              className={`inline-flex rounded-full px-2.5 py-0.5 text-xs font-medium ${
+                u.email_verified
+                  ? "bg-emerald-100 text-emerald-800"
+                  : "bg-amber-100 text-amber-800"
+              }`}
+            >
+              {u.email_verified ? "Ya" : "Belum"}
+            </span>,
+            <span key="t" className="whitespace-nowrap text-slate-600">
+              {u.created_at ? formatTanggal(u.created_at) : "-"}
+            </span>,
+            <span
+              key="s"
+              className={`inline-flex rounded-full px-2.5 py-0.5 text-xs font-medium ${
+                u.is_active
+                  ? "bg-emerald-100 text-emerald-800"
+                  : "bg-red-100 text-red-800"
+              }`}
+            >
+              {u.is_active ? "Aktif" : "Ditangguhkan"}
+            </span>,
+            <span key="a" className="text-slate-600">
+              {u.is_superadmin ? "Ya" : "-"}
+            </span>,
+            <div key="aksi" className="flex justify-end gap-2">
+              {!u.email_verified && (
+                <Button
+                  variant="secondary"
+                  onClick={() => verifikasiManual(u.id)}
+                  disabled={prosesId === u.id}
+                  className="px-3! py-1.5! text-xs"
+                >
+                  {prosesId === u.id ? "Memproses…" : "Verifikasi"}
+                </Button>
+              )}
+              <Button
+                variant="secondary"
+                onClick={() => ubahStatus(u.id, !u.is_active)}
+                disabled={prosesId === u.id}
+                className="px-3! py-1.5! text-xs"
+              >
+                {prosesId === u.id
+                  ? "Memproses…"
+                  : u.is_active
+                    ? "Tangguhkan"
+                    : "Aktifkan"}
+              </Button>
+            </div>,
+          ])}
+        />
         {pg.totalHalaman > 1 && (
           <div className="border-t border-slate-200">
             <Paginasi
@@ -540,7 +519,7 @@ function AdminIsi() {
             onClick={() => setTab(t.id)}
             className={`whitespace-nowrap px-4 py-2.5 text-sm font-semibold transition ${
               tab === t.id
-                ? "border-b-2 border-orange-600 text-orange-700"
+                ? "border-b-2 border-orange-500 text-orange-700"
                 : "text-slate-500 hover:text-slate-800"
             }`}
           >

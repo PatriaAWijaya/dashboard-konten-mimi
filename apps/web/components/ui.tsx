@@ -236,7 +236,7 @@ export function Paginasi({
           variant="secondary"
           onClick={() => onPindah(halaman - 1)}
           disabled={halaman <= 1}
-          className="px-3! py-1.5! text-xs"
+          className="min-h-[44px] px-4! text-sm"
         >
           ← Sebelumnya
         </Button>
@@ -244,11 +244,62 @@ export function Paginasi({
           variant="secondary"
           onClick={() => onPindah(halaman + 1)}
           disabled={halaman >= totalHalaman}
-          className="px-3! py-1.5! text-xs"
+          className="min-h-[44px] px-4! text-sm"
         >
           Berikutnya →
         </Button>
       </div>
+    </div>
+  );
+}
+
+/**
+ * Tabel baku aplikasi: satu varian header & padding untuk semua halaman.
+ * Sel memakai ReactNode sehingga badge/format kustom tetap bisa dipakai.
+ * Varian "padat" untuk tabel dengan banyak kolom (mis. timeline planner).
+ */
+export function Tabel({
+  kolom,
+  baris,
+  padat,
+  rata,
+}: {
+  kolom: string[];
+  baris: ReactNode[][];
+  padat?: boolean;
+  /** Perataan per kolom ("left" default, "right" untuk angka). */
+  rata?: ("left" | "right")[];
+}) {
+  const pad = padat ? "px-3 py-2" : "px-5 py-3";
+  const perataan = (i: number) =>
+    rata?.[i] === "right" ? "text-right" : "text-left";
+  return (
+    <div className="overflow-x-auto">
+      <table className="w-full text-left text-sm">
+        <thead>
+          <tr className="border-b border-slate-200 text-xs uppercase text-slate-400">
+            {kolom.map((k, i) => (
+              <th key={k} className={`${pad} font-semibold ${perataan(i)}`}>
+                {k}
+              </th>
+            ))}
+          </tr>
+        </thead>
+        <tbody>
+          {baris.map((sel, i) => (
+            <tr key={i} className="border-b border-slate-100 last:border-0">
+              {sel.map((isi, j) => (
+                <td
+                  key={j}
+                  className={`${pad} align-top text-slate-500 ${perataan(j)}`}
+                >
+                  {isi}
+                </td>
+              ))}
+            </tr>
+          ))}
+        </tbody>
+      </table>
     </div>
   );
 }

@@ -15,6 +15,7 @@ import {
   PageHeader,
   Select,
   Spinner,
+  Tabel,
 } from "@/components/ui";
 import { MembershipBadge } from "@/components/badges";
 
@@ -356,66 +357,55 @@ function KelolaOrganisasi() {
           <h3 className="mt-6 text-sm font-semibold text-slate-900">
             Anggota ({members.length})
           </h3>
-          <div className="mt-3 overflow-x-auto">
-            <table className="w-full text-left text-sm">
-              <thead>
-                <tr className="border-b border-slate-200 text-xs uppercase tracking-wide text-slate-500">
-                  <th className="py-2 pr-4 font-semibold">Nama</th>
-                  <th className="py-2 pr-4 font-semibold">Email</th>
-                  <th className="py-2 pr-4 font-semibold">Peran</th>
-                  <th className="py-2 font-semibold"></th>
-                </tr>
-              </thead>
-              <tbody>
-                {members.map((m) => {
-                  const diriSendiri =
-                    user?.email?.toLowerCase() === m.email.toLowerCase();
-                  const terkunci = diriSendiri || m.role === "owner";
-                  return (
-                    <tr key={m.user_id} className="border-b border-slate-100">
-                      <td className="py-2.5 pr-4 font-medium text-slate-900">
-                        {m.name}
-                        {diriSendiri && (
-                          <span className="ml-2 rounded-full bg-orange-100 px-2 py-0.5 text-[11px] font-semibold text-orange-700">
-                            Anda
-                          </span>
-                        )}
-                      </td>
-                      <td className="py-2.5 pr-4 text-slate-600">{m.email}</td>
-                      <td className="py-2.5 pr-4">
-                        <span className="inline-flex rounded-full bg-slate-100 px-2.5 py-0.5 text-xs font-medium text-slate-700">
-                          {m.role}
-                        </span>
-                      </td>
-                      <td className="py-2.5 text-right">
-                        <span
-                          title={
-                            diriSendiri
-                              ? "Anda tidak bisa mengeluarkan diri sendiri"
-                              : m.role === "owner"
-                                ? "Owner terakhir tidak bisa dikeluarkan"
-                                : "Keluarkan dari organisasi"
-                          }
-                        >
-                          <Button
-                            variant="ghost"
-                            onClick={() => keluarkanMember(m)}
-                            disabled={
-                              terkunci || prosesUndangan === m.user_id
-                            }
-                            className="px-3! py-1.5! text-xs text-red-600 hover:bg-red-50 disabled:text-slate-300"
-                          >
-                            {prosesUndangan === m.user_id
-                              ? "Memproses…"
-                              : "Keluarkan"}
-                          </Button>
-                        </span>
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
+          <div className="mt-3">
+            <Tabel
+              kolom={["Nama", "Email", "Peran", ""]}
+              baris={members.map((m) => {
+                const diriSendiri =
+                  user?.email?.toLowerCase() === m.email.toLowerCase();
+                const terkunci = diriSendiri || m.role === "owner";
+                return [
+                  <span key="n" className="font-medium text-slate-900">
+                    {m.name}
+                    {diriSendiri && (
+                      <span className="ml-2 rounded-full bg-orange-100 px-2 py-0.5 text-[11px] font-semibold text-orange-700">
+                        Anda
+                      </span>
+                    )}
+                  </span>,
+                  <span key="e" className="text-slate-600">
+                    {m.email}
+                  </span>,
+                  <span
+                    key="r"
+                    className="inline-flex rounded-full bg-slate-100 px-2.5 py-0.5 text-xs font-medium text-slate-700"
+                  >
+                    {m.role}
+                  </span>,
+                  <span
+                    key="k"
+                    title={
+                      diriSendiri
+                        ? "Anda tidak bisa mengeluarkan diri sendiri"
+                        : m.role === "owner"
+                          ? "Owner terakhir tidak bisa dikeluarkan"
+                          : "Keluarkan dari organisasi"
+                    }
+                  >
+                    <Button
+                      variant="ghost"
+                      onClick={() => keluarkanMember(m)}
+                      disabled={terkunci || prosesUndangan === m.user_id}
+                      className="px-3! py-1.5! text-xs text-red-600 hover:bg-red-50 disabled:text-slate-300"
+                    >
+                      {prosesUndangan === m.user_id
+                        ? "Memproses…"
+                        : "Keluarkan"}
+                    </Button>
+                  </span>,
+                ];
+              })}
+            />
             {members.length === 0 && (
               <p className="py-4 text-sm text-slate-500">
                 Belum ada member selain Anda.

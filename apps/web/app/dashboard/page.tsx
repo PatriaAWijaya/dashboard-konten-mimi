@@ -7,7 +7,7 @@ import { useAuth, RequireAuth } from "@/lib/auth";
 import { api, ApiError } from "@/lib/api";
 import { formatTanggal } from "@/lib/format";
 import type { OrganizationDetail } from "@/lib/types";
-import { Alert, Button, Card, Input, PageHeader, Spinner } from "@/components/ui";
+import { Alert, Button, Card, EmptyBox, Input, PageHeader, Spinner } from "@/components/ui";
 import { KirimUlangVerifikasi } from "@/components/KirimUlangVerifikasi";
 import { MembershipBadge, membershipLabel } from "@/components/badges";
 
@@ -307,9 +307,15 @@ function DasborIsi() {
           </div>
         </>
       ) : (
-        <p className="mt-8 text-center text-sm text-slate-400">
-          Belum ada data yang diinput.
-        </p>
+        <EmptyBox
+          title="Belum ada data yang diinput"
+          description="Mulai dengan menambah brand dan mengunggah data konten CSV."
+          icon={
+            <svg className="h-7 w-7" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M3 13.5V6a1 1 0 0 1 1-1h16a1 1 0 0 1 1 1v11a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1v-3.5M3 13.5h18M8 3v4M16 3v4" />
+            </svg>
+          }
+        />
       )}
     </div>
   );

@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { Alert, Button, Card, Input, Paginasi, Select, TextArea } from "@/components/ui";
+import { Alert, Button, Card, Input, Paginasi, Select, Tabel, TextArea } from "@/components/ui";
 import {
   DURASI_MAX_HARI,
   DURASI_MIN_HARI,
@@ -100,6 +100,7 @@ export default function GeneratePlanner() {
   const [namaKomp, setNamaKomp] = useState("");
   const [handleKomp, setHandleKomp] = useState("");
   const [polaKomp, setPolaKomp] = useState("");
+  const [exportingPdf, setExportingPdf] = useState(false);
   const [snap, setSnap] = useState<{
     tanggalMulai: string;
     tanggalTarget: string;
@@ -677,42 +678,30 @@ export default function GeneratePlanner() {
           <h3 className="mt-5 text-sm font-bold text-slate-800">
             Jadwal broadcast tersinkron ({jadwalWA.length} kiriman)
           </h3>
-          <div className="mt-2 overflow-x-auto">
-            <table className="w-full text-left text-sm">
-              <thead>
-                <tr className="border-b border-slate-200 text-xs uppercase text-slate-400">
-                  <th className="px-3 py-2 font-semibold">Tanggal</th>
-                  <th className="px-3 py-2 font-semibold">Fase</th>
-                  <th className="px-3 py-2 font-semibold">Kegiatan</th>
-                  <th className="px-3 py-2 font-semibold">Segmen</th>
-                  <th className="px-3 py-2 font-semibold">Detail</th>
-                </tr>
-              </thead>
-              <tbody>
-                {jadwalWA.map((w, i) => (
-                  <tr
-                    key={`${w.tanggal}-${i}`}
-                    className="border-b border-slate-100 last:border-0"
-                  >
-                    <td className="whitespace-nowrap px-3 py-2.5 font-medium text-slate-900">
-                      {formatTanggalPanjang(w.tanggal)}
-                    </td>
-                    <td className="px-3 py-2.5">
-                      <span
-                        className={`inline-block rounded-full px-2.5 py-0.5 text-xs font-bold ${INFO_FASE[w.fase].tone}`}
-                      >
-                        {w.fase}
-                      </span>
-                    </td>
-                    <td className="px-3 py-2.5 font-medium text-slate-700">
-                      {w.kegiatan}
-                    </td>
-                    <td className="px-3 py-2.5 text-slate-500">{w.segmen}</td>
-                    <td className="px-3 py-2.5 text-slate-500">{w.detail}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+          <div className="mt-2">
+            <Tabel
+              padat
+              kolom={["Tanggal", "Fase", "Kegiatan", "Segmen", "Detail"]}
+              baris={jadwalWA.map((w) => [
+                <span
+                  key="t"
+                  className="whitespace-nowrap font-medium text-slate-900"
+                >
+                  {formatTanggalPanjang(w.tanggal)}
+                </span>,
+                <span
+                  key="f"
+                  className={`inline-block rounded-full px-2.5 py-0.5 text-xs font-bold ${INFO_FASE[w.fase].tone}`}
+                >
+                  {w.fase}
+                </span>,
+                <span key="k" className="font-medium text-slate-700">
+                  {w.kegiatan}
+                </span>,
+                w.segmen,
+                w.detail,
+              ])}
+            />
           </div>
 
           <h3 className="mt-5 text-sm font-bold text-slate-800">
@@ -735,32 +724,23 @@ export default function GeneratePlanner() {
           <h3 className="mt-5 text-sm font-bold text-slate-800">
             Template sekuens pasca-event
           </h3>
-          <div className="mt-2 overflow-x-auto">
-            <table className="w-full text-left text-sm">
-              <thead>
-                <tr className="border-b border-slate-200 text-xs uppercase text-slate-400">
-                  <th className="px-3 py-2 font-semibold">Momen</th>
-                  <th className="px-3 py-2 font-semibold">Kegiatan</th>
-                  <th className="px-3 py-2 font-semibold">Detail</th>
-                </tr>
-              </thead>
-              <tbody>
-                {SEKUENS_PASCA_WA.map((s) => (
-                  <tr
-                    key={s.momen}
-                    className="border-b border-slate-100 last:border-0"
-                  >
-                    <td className="whitespace-nowrap px-3 py-2.5 font-bold text-slate-900">
-                      {s.momen}
-                    </td>
-                    <td className="px-3 py-2.5 font-medium text-slate-700">
-                      {s.kegiatan}
-                    </td>
-                    <td className="px-3 py-2.5 text-slate-500">{s.detail}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+          <div className="mt-2">
+            <Tabel
+              padat
+              kolom={["Momen", "Kegiatan", "Detail"]}
+              baris={SEKUENS_PASCA_WA.map((s) => [
+                <span
+                  key="m"
+                  className="whitespace-nowrap font-bold text-slate-900"
+                >
+                  {s.momen}
+                </span>,
+                <span key="k" className="font-medium text-slate-700">
+                  {s.kegiatan}
+                </span>,
+                s.detail,
+              ])}
+            />
           </div>
           <p className="mt-3 text-xs text-slate-400">
             Catatan: isi pesan broadcast aktual bersifat privat — yang
@@ -780,20 +760,30 @@ export default function GeneratePlanner() {
               </p>
               <Button
                 variant="secondary"
-                onClick={() =>
-                  brief &&
-                  exportTimelinePdf(
-                    brief,
-                    rencana,
-                    timeline,
-                    filterKanal,
-                    temaTerpilih,
-                    { nicheLabel: nicheAktif?.label, kompetitor: daftarKompetitor }
-                  )
-                }
+                disabled={exportingPdf}
+                onClick={async () => {
+                  if (!brief || exportingPdf) return;
+                  setExportingPdf(true);
+                  try {
+                    await exportTimelinePdf(
+                      brief,
+                      rencana,
+                      timeline,
+                      filterKanal,
+                      temaTerpilih,
+                      { nicheLabel: nicheAktif?.label, kompetitor: daftarKompetitor }
+                    );
+                  } catch (e) {
+                    setError(
+                      e instanceof Error ? e.message : "Gagal membuat PDF."
+                    );
+                  } finally {
+                    setExportingPdf(false);
+                  }
+                }}
                 className="px-3! py-1.5! text-xs"
               >
-                Export PDF
+                {exportingPdf ? "Menyiapkan PDF…" : "Export PDF"}
               </Button>
             </div>
           </div>
@@ -853,56 +843,41 @@ export default function GeneratePlanner() {
             ))}
           </div>
 
-          <div className="overflow-x-auto">
-            <table className="w-full text-left text-sm">
-              <thead>
-                <tr className="border-b border-slate-200 text-xs uppercase text-slate-400">
-                  <th className="px-3 py-2 font-semibold">Tanggal</th>
-                  <th className="px-3 py-2 font-semibold">Fase</th>
-                  <th className="px-3 py-2 font-semibold">Kanal</th>
-                  <th className="px-3 py-2 font-semibold">Kegiatan</th>
-                  <th className="px-3 py-2 font-semibold">Detail</th>
-                </tr>
-              </thead>
-              <tbody>
-                {itemsHalaman.map((it, i) => (
-                  <tr
-                    key={`${it.tanggal}-${it.kanal}-${i}`}
-                    className="border-b border-slate-100 last:border-0"
-                  >
-                    <td className="whitespace-nowrap px-3 py-2.5 font-medium text-slate-900">
-                      {formatTanggalPanjang(it.tanggal)}
-                    </td>
-                    <td className="px-3 py-2.5">
-                      <span
-                        className={`inline-block rounded-full px-2.5 py-0.5 text-xs font-bold ${INFO_FASE[it.fase].tone}`}
-                      >
-                        {it.fase}
-                      </span>
-                    </td>
-                    <td className="px-3 py-2.5">
-                      <span
-                        className={`inline-block whitespace-nowrap rounded-full px-2.5 py-0.5 text-xs font-bold ${TONE_KANAL[it.kanal]}`}
-                      >
-                        {LABEL_KANAL[it.kanal]}
-                      </span>
-                    </td>
-                    <td className="px-3 py-2.5 font-medium text-slate-700">
-                      {it.kegiatan}
-                    </td>
-                    <td className="px-3 py-2.5 text-slate-500">
-                      {it.detail}
-                      {it.referensiKompetitor && (
-                        <span className="mt-1 block text-xs text-slate-400">
-                          {it.referensiKompetitor}
-                        </span>
-                      )}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+          <Tabel
+            padat
+            kolom={["Tanggal", "Fase", "Kanal", "Kegiatan", "Detail"]}
+            baris={itemsHalaman.map((it) => [
+              <span
+                key="t"
+                className="whitespace-nowrap font-medium text-slate-900"
+              >
+                {formatTanggalPanjang(it.tanggal)}
+              </span>,
+              <span
+                key="f"
+                className={`inline-block rounded-full px-2.5 py-0.5 text-xs font-bold ${INFO_FASE[it.fase].tone}`}
+              >
+                {it.fase}
+              </span>,
+              <span
+                key="k"
+                className={`inline-block whitespace-nowrap rounded-full px-2.5 py-0.5 text-xs font-bold ${TONE_KANAL[it.kanal]}`}
+              >
+                {LABEL_KANAL[it.kanal]}
+              </span>,
+              <span key="kg" className="font-medium text-slate-700">
+                {it.kegiatan}
+              </span>,
+              <span key="d">
+                {it.detail}
+                {it.referensiKompetitor && (
+                  <span className="mt-1 block text-xs text-slate-400">
+                    {it.referensiKompetitor}
+                  </span>
+                )}
+              </span>,
+            ])}
+          />
           <Paginasi
             halaman={halaman}
             totalHalaman={totalHalaman}

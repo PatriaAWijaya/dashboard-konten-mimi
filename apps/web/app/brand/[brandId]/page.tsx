@@ -15,7 +15,7 @@ const TrenChart = dynamic(() => import("@/components/TrenChart"), {
   ssr: false,
   loading: () => <p className="text-sm text-slate-500">Memuat grafik…</p>,
 });
-import { Alert, Button, Card, EmptyBox, PageHeader, Spinner } from "@/components/ui";
+import { Alert, Button, Card, EmptyBox, PageHeader, Spinner, Tabel } from "@/components/ui";
 import { StatusKontenBadge } from "@/components/badges";
 import BrandNav from "@/components/BrandNav";
 import DemoBadge from "@/components/DemoBadge";
@@ -327,54 +327,72 @@ function DasborBrandIsi() {
               Daftar konten ({data.konten.length})
             </h3>
             <div className="overflow-x-auto">
-              <table className="w-full min-w-[820px] text-left text-sm">
-                <thead>
-                  <tr className="border-b border-slate-200 text-xs uppercase text-slate-500">
-                    <th className="py-2 pr-3">Post ID</th>
-                    <th className="py-2 pr-3">Platform</th>
-                    <th className="py-2 pr-3">Format</th>
-                    <th className="py-2 pr-3">Tujuan</th>
-                    <th className="py-2 pr-3 text-right">Views</th>
-                    <th className="py-2 pr-3 text-right">ER</th>
-                    <th className="py-2 pr-3 text-right">Skor</th>
-                    <th className="py-2 pr-3">Status</th>
-                    <th className="py-2">Label</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {data.konten.map((k) => (
-                    <tr key={k.content_id} className="border-b border-slate-100 last:border-0 hover:bg-slate-50">
-                      <td className="py-2.5 pr-3 font-mono text-[13px] font-medium text-slate-900">
-                        {k.post_id}
-                      </td>
-                      <td className="py-2.5 pr-3 capitalize text-slate-600">{k.platform}</td>
-                      <td className="py-2.5 pr-3 text-slate-600">{formatLabel(k.format)}</td>
-                      <td className="py-2.5 pr-3 capitalize text-slate-600">{k.tujuan}</td>
-                      <td className="py-2.5 pr-3 text-right tabular-nums text-slate-700">
-                        {k.views?.toLocaleString("id-ID") ?? "-"}
-                      </td>
-                      <td className="py-2.5 pr-3 text-right tabular-nums text-slate-700">
-                        {formatPersen(k.er)}
-                      </td>
-                      <td className="py-2.5 pr-3 text-right font-semibold tabular-nums text-slate-900">
-                        {k.score ?? "-"}
-                      </td>
-                      <td className="py-2.5 pr-3">
-                        <StatusKontenBadge status={k.status} />
-                      </td>
-                      <td className="py-2.5">
-                        {k.labels.includes("winner") ? (
-                          <span className="inline-flex items-center gap-1 rounded-full bg-orange-100 px-2.5 py-0.5 text-xs font-semibold text-orange-700">
-                            🏆 winner
-                          </span>
-                        ) : (
-                          <span className="text-slate-300">-</span>
-                        )}
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
+              <Tabel
+                kolom={[
+                  "Post ID",
+                  "Platform",
+                  "Format",
+                  "Tujuan",
+                  "Views",
+                  "ER",
+                  "Skor",
+                  "Status",
+                  "Label",
+                ]}
+                rata={[
+                  "left",
+                  "left",
+                  "left",
+                  "left",
+                  "right",
+                  "right",
+                  "right",
+                  "left",
+                  "left",
+                ]}
+                baris={data.konten.map((k) => [
+                  <span
+                    key="p"
+                    className="font-mono text-[13px] font-medium text-slate-900"
+                  >
+                    {k.post_id}
+                  </span>,
+                  <span key="pl" className="capitalize text-slate-600">
+                    {k.platform}
+                  </span>,
+                  <span key="f" className="text-slate-600">
+                    {formatLabel(k.format)}
+                  </span>,
+                  <span key="t" className="capitalize text-slate-600">
+                    {k.tujuan}
+                  </span>,
+                  <span key="v" className="tabular-nums text-slate-700">
+                    {k.views?.toLocaleString("id-ID") ?? "-"}
+                  </span>,
+                  <span key="e" className="tabular-nums text-slate-700">
+                    {formatPersen(k.er)}
+                  </span>,
+                  <span
+                    key="s"
+                    className="font-semibold tabular-nums text-slate-900"
+                  >
+                    {k.score ?? "-"}
+                  </span>,
+                  <StatusKontenBadge key="st" status={k.status} />,
+                  k.labels.includes("winner") ? (
+                    <span
+                      key="l"
+                      className="inline-flex items-center gap-1 rounded-full bg-orange-100 px-2.5 py-0.5 text-xs font-semibold text-orange-700"
+                    >
+                      🏆 winner
+                    </span>
+                  ) : (
+                    <span key="l" className="text-slate-300">
+                      -
+                    </span>
+                  ),
+                ])}
+              />
             </div>
             <p className="mt-3 text-xs text-slate-400">
               Data per {formatTanggal(new Date().toISOString())} · ER = weighted

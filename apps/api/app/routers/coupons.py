@@ -38,9 +38,11 @@ class RedeemRequest(BaseModel):
 @router.get("/validate", response_model=CouponInfo)
 async def validate(
     code: Annotated[str, Query(min_length=1, max_length=40)],
+    _user: Annotated[User, Depends(get_current_user)],
     db: Annotated[AsyncSession, Depends(get_db)],
 ):
-    """Cek apakah kode kupon valid (tanpa menukarkan)."""
+    """Cek apakah kode kupon valid (tanpa menukarkan). Wajib login agar
+    kode kupon tidak bisa dienumerasi publik."""
     coupon = await validate_coupon(db, code)
     return CouponInfo(
         code=coupon.code,

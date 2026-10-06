@@ -142,75 +142,6 @@ def normalize_content_row(platform: str, row: dict) -> dict:
     }
 
 
-async def upsert_content_row(
-    db: AsyncSession,
-    *,
-    brand_id: uuid.UUID,
-    organization_id: uuid.UUID,
-    normalized: dict,
-) -> tuple[Content, bool]:
-    """Upsert Content (kunci brand+platform+post_id) + ContentMetricsDaily
-    (kunci content+tanggal) dari dict hasil normalize_content_row.
-
-    Return (content, True) bila Content baru dibuat, (content, False) bila
-    Content sudah ada (di-update).
-    """
-    tanggal = normalized["tanggal"]
-    content = await db.scalar(
-        select(Content).where(
-            Content.brand_id == brand_id,
-            Content.organization_id == organization_id,
-            Content.platform == normalized["platform"],
-            Content.post_id == normalized["post_id"],
-        )
-    )
-    baru = content is None
-    if content is None:
-        content = Content(
-            organization_id=organization_id,
-            brand_id=brand_id,
-            platform=normalized["platform"],
-            post_id=normalized["post_id"],
-            post_url=normalized["post_url"],
-            posted_at=normalized["posted_at"],
-            format=normalized["format"],
-            tujuan=normalized["tujuan"],
-            caption=normalized["caption"],
-        )
-        db.add(content)
-        await db.flush()
-    else:
-        # posted_at TIDAK di-overwrite: tanggal publikasi adalah fakta immutable.
-        # (Sync ulang dengan data mock/API tidak boleh menggesernya.)
-        content.post_url = normalized["post_url"]
-        content.format = normalized["format"]
-        content.tujuan = normalized["tujuan"]
-        content.caption = normalized["caption"]
-
-    metric = await db.scalar(
-        select(ContentMetricsDaily).where(
-            ContentMetricsDaily.content_id == content.id,
-            ContentMetricsDaily.organization_id == organization_id,
-            ContentMetricsDaily.date == tanggal,
-        )
-    )
-    angka = {c: normalized[c] for c in INT_COLUMNS}
-    if metric is None:
-        metric = ContentMetricsDaily(
-            organization_id=organization_id,
-            content_id=content.id,
-            date=tanggal,
-            avg_watch_seconds=normalized["avg_watch_seconds"],
-            **angka,
-        )
-        db.add(metric)
-    else:
-        for c in INT_COLUMNS:
-            setattr(metric, c, angka[c])
-        metric.avg_watch_seconds = normalized["avg_watch_seconds"]
-    return content, baru
-
-
 async def upsert_content_rows(
     db: AsyncSession,
     *,
@@ -218,7 +149,7 @@ async def upsert_content_rows(
     organization_id: uuid.UUID,
     items: list[tuple[str, dict]],
 ) -> tuple[int, int]:
-    """Versi batch dari upsert_content_row untuk impor CSV.
+    """Upsert batch Content + ContentMetricsDaily untuk impor CSV.
 
     items: list (row_platform, normalized) hasil normalize_content_row.
     Hanya butuh segelintir roundtrip DB (bukan 2×N): satu SELECT untuk
