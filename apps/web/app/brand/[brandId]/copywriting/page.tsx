@@ -13,18 +13,22 @@ const GAYA = ["Casual", "Friendly", "Warm", "Formal", "Akademis", "Emotional"];
 const PLATFORMS = ["Instagram", "Facebook", "TikTok", "Threads", "Blog Artikel"];
 const FRAMEWORKS = [
   { value: "storybrand", label: "StoryBrand (Donald Miller)" },
+  { value: "aida", label: "AIDA (Attention–Interest–Desire–Action)" },
   { value: "pas", label: "Problem-Agitate-Solve" },
   { value: "bab", label: "Before-After-Bridge" },
-  { value: "freytag", label: "Freytag's Pyramid" },
-  { value: "truth_gap", label: "The Truth Gap (Kindra Hall)" },
-  { value: "golden_circle", label: "Golden Circle (Simon Sinek)" },
-  { value: "pixar", label: "Pixar Pitch (Pixar Studios)" },
-  { value: "hero_journey", label: "Hero's Journey" },
-  { value: "minto", label: "Pyramid Principle (Barbara Minto)" },
-  { value: "abt", label: "ABT — And, But, Therefore (Randy Olson)" },
-  { value: "what_sowhat_nowwhat", label: "What, So What, Now What" },
+  { value: "fab", label: "FAB — Features, Advantages, Benefits" },
+  { value: "quest", label: "QUEST (Qualify–Understand–Educate–Stimulate–Transition)" },
+  { value: "pastor", label: "PASTOR (Ray Edwards)" },
   { value: "hso", label: "Hook, Story, Offer" },
+  { value: "hero_journey", label: "Hero's Journey" },
+  { value: "freytag", label: "Freytag's Pyramid" },
+  { value: "pixar", label: "Pixar Pitch (Pixar Studios)" },
+  { value: "abt", label: "ABT — And, But, Therefore (Randy Olson)" },
+  { value: "golden_circle", label: "Golden Circle (Simon Sinek)" },
+  { value: "truth_gap", label: "The Truth Gap (Kindra Hall)" },
+  { value: "minto", label: "Pyramid Principle (Barbara Minto)" },
   { value: "five_cs", label: "5 C's of Storytelling" },
+  { value: "what_sowhat_nowwhat", label: "What, So What, Now What" },
 ];
 
 type Hasil = { hasil: string; framework: string; platform: string };

@@ -364,6 +364,37 @@ class MockLLMProvider(LLMProvider):
                 f"CLOSURE (penutup berkesan): {pov}.\n\n"
                 f"AJAKAN: {cta}."
             )
+        elif fw == "aida":
+            isi = (
+                f"ATTENTION (perhatian): {what} — {why}.\n\n"
+                f"INTEREST (ketertarikan): {who} perlu tahu {how}.\n\n"
+                f"DESIRE (keinginan): {pov} — untuk {audiens}.\n\n"
+                f"ACTION (ajakan): {cta}."
+            )
+        elif fw == "fab":
+            isi = (
+                f"FEATURES (fitur): {what} — {how}.\n\n"
+                f"ADVANTAGES (keunggulan): {why}.\n\n"
+                f"BENEFITS (manfaat untuk {audiens}): {pov}.\n\n"
+                f"AJAKAN: {cta}."
+            )
+        elif fw == "quest":
+            isi = (
+                f"QUALIFY (sapa audiens yang tepat): {who} — {audiens}.\n\n"
+                f"UNDERSTAND (pahami masalahnya): {why}.\n\n"
+                f"EDUCATE (edukasi): {what} — {how}.\n\n"
+                f"STIMULATE (rangsang keinginan): {pov}.\n\n"
+                f"TRANSITION (transisi ke aksi): {cta}."
+            )
+        elif fw == "pastor":
+            isi = (
+                f"PROBLEM (masalah): {who} menghadapi {what} — {why}.\n\n"
+                f"AMPLIFY (perbesar urgensinya): kalau dibiarkan, makin berat untuk {audiens}.\n\n"
+                f"STORY & SOLUTION (cerita & solusi): {how}.\n\n"
+                f"TRANSFORMATION (transformasi yang dijanjikan): {pov}.\n\n"
+                f"OFFER (penawaran): {cta}.\n\n"
+                f"RESPONSE (ajakan merespons sekarang): {cta}."
+            )
         else:
             isi = f"{what}\n\n{pov}\n\nAJAKAN: {cta}."
         return f"{pembuka}\n\n{isi}\n\n(Catatan: ini draf template. Aktifkan provider LLM (OpenAI/Anthropic) untuk copywriting yang lebih natural.)"
