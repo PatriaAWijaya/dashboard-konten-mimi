@@ -257,7 +257,11 @@ class MockLLMProvider(LLMProvider):
         Versi mock: menyusun draf terstruktur dari input pengguna.
         Untuk hasil yang lebih natural, aktifkan provider openai/anthropic.
         """
+        # Router mengirim label tampilan (LABEL_FRAMEWORK); petakan balik ke kode value.
+        from app.schemas.content import LABEL_FRAMEWORK
+
         fw = str(ctx.get("framework") or "")
+        fw = {v: k for k, v in LABEL_FRAMEWORK.items()}.get(fw, fw).strip().lower()
         what = ctx.get("what") or "-"
         who = ctx.get("who") or "-"
         why = ctx.get("why") or "-"
