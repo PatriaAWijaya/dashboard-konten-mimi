@@ -435,6 +435,7 @@ class MockLLMProvider(LLMProvider):
         tambahan = (
             "\n\n(Gaya mengikuti konten acuan.)"
             if str(ctx.get("konten_acuan_teks") or "").strip()
+            or str(ctx.get("konten_acuan_gambar") or "").strip()
             else ""
         )
         return f"{pembuka}\n\n{isi}{tambahan}\n\n(Catatan: ini draf template. Aktifkan provider LLM (OpenAI/Anthropic) untuk copywriting yang lebih natural.)"
@@ -580,6 +581,37 @@ async def fetch_teks_acuan(acuan: str, batas: int = 3000) -> str:
         return ""
 
 
+def _parse_data_url(gambar: str) -> tuple[str, str]:
+    """Pecah data URL gambar menjadi (media_type, base64). Terima juga base64 mentah."""
+    g = (gambar or "").strip()
+    if g.startswith("data:"):
+        kepala, _, data = g.partition(",")
+        media = kepala[5:].split(";")[0].strip() or "image/jpeg"
+        return media, data.strip()
+    return "image/jpeg", g
+
+
+def _konten_user_vision(user: str, gambar: str, gaya: str) -> object:
+    """Bangun konten pesan user; sertakan gambar bila ada.
+
+    gaya 'openai' → blok image_url; gaya 'anthropic' → blok image base64.
+    """
+    g = (gambar or "").strip()
+    if not g:
+        return user
+    if gaya == "openai":
+        data_url = g if g.startswith("data:image") else f"data:image/jpeg;base64,{g}"
+        return [
+            {"type": "text", "text": user},
+            {"type": "image_url", "image_url": {"url": data_url}},
+        ]
+    media, data = _parse_data_url(g)
+    return [
+        {"type": "image", "source": {"type": "base64", "media_type": media, "data": data}},
+        {"type": "text", "text": user},
+    ]
+
+
 def parse_script_segmen(teks: str, format_value: str) -> list[dict]:
     """Pecah teks script menjadi [{judul, isi}] berdasarkan penanda '## judul'.
     Dipakai seragam untuk jalur mock maupun LLM. Bila LLM tidak mengikuti
@@ -605,13 +637,19 @@ def parse_script_segmen(teks: str, format_value: str) -> list[dict]:
 
 def _build_prompt(kind: str, context: dict) -> tuple[str, str]:
     acuan = str(context.get("konten_acuan_teks") or "").strip()
+    ada_gambar = bool(str(context.get("konten_acuan_gambar") or "").strip())
+    sumber = []
+    if acuan:
+        sumber.append("teks 'konten_acuan_teks' di konteks")
+    if ada_gambar:
+        sumber.append("gambar konten acuan yang dilampirkan")
     instruksi_acuan = (
-        " Ada konten acuan dari pengguna (lihat 'konten_acuan_teks' di konteks): tiru "
+        f" Ada konten acuan dari pengguna ({' dan '.join(sumber)}): analisis dan tiru "
         "GAYA-nya — pilihan kata, ritme kalimat, panjang tulisan, pemakaian emoji/hashtag, "
         "dan struktur pembuka-isi-penutup. Namun isi WAJIB mengikuti brief 5W1H dan CTA "
         "pilihan pengguna. Jangan menyalin mentah-mentah; buat versi orisinal yang "
         "disesuaikan dengan brief."
-        if acuan
+        if sumber
         else ""
     )
     if kind == "copywriting":
@@ -695,6 +733,7 @@ class OpenAIProvider(LLMProvider):
         system, user = _build_prompt(kind, context)
         # Script konten (multi-segmen) butuh ruang token lebih besar.
         batas_token = 1500 if kind == "script_konten" else 800
+        konten_user = _konten_user_vision(user, str(context.get("konten_acuan_gambar") or ""), "openai")
         try:
             async with httpx.AsyncClient(timeout=60.0) as client:
                 resp = await client.post(
@@ -704,7 +743,7 @@ class OpenAIProvider(LLMProvider):
                         "model": self.model,
                         "messages": [
                             {"role": "system", "content": system},
-                            {"role": "user", "content": user},
+                            {"role": "user", "content": konten_user},
                         ],
                         "temperature": 0.7,
                         "max_tokens": batas_token,
@@ -757,7 +796,7 @@ class AnthropicProvider(LLMProvider):
                         "model": self.model,
                         "max_tokens": batas_token,
                         "system": system,
-                        "messages": [{"role": "user", "content": user}],
+                        "messages": [{"role": "user", "content": _konten_user_vision(user, str(context.get("konten_acuan_gambar") or ""), "anthropic")}],
                     },
                 )
         except httpx.HTTPError as exc:

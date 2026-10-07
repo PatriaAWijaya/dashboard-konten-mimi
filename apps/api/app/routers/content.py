@@ -49,6 +49,8 @@ from app.schemas.content import (
     InterviewStartOut,
     JawabIn,
     JawabOut,
+    AcuanCekIn,
+    AcuanCekOut,
     CopywritingIn,
     CopywritingOut,
     ScriptIn,
@@ -1099,6 +1101,40 @@ async def laporan_wawancara(
 # ---------------------------------------------------------------------------
 
 @router.post(
+    "/content/brands/{brand_id}/copywriting/acuan/cek",
+    response_model=AcuanCekOut,
+)
+async def cek_konten_acuan(
+    brand_id: Annotated[uuid.UUID, Path()],
+    org_id: Annotated[uuid.UUID, Depends(parse_org_header)],
+    user: Annotated[User, Depends(get_current_user)],
+    db: Annotated[AsyncSession, Depends(get_db)],
+    data: AcuanCekIn,
+):
+    """Cek apakah URL konten acuan bisa dibaca server. Bila tidak (mis. butuh
+    login), frontend meminta user mengunggah screenshot sebagai gantinya."""
+    from app.services.llm import fetch_teks_acuan
+
+    ctx = await get_org_context(db, user, org_id, min_role=ROLE_EDITOR)
+    await get_brand(db, brand_id, ctx.organization.id)
+    url = (data.url or "").strip()
+    if not url:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST, detail="URL wajib diisi."
+        )
+    teks = await fetch_teks_acuan(url)
+    if teks:
+        return AcuanCekOut(
+            terbaca=True, cuplikan=teks[:300], pesan="Konten terbaca — gayanya akan ditiru."
+        )
+    return AcuanCekOut(
+        terbaca=False,
+        pesan="URL tidak bisa dibaca — kemungkinan situs butuh login. "
+        "Upload screenshot kontennya sebagai gantinya.",
+    )
+
+
+@router.post(
     "/content/brands/{brand_id}/copywriting/generate",
     response_model=CopywritingOut,
 )
@@ -1128,11 +1164,15 @@ async def generate_copywriting(
             detail="Kolom 'What' wajib diisi.",
         )
 
-    teks_acuan = await fetch_teks_acuan(data.konten_acuan)
+    gambar_acuan = (data.konten_acuan_gambar or "").strip()
+    if len(gambar_acuan) > 8_000_000:
+        gambar_acuan = ""  # terlalu besar, abaikan
+    teks_acuan = "" if gambar_acuan else await fetch_teks_acuan(data.konten_acuan)
     konteks = {
         "brand": brand.name,
         "framework": LABEL_FRAMEWORK[fw],
         "konten_acuan_teks": teks_acuan,
+        "konten_acuan_gambar": gambar_acuan,
         "what": data.what.strip(),
         "who": data.who.strip(),
         "when": data.when.strip(),
@@ -1203,11 +1243,15 @@ async def generate_script_konten(
             detail="Kolom 'What' wajib diisi.",
         )
 
-    teks_acuan = await fetch_teks_acuan(data.konten_acuan)
+    gambar_acuan = (data.konten_acuan_gambar or "").strip()
+    if len(gambar_acuan) > 8_000_000:
+        gambar_acuan = ""  # terlalu besar, abaikan
+    teks_acuan = "" if gambar_acuan else await fetch_teks_acuan(data.konten_acuan)
     konteks = {
         "brand": brand.name,
         "framework": LABEL_FRAMEWORK[fw],
         "konten_acuan_teks": teks_acuan,
+        "konten_acuan_gambar": gambar_acuan,
         "format": LABEL_FORMAT_SCRIPT[fmt],
         "segmen_spec": SPEC_SCRIPT[fmt]["segmen"],
         "what": data.what.strip(),

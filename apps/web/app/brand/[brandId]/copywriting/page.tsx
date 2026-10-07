@@ -76,6 +76,57 @@ export default function CopywritingPage() {
   const [scriptFormat, setScriptFormat] = useState(FORMAT_SCRIPT[0].value);
   const [script, setScript] = useState<ScriptHasil | null>(null);
   const [scriptLoading, setScriptLoading] = useState(false);
+  const [acuanFile, setAcuanFile] = useState<File | null>(null);
+  const [acuanCek, setAcuanCek] = useState<{ terbaca: boolean; cuplikan: string; pesan: string } | null>(null);
+  const [acuanCekLoading, setAcuanCekLoading] = useState(false);
+
+  function fileKeDataURL(f: File): Promise<string> {
+    return new Promise((res, rej) => {
+      const r = new FileReader();
+      r.onload = () => res(String(r.result));
+      r.onerror = rej;
+      r.readAsDataURL(f);
+    });
+  }
+
+  async function gambarAcuan(): Promise<string> {
+    if (!acuanFile) return "";
+    if (acuanFile.size > 4 * 1024 * 1024) {
+      setError("Ukuran gambar acuan maksimal 4MB.");
+      return "";
+    }
+    return fileKeDataURL(acuanFile);
+  }
+
+  function pilihFileAcuan(f: File | null) {
+    if (f && f.size > 4 * 1024 * 1024) {
+      setError("Ukuran gambar acuan maksimal 4MB.");
+      return;
+    }
+    setError("");
+    setAcuanFile(f);
+  }
+
+  async function cekAcuan() {
+    if (!form.konten_acuan.trim()) {
+      setError("Isi dulu URL konten acuan.");
+      return;
+    }
+    setAcuanCekLoading(true);
+    setError("");
+    try {
+      const r = await api.post<{ terbaca: boolean; cuplikan: string; pesan: string }>(
+        `/content/brands/${brandId}/copywriting/acuan/cek`,
+        { url: form.konten_acuan.trim() }
+      );
+      setAcuanCek(r);
+      if (!r.terbaca) setAcuanFile(null);
+    } catch (err) {
+      setError(err instanceof ApiError ? err.message : "Gagal mengecek URL.");
+    } finally {
+      setAcuanCekLoading(false);
+    }
+  }
 
   function set(k: keyof typeof form, v: string) {
     setForm((f) => ({ ...f, [k]: v }));
@@ -90,9 +141,10 @@ export default function CopywritingPage() {
     setError("");
     setScript(null);
     try {
+      const gambar = await gambarAcuan();
       const r = await api.post<ScriptHasil>(
         `/content/brands/${brandId}/copywriting/script`,
-        { ...form, format: scriptFormat }
+        { ...form, format: scriptFormat, konten_acuan_gambar: gambar }
       );
       setScript(r);
     } catch (err) {
@@ -111,9 +163,10 @@ export default function CopywritingPage() {
     setError("");
     setHasil(null);
     try {
+      const gambar = await gambarAcuan();
       const r = await api.post<Hasil>(
         `/content/brands/${brandId}/copywriting/generate`,
-        form
+        { ...form, konten_acuan_gambar: gambar }
       );
       setHasil(r);
     } catch (err) {
@@ -135,19 +188,62 @@ export default function CopywritingPage() {
         <div className="mx-auto max-w-3xl">
 
         <Card className="mt-5">
-          <h2 className="mb-1 text-sm font-semibold text-slate-900">
-            Konten Acuan <span className="font-normal text-slate-500">(opsional)</span>
-          </h2>
-          <p className="mb-3 text-xs text-slate-500">
-            Tempel URL konten yang gayanya ingin ditiru. Gaya copywriting akan mengikuti konten acuan,
-            dengan penyesuaian isi sesuai brief dan CTA pilihanmu.
-          </p>
-          <Input
-            label="URL konten acuan"
-            value={form.konten_acuan}
-            onChange={(e) => set("konten_acuan", e.target.value)}
-            placeholder="Contoh: https://www.instagram.com/p/..."
-          />
+          <div
+            onPaste={(e) => {
+              const item = Array.from(e.clipboardData.items).find((i) => i.type.startsWith("image/"));
+              const f = item?.getAsFile();
+              if (f) {
+                e.preventDefault();
+                pilihFileAcuan(f);
+              }
+            }}
+          >
+            <h2 className="mb-1 text-sm font-semibold text-slate-900">
+              Konten Acuan <span className="font-normal text-slate-500">(opsional)</span>
+            </h2>
+            <p className="mb-3 text-xs text-slate-500">
+              Tempel URL konten yang gayanya ingin ditiru. Gaya copywriting akan mengikuti konten acuan,
+              dengan penyesuaian isi sesuai brief dan CTA pilihanmu.
+            </p>
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-end">
+              <div className="flex-1">
+                <Input
+                  label="URL konten acuan"
+                  value={form.konten_acuan}
+                  onChange={(e) => { set("konten_acuan", e.target.value); setAcuanCek(null); }}
+                  placeholder="Contoh: https://www.instagram.com/p/..."
+                />
+              </div>
+              <Button variant="secondary" onClick={cekAcuan} disabled={acuanCekLoading}>
+                {acuanCekLoading ? "Mengecek…" : "Cek URL"}
+              </Button>
+            </div>
+            {acuanCek && acuanCek.terbaca && (
+              <div className="mt-3"><Alert kind="success">Konten terbaca — gayanya akan ditiru.</Alert></div>
+            )}
+            {acuanCek && !acuanCek.terbaca && (
+              <div className="mt-3 space-y-2">
+                <Alert kind="warning">{acuanCek.pesan}</Alert>
+                <div>
+                  <label className="mb-1 block text-xs font-medium text-slate-700">
+                    Upload screenshot / gambar konten
+                  </label>
+                  <input
+                    type="file"
+                    accept="image/*"
+                    className="block w-full text-sm text-slate-600 file:mr-3 file:rounded-lg file:border-0 file:bg-slate-100 file:px-3 file:py-2 file:text-sm file:font-medium file:text-slate-700"
+                    onChange={(e) => pilihFileAcuan(e.target.files?.[0] ?? null)}
+                  />
+                  <p className="mt-1 text-xs text-slate-500">
+                    Maksimal 4MB. Bisa juga tempel gambar langsung di area ini (Ctrl+V).
+                  </p>
+                  {acuanFile && (
+                    <p className="mt-1 text-xs font-medium text-slate-700">Terpilih: {acuanFile.name}</p>
+                  )}
+                </div>
+              </div>
+            )}
+          </div>
         </Card>
 
         <Card className="mt-4">

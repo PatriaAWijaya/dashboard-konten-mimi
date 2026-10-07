@@ -389,6 +389,7 @@ class CopywritingIn(BaseModel):
     platform: str = Field(description="Platform tujuan.")
     framework: str = Field(description="Framework storytelling.")
     konten_acuan: str = Field(default="", description="URL/teks konten acuan (opsional); gayanya ditiru, isi menyesuaikan brief dan CTA.")
+    konten_acuan_gambar: str = Field(default="", description="Gambar konten acuan (data URL base64, opsional) bila URL tak bisa dibaca.")
 
 
 # ---------------------------------------------------------------------------
@@ -473,6 +474,16 @@ class ScriptOut(BaseModel):
     framework: str
     segmen: list[ScriptSegmen] = Field(default_factory=list)
     hasil: str
+
+
+class AcuanCekIn(BaseModel):
+    url: str
+
+
+class AcuanCekOut(BaseModel):
+    terbaca: bool
+    cuplikan: str = ""
+    pesan: str = ""
 
 
 class CopywritingOut(BaseModel):
