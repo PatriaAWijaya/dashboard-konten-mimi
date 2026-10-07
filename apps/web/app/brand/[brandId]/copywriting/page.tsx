@@ -37,6 +37,21 @@ const FRAMEWORKS = [
 
 type Hasil = { hasil: string; framework: string; platform: string };
 
+const FORMAT_SCRIPT = [
+  { value: "carousel_6", label: "Carousel 6 Slide" },
+  { value: "carousel_10", label: "Carousel 10 Slide" },
+  { value: "reels_30", label: "Reels 30 Detik" },
+  { value: "reels_60", label: "Reels 60 Detik" },
+  { value: "reels_90", label: "Reels 90 Detik" },
+];
+
+type ScriptHasil = {
+  format: string;
+  framework: string;
+  segmen: { judul: string; isi: string }[];
+  hasil: string;
+};
+
 export default function CopywritingPage() {
   const brandId = useBrandId();
   const [form, setForm] = useState({
@@ -57,9 +72,33 @@ export default function CopywritingPage() {
   const [hasil, setHasil] = useState<Hasil | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const [scriptFormat, setScriptFormat] = useState(FORMAT_SCRIPT[0].value);
+  const [script, setScript] = useState<ScriptHasil | null>(null);
+  const [scriptLoading, setScriptLoading] = useState(false);
 
   function set(k: keyof typeof form, v: string) {
     setForm((f) => ({ ...f, [k]: v }));
+  }
+
+  async function generateScript() {
+    if (!form.what.trim()) {
+      setError("Kolom 'What' wajib diisi dulu.");
+      return;
+    }
+    setScriptLoading(true);
+    setError("");
+    setScript(null);
+    try {
+      const r = await api.post<ScriptHasil>(
+        `/content/brands/${brandId}/copywriting/script`,
+        { ...form, format: scriptFormat }
+      );
+      setScript(r);
+    } catch (err) {
+      setError(err instanceof ApiError ? err.message : "Gagal generate script konten.");
+    } finally {
+      setScriptLoading(false);
+    }
   }
 
   async function generate() {
@@ -156,6 +195,48 @@ export default function CopywritingPage() {
               variant="secondary"
               className="mt-3"
               onClick={() => navigator.clipboard.writeText(hasil.hasil)}
+            >
+              Salin Teks
+            </Button>
+
+            <div className="mt-5 border-t border-slate-200 pt-4">
+              <h3 className="mb-2 text-sm font-semibold text-slate-900">Buat Script Konten</h3>
+              <p className="mb-3 text-xs text-slate-500">
+                Slide 1 hook, slide tengah mengikuti framework {hasil.framework}, slide terakhir CTA.
+                Untuk reels: hook di detik awal, framework di tengah, CTA di detik akhir.
+              </p>
+              <div className="flex flex-col gap-3 sm:flex-row sm:items-end">
+                <div className="sm:w-64">
+                  <Select label="Format script" value={scriptFormat} onChange={(e) => setScriptFormat(e.target.value)}>
+                    {FORMAT_SCRIPT.map((f) => <option key={f.value} value={f.value}>{f.label}</option>)}
+                  </Select>
+                </div>
+                <Button onClick={generateScript} disabled={scriptLoading}>
+                  {scriptLoading ? "Menulis script…" : "Generate Script"}
+                </Button>
+              </div>
+            </div>
+          </Card>
+        )}
+
+        {script && (
+          <Card className="mt-4">
+            <div className="mb-3 flex items-center justify-between">
+              <h2 className="text-sm font-semibold text-slate-900">Script — {script.format}</h2>
+              <span className="text-xs text-slate-500">{script.framework}</span>
+            </div>
+            <ol className="space-y-3">
+              {script.segmen.map((s, i) => (
+                <li key={i} className="rounded-xl border border-slate-200 bg-slate-50 p-3">
+                  <p className="mb-1 text-xs font-semibold uppercase tracking-wide text-orange-700">{s.judul}</p>
+                  <p className="whitespace-pre-wrap text-sm leading-relaxed text-slate-800">{s.isi}</p>
+                </li>
+              ))}
+            </ol>
+            <Button
+              variant="secondary"
+              className="mt-3"
+              onClick={() => navigator.clipboard.writeText(script.hasil)}
             >
               Salin Teks
             </Button>

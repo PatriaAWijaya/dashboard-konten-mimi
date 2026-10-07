@@ -9,13 +9,14 @@ from __future__ import annotations
 
 import asyncio
 import json
+import re
 from abc import ABC, abstractmethod
 import httpx
 
 from app.core.config import get_settings
 
 # Jenis narasi yang didukung oleh narrate().
-NARRATE_KINDS = ("rekomendasi", "brand_dna", "niche", "ringkasan", "copywriting")
+NARRATE_KINDS = ("rekomendasi", "brand_dna", "niche", "ringkasan", "copywriting", "script_konten")
 
 
 class LLMProvider(ABC):
@@ -68,6 +69,8 @@ class MockLLMProvider(LLMProvider):
             return self._narrate_ringkasan(context)
         if kind == "copywriting":
             return self._narrate_copywriting(context)
+        if kind == "script_konten":
+            return self._narrate_script_konten(context)
         raise ValueError(f"Jenis narasi tidak dikenal: '{kind}'. Pilihan: {', '.join(NARRATE_KINDS)}.")
 
     # -- rekomendasi ------------------------------------------------------
@@ -431,6 +434,104 @@ class MockLLMProvider(LLMProvider):
             isi = f"{what}\n\n{pov}\n\nAJAKAN: {cta}."
         return f"{pembuka}\n\n{isi}\n\n(Catatan: ini draf template. Aktifkan provider LLM (OpenAI/Anthropic) untuk copywriting yang lebih natural.)"
 
+    # -- script konten (carousel & reels) -----------------------------------
+
+    def _bagian_framework(self, ctx: dict) -> list[tuple[str, str]]:
+        """Pecah draf framework menjadi daftar (judul_bagian, isi)."""
+        draf = self._narrate_copywriting(ctx)
+        baris = draf.split("\n\n")
+        # baris[0] = "[Draf ...]", baris terakhir = "(Catatan: ...)"
+        isi = [b for b in baris[1:] if b.strip() and not b.strip().startswith("(Catatan:")]
+        bagian: list[tuple[str, str]] = []
+        for b in isi:
+            if ": " in b:
+                judul, teks = b.split(": ", 1)
+            elif ":" in b:
+                judul, teks = b.split(":", 1)
+            else:
+                judul, teks = "Isi", b
+            bagian.append((judul.strip(), teks.strip()))
+        return bagian or [("Isi", "-")]
+
+    @staticmethod
+    def _bagi_rata(tengah: list[tuple[str, str]], n: int) -> list[tuple[str, str]]:
+        """Bagi daftar (judul, isi) menjadi tepat n bagian: gabung bila
+        berlebih, pecah per kalimat bila kurang."""
+        if n <= 0:
+            return []
+        if not tengah:
+            return [("Cerita", "-")] * n
+        if len(tengah) == n:
+            return list(tengah)
+        if len(tengah) > n:
+            grup: list[list[tuple[str, str]]] = [[] for _ in range(n)]
+            for i, b in enumerate(tengah):
+                grup[i * n // len(tengah)].append(b)
+            return [(g[0][0], " ".join(t for _, t in g)) for g in grup]
+        hasil = list(tengah)
+        while len(hasil) < n:
+            idx = max(range(len(hasil)), key=lambda i: len(hasil[i][1]))
+            judul, isi = hasil[idx]
+            kalimat = [
+                k.strip()
+                for k in isi.replace("! ", ". ").replace("? ", ". ").split(". ")
+                if k.strip()
+            ]
+            if len(kalimat) < 2:
+                break
+            mid = (len(kalimat) + 1) // 2
+            hasil[idx : idx + 1] = [
+                (judul, ". ".join(kalimat[:mid]) + "."),
+                (judul + " (lanjut)", ". ".join(kalimat[mid:]) + "."),
+            ]
+        while len(hasil) < n:
+            hasil.append((hasil[-1][0], hasil[-1][1]))
+        return hasil[:n]
+
+    def _narrate_script_konten(self, ctx: dict) -> str:
+        """Script carousel/reels (mock): Hook di segmen pertama, framework
+        storytelling di tengah, CTA di segmen terakhir. Tiap segmen diawali
+        penanda '## judul' agar bisa diparsing seragam dengan jalur LLM."""
+        from app.schemas.content import SPEC_SCRIPT
+
+        fmt = str(ctx.get("format") or "carousel_6")
+        spec = SPEC_SCRIPT.get(fmt, SPEC_SCRIPT["carousel_6"])
+        judul_segmen: list[str] = spec["segmen"]
+
+        bagian = self._bagian_framework(ctx)
+        _, hook_isi = bagian[0]
+        _, cta_isi = bagian[-1]
+        tengah = bagian[1:-1]
+
+        n_tengah = len(judul_segmen) - 2
+        tengah_bagi = self._bagi_rata(tengah, n_tengah)
+
+        segmen: list[tuple[str, str]] = [(judul_segmen[0], hook_isi)]
+        for judul, (_, isi) in zip(judul_segmen[1:-1], tengah_bagi):
+            segmen.append((judul, isi))
+        segmen.append((judul_segmen[-1], cta_isi))
+
+        return "\n\n".join(f"## {j}\n{t}" for j, t in segmen)
+
+
+def parse_script_segmen(teks: str, format_value: str) -> list[dict]:
+    """Pecah teks script menjadi [{judul, isi}] berdasarkan penanda '## judul'.
+    Dipakai seragam untuk jalur mock maupun LLM. Bila LLM tidak mengikuti
+    penanda, kembalikan seluruh teks sebagai satu segmen."""
+    from app.schemas.content import SPEC_SCRIPT
+
+    spec = SPEC_SCRIPT.get(format_value, SPEC_SCRIPT["carousel_6"])
+    pola = re.compile(r"^##\s*(.+?)\s*$", re.M)
+    cocok = list(pola.finditer(teks or ""))
+    segmen: list[dict] = []
+    for i, m in enumerate(cocok):
+        awal = m.end()
+        akhir = cocok[i + 1].start() if i + 1 < len(cocok) else len(teks)
+        segmen.append({"judul": m.group(1).strip(), "isi": teks[awal:akhir].strip()})
+    if not segmen:
+        segmen = [{"judul": spec["segmen"][0], "isi": (teks or "").strip()}]
+    return segmen
+
 
 # ---------------------------------------------------------------------------
 # Provider OpenAI (chat completions via httpx)
@@ -452,6 +553,27 @@ def _build_prompt(kind: str, context: dict) -> tuple[str, str]:
             "Buatkan copywriting berdasarkan brief berikut.\n"
             f"Konteks (JSON):\n{json.dumps(context, ensure_ascii=False, default=str)}\n\n"
             "Hasilkan hanya copywriting-nya saja, tanpa penjelasan tambahan."
+        )
+        return system, user
+    if kind == "script_konten":
+        segmen = context.get("segmen_spec") or []
+        daftar = "\n".join(f"{i+1}. {s}" for i, s in enumerate(segmen))
+        system = (
+            "Kamu adalah scriptwriter konten profesional berbahasa Indonesia. "
+            "Buatkan script konten yang siap produksi mengikuti framework storytelling "
+            "yang diminta. Segmen pertama WAJIB hook yang memikat, segmen-segmen tengah "
+            "mengikuti alur framework storytelling, segmen terakhir WAJIB CTA yang jelas. "
+            "Gunakan HANYA fakta dari konteks; jangan mengarang klaim baru."
+        )
+        user = (
+            "Buatkan script konten berdasarkan brief berikut.\n"
+            f"Konteks (JSON):\n{json.dumps(context, ensure_ascii=False, default=str)}\n\n"
+            f"Struktur segmen WAJIB (urutan dan jumlah tidak boleh diubah):\n{daftar}\n\n"
+            "Aturan format output: setiap segmen diawali baris '## ' diikuti judul segmen "
+            "persis seperti di atas, lalu isi segmen di baris-baris berikutnya. "
+            "Untuk carousel: tiap slide 25-40 kata, kalimat pendek dan visual. "
+            "Untuk reels: tulis narasi/voice-over per rentang detik, total sesuai durasi. "
+            "Hasilkan hanya script-nya saja, tanpa penjelasan tambahan."
         )
         return system, user
     system = (
@@ -485,6 +607,8 @@ class OpenAIProvider(LLMProvider):
         if kind not in NARRATE_KINDS:
             raise ValueError(f"Jenis narasi tidak dikenal: '{kind}'.")
         system, user = _build_prompt(kind, context)
+        # Script konten (multi-segmen) butuh ruang token lebih besar.
+        batas_token = 1500 if kind == "script_konten" else 800
         try:
             async with httpx.AsyncClient(timeout=60.0) as client:
                 resp = await client.post(
@@ -497,7 +621,7 @@ class OpenAIProvider(LLMProvider):
                             {"role": "user", "content": user},
                         ],
                         "temperature": 0.7,
-                        "max_tokens": 800,
+                        "max_tokens": batas_token,
                     },
                 )
         except httpx.HTTPError as exc:
@@ -532,6 +656,8 @@ class AnthropicProvider(LLMProvider):
         if kind not in NARRATE_KINDS:
             raise ValueError(f"Jenis narasi tidak dikenal: '{kind}'.")
         system, user = _build_prompt(kind, context)
+        # Script konten (multi-segmen) butuh ruang token lebih besar.
+        batas_token = 1500 if kind == "script_konten" else 800
         try:
             async with httpx.AsyncClient(timeout=60.0) as client:
                 resp = await client.post(
@@ -543,7 +669,7 @@ class AnthropicProvider(LLMProvider):
                     },
                     json={
                         "model": self.model,
-                        "max_tokens": 800,
+                        "max_tokens": batas_token,
                         "system": system,
                         "messages": [{"role": "user", "content": user}],
                     },

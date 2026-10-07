@@ -390,6 +390,90 @@ class CopywritingIn(BaseModel):
     framework: str = Field(description="Framework storytelling.")
 
 
+# ---------------------------------------------------------------------------
+# Script konten (carousel & reels) dari brief copywriting
+# ---------------------------------------------------------------------------
+
+FORMAT_SCRIPT = (
+    "carousel_6",
+    "carousel_10",
+    "reels_30",
+    "reels_60",
+    "reels_90",
+)
+
+LABEL_FORMAT_SCRIPT = {
+    "carousel_6": "Carousel 6 Slide",
+    "carousel_10": "Carousel 10 Slide",
+    "reels_30": "Reels 30 Detik",
+    "reels_60": "Reels 60 Detik",
+    "reels_90": "Reels 90 Detik",
+}
+
+# Judul tiap segmen per format. Carousel: slide 1 hook, tengah framework
+# storytelling, slide terakhir CTA. Reels: hook di awal, storytelling di
+# tengah, CTA di akhir (durasi 60/90 detik diskalakan dari pola 30 detik).
+SPEC_SCRIPT = {
+    "carousel_6": {
+        "label": "Carousel 6 Slide",
+        "segmen": [
+            "Slide 1 — Hook",
+            "Slide 2 — Framework",
+            "Slide 3 — Framework",
+            "Slide 4 — Framework",
+            "Slide 5 — Framework",
+            "Slide 6 — CTA",
+        ],
+    },
+    "carousel_10": {
+        "label": "Carousel 10 Slide",
+        "segmen": ["Slide 1 — Hook"]
+        + [f"Slide {i} — Framework" for i in range(2, 10)]
+        + ["Slide 10 — CTA"],
+    },
+    "reels_30": {
+        "label": "Reels 30 Detik",
+        "segmen": [
+            "Detik 0–3 — Hook",
+            "Detik 4–26 — Framework Storytelling",
+            "Detik 27–30 — CTA",
+        ],
+    },
+    "reels_60": {
+        "label": "Reels 60 Detik",
+        "segmen": [
+            "Detik 0–6 — Hook",
+            "Detik 7–54 — Framework Storytelling",
+            "Detik 55–60 — CTA",
+        ],
+    },
+    "reels_90": {
+        "label": "Reels 90 Detik",
+        "segmen": [
+            "Detik 0–9 — Hook",
+            "Detik 10–81 — Framework Storytelling",
+            "Detik 82–90 — CTA",
+        ],
+    },
+}
+
+
+class ScriptIn(CopywritingIn):
+    format: str = Field(description="Format script: carousel_6 | carousel_10 | reels_30 | reels_60 | reels_90.")
+
+
+class ScriptSegmen(BaseModel):
+    judul: str
+    isi: str
+
+
+class ScriptOut(BaseModel):
+    format: str
+    framework: str
+    segmen: list[ScriptSegmen] = Field(default_factory=list)
+    hasil: str
+
+
 class CopywritingOut(BaseModel):
     hasil: str
     framework: str

@@ -1151,3 +1151,84 @@ async def generate_copywriting(
             status_code=status.HTTP_502_BAD_GATEWAY, detail=str(exc)
         )
     return CopywritingOut(hasil=hasil, framework=LABEL_FRAMEWORK[fw], platform=data.platform.strip())
+
+
+@router.post(
+    "/content/brands/{brand_id}/copywriting/script",
+    response_model=ScriptOut,
+)
+async def generate_script_konten(
+    brand_id: Annotated[uuid.UUID, Path()],
+    org_id: Annotated[uuid.UUID, Depends(parse_org_header)],
+    user: Annotated[User, Depends(get_current_user)],
+    db: Annotated[AsyncSession, Depends(get_db)],
+    data: ScriptIn,
+):
+    """Generate script carousel/reels dari brief 5W1H + framework storytelling.
+
+    Struktur: segmen pertama hook, segmen tengah framework storytelling,
+    segmen terakhir CTA.
+    """
+    from app.schemas.content import (
+        FORMAT_SCRIPT,
+        FRAMEWORK_COPYWRITING,
+        LABEL_FORMAT_SCRIPT,
+        LABEL_FRAMEWORK,
+        SPEC_SCRIPT,
+        ScriptOut,
+    )
+    from app.services.llm import get_llm_provider, parse_script_segmen, resolve_llm_api_key
+
+    ctx = await get_org_context(db, user, org_id, min_role=ROLE_EDITOR)
+    brand = await get_brand(db, brand_id, ctx.organization.id)
+
+    fw = data.framework.strip().lower()
+    if fw not in FRAMEWORK_COPYWRITING:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"Framework tidak dikenal: '{data.framework}'.",
+        )
+    fmt = data.format.strip().lower()
+    if fmt not in FORMAT_SCRIPT:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"Format script tidak dikenal: '{data.format}'.",
+        )
+    if not data.what.strip():
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Kolom 'What' wajib diisi.",
+        )
+
+    konteks = {
+        "brand": brand.name,
+        "framework": LABEL_FRAMEWORK[fw],
+        "format": LABEL_FORMAT_SCRIPT[fmt],
+        "segmen_spec": SPEC_SCRIPT[fmt]["segmen"],
+        "what": data.what.strip(),
+        "who": data.who.strip(),
+        "when": data.when.strip(),
+        "where": data.where.strip(),
+        "why": data.why.strip(),
+        "how": data.how.strip(),
+        "pov": data.pov.strip(),
+        "target_audiens": data.target_audiens.strip(),
+        "goals": data.goals.strip(),
+        "cta": data.cta.strip(),
+        "gaya_bahasa": data.gaya_bahasa.strip(),
+        "platform": data.platform.strip(),
+    }
+    try:
+        api_key = await resolve_llm_api_key(db)
+        provider = get_llm_provider(api_key=api_key)
+        hasil = await provider.narrate("script_konten", konteks)
+    except (RuntimeError, ValueError) as exc:
+        raise HTTPException(
+            status_code=status.HTTP_502_BAD_GATEWAY, detail=str(exc)
+        )
+    return ScriptOut(
+        format=LABEL_FORMAT_SCRIPT[fmt],
+        framework=LABEL_FRAMEWORK[fw],
+        segmen=parse_script_segmen(hasil, fmt),
+        hasil=hasil,
+    )
