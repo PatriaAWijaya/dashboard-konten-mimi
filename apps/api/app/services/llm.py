@@ -507,7 +507,11 @@ class MockLLMProvider(LLMProvider):
         tengah_bagi = self._bagi_rata(tengah, n_tengah)
 
         segmen: list[tuple[str, str]] = [(judul_segmen[0], hook_isi)]
-        for judul, (_, isi) in zip(judul_segmen[1:-1], tengah_bagi):
+        is_carousel = fmt.startswith("carousel")
+        for k, ((beat_judul, isi), _) in enumerate(zip(tengah_bagi, judul_segmen[1:-1])):
+            # Carousel: 1 slide 1 pokok pikiran — judul slide memakai label ide
+            # dari framework (mis. "Slide 2 — MASALAH").
+            judul = f"Slide {k + 2} — {beat_judul}" if is_carousel else judul_segmen[k + 1]
             segmen.append((judul, isi))
         segmen.append((judul_segmen[-1], cta_isi))
 
@@ -558,6 +562,13 @@ def _build_prompt(kind: str, context: dict) -> tuple[str, str]:
     if kind == "script_konten":
         segmen = context.get("segmen_spec") or []
         daftar = "\n".join(f"{i+1}. {s}" for i, s in enumerate(segmen))
+        aturan_slide = ""
+        if str(context.get("format") or "").startswith("Carousel"):
+            aturan_slide = (
+                " Aturan khusus carousel: 1 slide = 1 pokok pikiran. Setiap slide "
+                "hanya menyampaikan SATU ide utama yang fokus; jangan menggabungkan "
+                "dua ide berbeda dalam satu slide."
+            )
         system = (
             "Kamu adalah scriptwriter konten profesional berbahasa Indonesia. "
             "Buatkan script konten yang siap produksi mengikuti framework storytelling "
@@ -571,7 +582,8 @@ def _build_prompt(kind: str, context: dict) -> tuple[str, str]:
             f"Struktur segmen WAJIB (urutan dan jumlah tidak boleh diubah):\n{daftar}\n\n"
             "Aturan format output: setiap segmen diawali baris '## ' diikuti judul segmen "
             "persis seperti di atas, lalu isi segmen di baris-baris berikutnya. "
-            "Untuk carousel: tiap slide 25-40 kata, kalimat pendek dan visual. "
+            "Untuk carousel: tiap slide 25-40 kata, kalimat pendek dan visual."
+            f"{aturan_slide} "
             "Untuk reels: tulis narasi/voice-over per rentang detik, total sesuai durasi. "
             "Hasilkan hanya script-nya saja, tanpa penjelasan tambahan."
         )

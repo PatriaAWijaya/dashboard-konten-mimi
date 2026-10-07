@@ -202,8 +202,8 @@ export default function CopywritingPage() {
             <div className="mt-5 border-t border-slate-200 pt-4">
               <h3 className="mb-2 text-sm font-semibold text-slate-900">Buat Script Konten</h3>
               <p className="mb-3 text-xs text-slate-500">
-                Slide 1 hook, slide tengah mengikuti framework {hasil.framework}, slide terakhir CTA.
-                Untuk reels: hook di detik awal, framework di tengah, CTA di detik akhir.
+                Slide 1 hook, slide tengah mengikuti framework {hasil.framework} (1 slide 1 pokok pikiran),
+                slide terakhir CTA. Untuk reels: hook di detik awal, framework di tengah, CTA di detik akhir.
               </p>
               <div className="flex flex-col gap-3 sm:flex-row sm:items-end">
                 <div className="sm:w-64">
