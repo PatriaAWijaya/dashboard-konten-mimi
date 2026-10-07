@@ -500,7 +500,9 @@ class MockLLMProvider(LLMProvider):
         penanda '## judul' agar bisa diparsing seragam dengan jalur LLM."""
         from app.schemas.content import SPEC_SCRIPT
 
-        fmt = str(ctx.get("format") or "carousel_6")
+        fmt = str(ctx.get("format") or "")
+        # Router mengirim label tampilan ("Carousel 6 Slide"); petakan balik ke kode value.
+        fmt = {v["label"]: k for k, v in SPEC_SCRIPT.items()}.get(fmt, fmt).strip().lower()
         spec = SPEC_SCRIPT.get(fmt, SPEC_SCRIPT["carousel_6"])
         judul_segmen: list[str] = spec["segmen"]
 
