@@ -388,6 +388,7 @@ class CopywritingIn(BaseModel):
     gaya_bahasa: str = Field(description="Gaya bahasa.")
     platform: str = Field(description="Platform tujuan.")
     framework: str = Field(description="Framework storytelling.")
+    konten_acuan: str = Field(default="", description="URL/teks konten acuan (opsional); gayanya ditiru, isi menyesuaikan brief dan CTA.")
 
 
 # ---------------------------------------------------------------------------

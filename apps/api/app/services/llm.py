@@ -432,7 +432,12 @@ class MockLLMProvider(LLMProvider):
             )
         else:
             isi = f"{what}\n\n{pov}\n\nAJAKAN: {cta}."
-        return f"{pembuka}\n\n{isi}\n\n(Catatan: ini draf template. Aktifkan provider LLM (OpenAI/Anthropic) untuk copywriting yang lebih natural.)"
+        tambahan = (
+            "\n\n(Gaya mengikuti konten acuan.)"
+            if str(ctx.get("konten_acuan_teks") or "").strip()
+            else ""
+        )
+        return f"{pembuka}\n\n{isi}{tambahan}\n\n(Catatan: ini draf template. Aktifkan provider LLM (OpenAI/Anthropic) untuk copywriting yang lebih natural.)"
 
     # -- script konten (carousel & reels) -----------------------------------
 
@@ -518,6 +523,63 @@ class MockLLMProvider(LLMProvider):
         return "\n\n".join(f"## {j}\n{t}" for j, t in segmen)
 
 
+def _teks_dari_html(html: str) -> str:
+    """Ekstrak teks terbaca dari HTML (tanpa dependensi baru)."""
+    from html.parser import HTMLParser
+
+    class _P(HTMLParser):
+        def __init__(self) -> None:
+            super().__init__()
+            self.bagian: list[str] = []
+            self.lewati = 0
+
+        def handle_starttag(self, tag: str, attrs: list) -> None:
+            if tag in ("script", "style", "noscript"):
+                self.lewati += 1
+
+        def handle_endtag(self, tag: str) -> None:
+            if tag in ("script", "style", "noscript") and self.lewati:
+                self.lewati -= 1
+
+        def handle_data(self, data: str) -> None:
+            if not self.lewati:
+                t = data.strip()
+                if t:
+                    self.bagian.append(t)
+
+    p = _P()
+    try:
+        p.feed(html or "")
+    except Exception:
+        pass
+    return re.sub(r"\s+", " ", " ".join(p.bagian)).strip()
+
+
+async def fetch_teks_acuan(acuan: str, batas: int = 3000) -> str:
+    """Ambil teks konten acuan (opsional).
+
+    Bila berupa URL http(s): fetch server-side dan ekstrak teksnya.
+    Bila berupa teks biasa: pakai langsung. Gagal/terblokir → string kosong
+    (gaya acuan tidak diterapkan, proses tetap jalan).
+    """
+    acuan = (acuan or "").strip()
+    if not acuan:
+        return ""
+    if not acuan.lower().startswith(("http://", "https://")):
+        return acuan[:batas]
+    try:
+        async with httpx.AsyncClient(timeout=15.0, follow_redirects=True) as client:
+            resp = await client.get(
+                acuan,
+                headers={"User-Agent": "Mozilla/5.0 (compatible; KontenAIBot/1.0)"},
+            )
+        if resp.status_code != 200:
+            return ""
+        return _teks_dari_html(resp.text)[:batas]
+    except Exception:
+        return ""
+
+
 def parse_script_segmen(teks: str, format_value: str) -> list[dict]:
     """Pecah teks script menjadi [{judul, isi}] berdasarkan penanda '## judul'.
     Dipakai seragam untuk jalur mock maupun LLM. Bila LLM tidak mengikuti
@@ -542,6 +604,16 @@ def parse_script_segmen(teks: str, format_value: str) -> list[dict]:
 # ---------------------------------------------------------------------------
 
 def _build_prompt(kind: str, context: dict) -> tuple[str, str]:
+    acuan = str(context.get("konten_acuan_teks") or "").strip()
+    instruksi_acuan = (
+        " Ada konten acuan dari pengguna (lihat 'konten_acuan_teks' di konteks): tiru "
+        "GAYA-nya — pilihan kata, ritme kalimat, panjang tulisan, pemakaian emoji/hashtag, "
+        "dan struktur pembuka-isi-penutup. Namun isi WAJIB mengikuti brief 5W1H dan CTA "
+        "pilihan pengguna. Jangan menyalin mentah-mentah; buat versi orisinal yang "
+        "disesuaikan dengan brief."
+        if acuan
+        else ""
+    )
     if kind == "copywriting":
         system = (
             "Kamu adalah copywriter profesional berbahasa Indonesia. "
@@ -552,6 +624,7 @@ def _build_prompt(kind: str, context: dict) -> tuple[str, str]:
             "Blog Artikel lebih panjang dan terstruktur. "
             "Ikuti struktur framework storytelling yang diminta. "
             "Gunakan HANYA fakta dari konteks; jangan mengarang klaim baru."
+            f"{instruksi_acuan}"
         )
         user = (
             "Buatkan copywriting berdasarkan brief berikut.\n"
@@ -575,6 +648,7 @@ def _build_prompt(kind: str, context: dict) -> tuple[str, str]:
             "yang diminta. Segmen pertama WAJIB hook yang memikat, segmen-segmen tengah "
             "mengikuti alur framework storytelling, segmen terakhir WAJIB CTA yang jelas. "
             "Gunakan HANYA fakta dari konteks; jangan mengarang klaim baru."
+            f"{instruksi_acuan}"
         )
         user = (
             "Buatkan script konten berdasarkan brief berikut.\n"

@@ -68,6 +68,7 @@ export default function CopywritingPage() {
     gaya_bahasa: GAYA[0],
     platform: PLATFORMS[0],
     framework: FRAMEWORKS[0].value,
+    konten_acuan: "",
   });
   const [hasil, setHasil] = useState<Hasil | null>(null);
   const [loading, setLoading] = useState(false);
@@ -134,6 +135,22 @@ export default function CopywritingPage() {
         <div className="mx-auto max-w-3xl">
 
         <Card className="mt-5">
+          <h2 className="mb-1 text-sm font-semibold text-slate-900">
+            Konten Acuan <span className="font-normal text-slate-500">(opsional)</span>
+          </h2>
+          <p className="mb-3 text-xs text-slate-500">
+            Tempel URL konten yang gayanya ingin ditiru. Gaya copywriting akan mengikuti konten acuan,
+            dengan penyesuaian isi sesuai brief dan CTA pilihanmu.
+          </p>
+          <Input
+            label="URL konten acuan"
+            value={form.konten_acuan}
+            onChange={(e) => set("konten_acuan", e.target.value)}
+            placeholder="Contoh: https://www.instagram.com/p/..."
+          />
+        </Card>
+
+        <Card className="mt-4">
           <h2 className="mb-3 text-sm font-semibold text-slate-900">5W1H</h2>
           <div className="grid gap-3 sm:grid-cols-2">
             <div className="sm:col-span-2">

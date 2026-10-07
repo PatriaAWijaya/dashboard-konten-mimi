@@ -1111,7 +1111,7 @@ async def generate_copywriting(
 ):
     """Generate copywriting dari brief 5W1H + framework storytelling."""
     from app.schemas.content import FRAMEWORK_COPYWRITING, LABEL_FRAMEWORK
-    from app.services.llm import get_llm_provider, resolve_llm_api_key
+    from app.services.llm import fetch_teks_acuan, get_llm_provider, resolve_llm_api_key
 
     ctx = await get_org_context(db, user, org_id, min_role=ROLE_EDITOR)
     brand = await get_brand(db, brand_id, ctx.organization.id)
@@ -1128,9 +1128,11 @@ async def generate_copywriting(
             detail="Kolom 'What' wajib diisi.",
         )
 
+    teks_acuan = await fetch_teks_acuan(data.konten_acuan)
     konteks = {
         "brand": brand.name,
         "framework": LABEL_FRAMEWORK[fw],
+        "konten_acuan_teks": teks_acuan,
         "what": data.what.strip(),
         "who": data.who.strip(),
         "when": data.when.strip(),
@@ -1178,7 +1180,7 @@ async def generate_script_konten(
         LABEL_FRAMEWORK,
         SPEC_SCRIPT,
     )
-    from app.services.llm import get_llm_provider, parse_script_segmen, resolve_llm_api_key
+    from app.services.llm import fetch_teks_acuan, get_llm_provider, parse_script_segmen, resolve_llm_api_key
 
     ctx = await get_org_context(db, user, org_id, min_role=ROLE_EDITOR)
     brand = await get_brand(db, brand_id, ctx.organization.id)
@@ -1201,9 +1203,11 @@ async def generate_script_konten(
             detail="Kolom 'What' wajib diisi.",
         )
 
+    teks_acuan = await fetch_teks_acuan(data.konten_acuan)
     konteks = {
         "brand": brand.name,
         "framework": LABEL_FRAMEWORK[fw],
+        "konten_acuan_teks": teks_acuan,
         "format": LABEL_FORMAT_SCRIPT[fmt],
         "segmen_spec": SPEC_SCRIPT[fmt]["segmen"],
         "what": data.what.strip(),
