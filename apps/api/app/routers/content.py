@@ -51,6 +51,8 @@ from app.schemas.content import (
     JawabOut,
     CopywritingIn,
     CopywritingOut,
+    ScriptIn,
+    ScriptOut,
     PerbandinganBulan,
     PerbandinganDelta,
     PerbandinganOut,
@@ -1175,7 +1177,6 @@ async def generate_script_konten(
         LABEL_FORMAT_SCRIPT,
         LABEL_FRAMEWORK,
         SPEC_SCRIPT,
-        ScriptOut,
     )
     from app.services.llm import get_llm_provider, parse_script_segmen, resolve_llm_api_key
 
